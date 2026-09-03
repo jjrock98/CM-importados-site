@@ -7,6 +7,18 @@ const ORDER_SELECT =
   'retiro_dni_titular, retiro_retira_tercero, retiro_tercero_nombre, retiro_tercero_dni, ' +
   'retirado_at, retirado_por, created_at, order_items(nombre_snap, cantidad_packs, tipo_pack)';
 
+// Cast to a literal type so Supabase's query builder can infer the exact
+// shape of the selected columns (a plain `string` type makes it fall back
+// to `GenericStringError`, which is what caused the build failures below).
+type OrderSelectRow = {
+  id: string; nombre: string; email: string; telefono: string | null;
+  estado: string; tipo_entrega: string; total: number; codigo_retiro: string | null;
+  retiro_dni_titular: string | null; retiro_retira_tercero: boolean | null;
+  retiro_tercero_nombre: string | null; retiro_tercero_dni: string | null;
+  retirado_at: string | null; retirado_por: string | null; created_at: string;
+  order_items: { nombre_snap: string; cantidad_packs: number; tipo_pack: string }[];
+};
+
 async function requireAdmin() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -40,6 +52,7 @@ export async function GET(req: NextRequest) {
     .from('orders')
     .select(ORDER_SELECT)
     .eq('codigo_retiro', codigo)
+    .returns<OrderSelectRow[]>()
     .single();
 
   if (error || !order) {
@@ -77,6 +90,7 @@ export async function POST(req: NextRequest) {
     .from('orders')
     .select(ORDER_SELECT)
     .eq('codigo_retiro', codigo)
+    .returns<OrderSelectRow[]>()
     .single();
 
   if (error || !order) {
@@ -109,6 +123,7 @@ export async function POST(req: NextRequest) {
     })
     .eq('id', order.id)
     .select(ORDER_SELECT)
+    .returns<OrderSelectRow[]>()
     .single();
 
   if (updateErr) {
