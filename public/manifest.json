@@ -1,0 +1,16 @@
+{
+  "name": "CM Importados",
+  "short_name": "CM Importados",
+  "description": "Venta mayorista de indumentaria importada — packs por docena y curva surtida.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f4ef",
+  "theme_color": "#1e2a4a",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" }
+  ],
+  "categories": ["shopping"],
+  "lang": "es"
+}
