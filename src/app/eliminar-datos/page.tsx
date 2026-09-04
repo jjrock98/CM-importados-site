@@ -64,7 +64,6 @@ export default function EliminarDatosPage() {
         <ul>
           <li>Nombre, email y teléfono de tu perfil.</li>
           <li>Tu acceso de inicio de sesión (email/contraseña o vínculo con Facebook/Google).</li>
-          <li>La asociación entre vos y tu historial de pedidos (el historial en sí se conserva anonimizado por obligaciones contables/impositivas).</li>
         </ul>
       </div>
     </>
