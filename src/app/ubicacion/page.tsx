@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getYouTubeEmbedUrl } from '@/utils';
 import { PageHero } from '@/components/common/PageHero';
 import { AnimateIn } from '@/components/common/AnimateIn';
@@ -10,8 +10,8 @@ export const metadata: Metadata = { title: 'Ubicación' };
 export const revalidate = 300;
 
 export default async function UbicacionPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.from('location_info').select('*').single();
+  const admin = createAdminClient();
+  const { data } = await admin.from('location_info').select('*').single();
   const info = data as LocationInfo | null;
 
   return (

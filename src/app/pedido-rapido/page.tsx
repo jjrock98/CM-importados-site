@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { QuickOrderTable } from '@/components/products/QuickOrderTable';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
@@ -19,8 +19,8 @@ export const revalidate = 60;
  * navegar el catálogo visual normal.
  */
 export default async function PedidoRapidoPage() {
-  const supabase = await createClient();
-  const { data: products } = await supabase
+  const admin = createAdminClient();
+  const { data: products } = await admin
     .from('products')
     .select('*')
     .eq('activo', true)

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ContactForm } from '@/components/common/ContactForm';
 import { PageHero } from '@/components/common/PageHero';
 import { AnimateIn } from '@/components/common/AnimateIn';
@@ -17,8 +17,8 @@ export const metadata = { title: 'Contacto' };
 export const revalidate = 300;
 
 export default async function ContactoPage() {
-  const supabase = await createClient();
-  const { data } = await supabase.from('contact_info').select('*').single();
+  const admin = createAdminClient();
+  const { data } = await admin.from('contact_info').select('*').single();
   const info = data as ContactInfo | null;
 
   return (

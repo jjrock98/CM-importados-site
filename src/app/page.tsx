@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import { HeroVisual } from '@/components/home/HeroVisual';
@@ -23,10 +23,10 @@ export default async function HomePage({
   const busqueda = params.q?.trim() ?? '';
   const POR_PAGINA = 12;
   const offset     = (pagina - 1) * POR_PAGINA;
-  const supabase = await createClient();
+  const admin = createAdminClient();
 
   // Query base con búsqueda opcional
-  let prodQuery = supabase
+  let prodQuery = admin
     .from('products')
     .select('*', { count: 'exact' })
     .eq('activo', true)
@@ -43,7 +43,7 @@ export default async function HomePage({
 
   const [{ data: products, count: totalProductos }, { data: rawContact }] = await Promise.all([
     prodQuery,
-    supabase
+    admin
       .from('contact_info')
       .select('email,telefono,direccion,horario,instagram,whatsapp')
       .limit(1)

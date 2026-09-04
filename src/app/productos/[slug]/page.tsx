@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -25,8 +24,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const supabase   = await createClient();
-  const { data: product } = await supabase
+  const admin      = createAdminClient();
+  const { data: product } = await admin
     .from('products').select('*').eq('slug', slug).eq('activo', true).single();
 
   if (!product) return { title: 'Producto no encontrado' };
@@ -67,8 +66,8 @@ export const revalidate = 60;
 
 export default async function ProductoPage({ params }: Props) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: product } = await supabase
+  const admin = createAdminClient();
+  const { data: product } = await admin
     .from('products').select('*').eq('slug', slug).eq('activo', true).single();
 
   if (!product) notFound();
@@ -78,7 +77,6 @@ export default async function ProductoPage({ params }: Props) {
   // ✅ Traer variantes (talla/color) con stock real, si el producto las tiene
   let variants: import('@/types').ProductVariant[] = [];
   if (p.venta_minorista) {
-    const admin = createAdminClient();
     const { data: variantData } = await admin
       .from('product_variants')
       .select('*')
