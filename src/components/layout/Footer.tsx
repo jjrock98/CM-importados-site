@@ -58,6 +58,7 @@ export function Footer({ contactInfo }: Props) {
                 { href: '/terminos', label: 'Términos y condiciones' },
                 { href: '/politicas', label: 'Política de privacidad' },
                 { href: '/ubicacion', label: 'Cómo llegar' },
+                { href: '/eliminar-datos', label: 'Eliminar mis datos' },
               ].map(({ href, label }) => (
                 <li key={href}>
                   <Link href={href} className="group inline-flex items-center gap-1.5 text-white/60 transition-colors hover:text-accent-300">
