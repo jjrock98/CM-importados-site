@@ -20,13 +20,13 @@ necesitás. El único cron que quedó en `vercel.json` (`/api/revalidate`,
 1. Creá una cuenta en **https://cron-job.org** (gratis, permite hasta 50 cron jobs con intervalos de 1 minuto).
 
 2. **Job 1 — Limpieza de reservas de stock**
-   - URL: `https://www.mc-importados.xyz/api/cron/cleanup-reservations?secret=TU_REVALIDATE_SECRET_TOKEN`
+   - URL: `https://www.mc-importados.shop/api/cron/cleanup-reservations?secret=TU_REVALIDATE_SECRET_TOKEN`
    - Schedule: cada hora (`Every hour`, minuto 0)
    - Método: GET
    - Guardalo y activalo.
 
 3. **Job 2 — Alertas de quiebre de stock**
-   - URL: `https://www.mc-importados.xyz/api/cron/stock-alerts?secret=TU_REVALIDATE_SECRET_TOKEN`
+   - URL: `https://www.mc-importados.shop/api/cron/stock-alerts?secret=TU_REVALIDATE_SECRET_TOKEN`
    - Schedule: cada 10 minutos
    - Método: GET
    - Guardalo y activalo.
