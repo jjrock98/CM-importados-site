@@ -229,26 +229,26 @@ export default async function ProductoPage({ params }: Props) {
                  venta mayorista, independientemente de si además tiene variantes
                  cargadas para alimentar la curva automática: esta guía y el
                  selector de talle exacto (más abajo) cumplen roles distintos. */}
-            {p.venta_mayorista && (p.colores.length > 0 || p.talles.length > 0) && (
+            {p.venta_mayorista && ((p.colores?.length ?? 0) > 0 || (p.talles?.length ?? 0) > 0) && (
               <div className="rounded-xl border border-border bg-surface-2/50 p-4">
                 <p className="text-sm font-semibold mb-1">🏭 Así viene surtida de fábrica</p>
                 <p className="text-xs text-muted mb-3">
                   Guía orientativa de los talles y colores que trae la docena y la curva de este producto.
                   La composición viene definida de fábrica — no se puede elegir combinación exacta al comprar por pack.
                 </p>
-                {p.colores.length > 0 && (
+                {(p.colores?.length ?? 0) > 0 && (
                   <div className="mb-3">
                     <p className="text-xs text-muted mb-1.5">Colores</p>
                     <div className="flex flex-wrap gap-2">
-                      {p.colores.map((c) => <span key={c} className="badge bg-surface text-sm px-3 py-1">{c}</span>)}
+                      {p.colores!.map((c) => <span key={c} className="badge bg-surface text-sm px-3 py-1">{c}</span>)}
                     </div>
                   </div>
                 )}
-                {p.talles.length > 0 && (
+                {(p.talles?.length ?? 0) > 0 && (
                   <div>
                     <p className="text-xs text-muted mb-1.5">Talles</p>
                     <div className="flex flex-wrap gap-2">
-                      {p.talles.map((t) => <span key={t} className="badge bg-surface text-sm px-3 py-1">{t}</span>)}
+                      {p.talles!.map((t) => <span key={t} className="badge bg-surface text-sm px-3 py-1">{t}</span>)}
                     </div>
                   </div>
                 )}
