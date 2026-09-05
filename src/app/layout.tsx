@@ -134,7 +134,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PageProgress />
           <EmailVerificationBanner />
           <Navbar />
-          <main>{children}</main>
+          <main id="print-root">{children}</main>
           <Footer contactInfo={contactInfo} />
           <WhatsAppButton />
           <TawkTo />
