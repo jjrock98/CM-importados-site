@@ -60,14 +60,14 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/logo.png"
-              alt={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'CM Importados'}
+              alt={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'MC Importados'}
               width={34}
               height={34}
               className="rounded-lg object-contain"
               priority
             />
             <span className="font-display text-base font-bold text-brand-700 dark:text-brand-300 hidden sm:inline">
-              {process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'CM Importados'}
+              {process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'MC Importados'}
             </span>
           </Link>
 

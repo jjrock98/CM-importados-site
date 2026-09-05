@@ -14,7 +14,7 @@ export default function EliminarDatosPage() {
       />
       <div className="mx-auto max-w-3xl px-4 py-12 prose prose-sm dark:prose-invert">
         <p>
-          En CM Importados podés solicitar la eliminación completa de tu cuenta y de los datos
+          En MC Importados podés solicitar la eliminación completa de tu cuenta y de los datos
           personales asociados a ella (nombre, email, teléfono e historial vinculado a tu perfil)
           en cualquier momento.
         </p>
@@ -55,7 +55,7 @@ export default function EliminarDatosPage() {
 
         <h2>Si iniciaste sesión con Facebook</h2>
         <p>
-          Además de eliminar tu cuenta acá, podés revocar el acceso de CM Importados a tu perfil
+          Además de eliminar tu cuenta acá, podés revocar el acceso de MC Importados a tu perfil
           de Facebook desde la configuración de tu cuenta de Facebook, en{' '}
           <strong>Configuración → Apps y sitios web</strong>.
         </p>
