@@ -3,9 +3,10 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/utils';
 import { PACK_CONFIG } from '@/types';
-import { Package2, ChevronRight, ExternalLink } from 'lucide-react';
+import { Package2, ChevronRight } from 'lucide-react';
 import type { Order } from '@/types';
 import { RepetirPedidoButton } from '@/components/orders/RepetirPedidoButton';
+import { VerComprobanteLink, SubirComprobanteLink } from '@/components/orders/OrderCardActions';
 
 export const metadata = { title: 'Mis pedidos' };
 export const dynamic  = 'force-dynamic';
@@ -85,19 +86,14 @@ export default async function MisPedidosPage() {
 
             {/* Footer */}
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-xs text-muted">
-              <span>Envío: {order.costo_envio > 0 ? formatPrice(order.costo_envio) : (order.tipo_entrega === 'retiro' ? 'Retiro en local' : 'A coordinar')}</span>
+              <span>Envío: {order.tipo_entrega === 'retiro' ? 'Gratis (retiro)' : 'A coordinar'}</span>
               <span>·</span>
               <span className="capitalize">{order.metodo_pago}</span>
 
               {order.comprobante_url && (
                 <>
                   <span>·</span>
-                  <span
-                    onClick={(e) => { e.preventDefault(); window.open(order.comprobante_url!, '_blank'); }}
-                    className="flex items-center gap-1 text-brand-600 hover:underline cursor-pointer"
-                  >
-                    <ExternalLink size={11} /> Comprobante
-                  </span>
+                  <VerComprobanteLink url={order.comprobante_url} />
                 </>
               )}
 
@@ -105,12 +101,7 @@ export default async function MisPedidosPage() {
               {order.estado === 'pendiente' && order.metodo_pago === 'transferencia' && !order.comprobante_url && (
                 <>
                   <span>·</span>
-                  <span
-                    onClick={(e) => { e.preventDefault(); window.location.href = `/subir-comprobante?orderId=${order.id}`; }}
-                    className="text-brand-600 hover:underline font-medium cursor-pointer"
-                  >
-                    Subir comprobante →
-                  </span>
+                  <SubirComprobanteLink orderId={order.id} />
                 </>
               )}
 
