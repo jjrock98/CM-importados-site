@@ -78,27 +78,28 @@ describe('ProductCard', () => {
     expect(screen.getByText(/4/)).toBeInTheDocument();
   });
 
-  it('shows "Sin stock" overlay when out of stock', () => {
+  it('shows "Agotado" state with notify-me form when out of stock', () => {
     render(<ProductCard product={PRODUCT_NO_STOCK} />);
-    expect(screen.getByText('Sin stock')).toBeInTheDocument();
+    // Aparece dos veces: el badge sobre la imagen y el bloque de "avísame"
+    expect(screen.getAllByText('Agotado').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Avisame cuando haya stock/i })).toBeInTheDocument();
   });
 
-  it('disables add button when out of stock', () => {
+  it('does not render the add-to-cart button when out of stock', () => {
     render(<ProductCard product={PRODUCT_NO_STOCK} />);
-    const button = screen.getByRole('button', { name: /Sin stock/i });
-    expect(button).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /al carrito/i })).not.toBeInTheDocument();
   });
 
-  it('shows "Agregar al carrito" button when in stock', () => {
+  it('shows the add-to-cart button when in stock', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
-    expect(screen.getByRole('button', { name: /Agregar al carrito/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Agregar Medias Premium al carrito/i })).toBeInTheDocument();
   });
 
-  it('opens modal on image/button click', () => {
+  it('opens modal on button click', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
-    const addBtn = screen.getByRole('button', { name: /Agregar al carrito/i });
+    const addBtn = screen.getByRole('button', { name: /Agregar Medias Premium al carrito/i });
     fireEvent.click(addBtn);
-    // Modal should be rendered
-    expect(screen.getByText('Medias Premium')).toBeInTheDocument();
+    // El modal de detalle debe abrirse — el nombre queda duplicado (card + modal)
+    expect(screen.getAllByText('Medias Premium').length).toBeGreaterThan(1);
   });
 });

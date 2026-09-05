@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
@@ -202,7 +203,7 @@ export default async function HomePage({
             <input name="q" defaultValue={busqueda} placeholder="Buscar productos…"
               className="input-base max-w-xs text-sm" />
             {busqueda && (
-              <a href="/" className="btn-ghost text-sm py-2 px-3">✕ Limpiar</a>
+              <Link href="/" className="btn-ghost text-sm py-2 px-3">✕ Limpiar</Link>
             )}
           </form>
           <p className="text-sm text-muted">
@@ -216,7 +217,7 @@ export default async function HomePage({
             <ShoppingBag size={40} className="mx-auto mb-3 opacity-30" />
             <p>{busqueda ? `Sin resultados para "${busqueda}"` : 'No hay productos disponibles aún.'}</p>
             {busqueda && (
-              <a href="/" className="btn-secondary mt-4 text-sm px-4 py-2">Ver todo el catálogo</a>
+              <Link href="/" className="btn-secondary mt-4 text-sm px-4 py-2">Ver todo el catálogo</Link>
             )}
           </AnimateIn>
         ) : (

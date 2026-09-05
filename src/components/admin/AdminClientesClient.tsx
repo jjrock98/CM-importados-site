@@ -44,6 +44,24 @@ type SortKey = 'nombre' | 'totalGastado' | 'totalPedidos' | 'ultimoPedido' | 'cr
 
 interface Props { clients: Client[]; metrics: Metrics }
 
+// Se define fuera del componente para no recrearse (y remontarse) en cada
+// render de AdminClientesClient — antes vivía adentro y perdía cualquier
+// estado propio (ej. foco) cada vez que cambiaba search/sort/filtros.
+function SortBtn({ k, label, sortBy, onSort }: { k: SortKey; label: string; sortBy: SortKey; onSort: (k: SortKey) => void }) {
+  return (
+    <button
+      onClick={() => onSort(k)}
+      className={cn(
+        'flex items-center gap-1 text-xs font-semibold uppercase tracking-wide',
+        sortBy === k ? 'text-brand-600' : 'text-muted hover:text-foreground'
+      )}
+    >
+      {label}
+      <ArrowUpDown size={11} />
+    </button>
+  );
+}
+
 export function AdminClientesClient({ clients, metrics }: Props) {
   const [search,    setSearch]    = useState('');
   const [sortBy,    setSortBy]    = useState<SortKey>('totalGastado');
@@ -217,19 +235,6 @@ export function AdminClientesClient({ clients, metrics }: Props) {
     else { setSortBy(key); setSortDir('desc'); }
   };
 
-  const SortBtn = ({ k, label }: { k: SortKey; label: string }) => (
-    <button
-      onClick={() => toggleSort(k)}
-      className={cn(
-        'flex items-center gap-1 text-xs font-semibold uppercase tracking-wide',
-        sortBy === k ? 'text-brand-600' : 'text-muted hover:text-foreground'
-      )}
-    >
-      {label}
-      <ArrowUpDown size={11} />
-    </button>
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -284,12 +289,12 @@ export function AdminClientesClient({ clients, metrics }: Props) {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-surface-2">
               <tr>
-                <th className="p-3 text-left"><SortBtn k="nombre" label="Cliente" /></th>
+                <th className="p-3 text-left"><SortBtn k="nombre" label="Cliente" sortBy={sortBy} onSort={toggleSort} /></th>
                 <th className="p-3 text-left hidden md:table-cell">Contacto</th>
-                <th className="p-3 text-left hidden lg:table-cell"><SortBtn k="created_at" label="Registro" /></th>
-                <th className="p-3 text-right"><SortBtn k="totalPedidos" label="Pedidos" /></th>
-                <th className="p-3 text-right"><SortBtn k="totalGastado" label="Total gastado" /></th>
-                <th className="p-3 text-right hidden md:table-cell"><SortBtn k="ultimoPedido" label="Último pedido" /></th>
+                <th className="p-3 text-left hidden lg:table-cell"><SortBtn k="created_at" label="Registro" sortBy={sortBy} onSort={toggleSort} /></th>
+                <th className="p-3 text-right"><SortBtn k="totalPedidos" label="Pedidos" sortBy={sortBy} onSort={toggleSort} /></th>
+                <th className="p-3 text-right"><SortBtn k="totalGastado" label="Total gastado" sortBy={sortBy} onSort={toggleSort} /></th>
+                <th className="p-3 text-right hidden md:table-cell"><SortBtn k="ultimoPedido" label="Último pedido" sortBy={sortBy} onSort={toggleSort} /></th>
                 <th className="p-3 w-10" />
               </tr>
             </thead>

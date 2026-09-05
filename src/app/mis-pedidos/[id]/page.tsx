@@ -39,7 +39,7 @@ export default async function OrderDetailPage({ params }: Props) {
     .eq('id', id).eq('user_id', user.id).single();
 
   if (!order) notFound();
-  const o = order as Order;
+  const o = order as unknown as Order;
 
   const isRetiro    = o.tipo_entrega === 'retiro';
   const isCancelled = o.estado === 'cancelado';
