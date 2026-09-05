@@ -5,7 +5,7 @@ interface Props { videos: string[]; nombre: string }
 
 /** Convierte una URL de YouTube a su formato embed, o la deja igual si ya es directa (.mp4) o Vimeo */
 function toEmbedUrl(url: string): { type: 'iframe' | 'video'; src: string } {
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]+)/);
   if (ytMatch) return { type: 'iframe', src: `https://www.youtube.com/embed/${ytMatch[1]}` };
 
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);

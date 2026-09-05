@@ -39,6 +39,7 @@ export function getYouTubeEmbedUrl(url: string): string {
   if (!url) return '';
   const regexps = [
     /youtu\.be\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
     /[?&]v=([a-zA-Z0-9_-]+)/,
     /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
   ];
