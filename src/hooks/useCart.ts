@@ -48,23 +48,46 @@ function sameLine(i: CartItem, productId: string, tipoPack: TipoPack, variantId?
   return i.productId === productId && i.tipoPack === tipoPack && (i.variantId ?? null) === (variantId ?? null);
 }
 
+// ── Totales derivados ────────────────────────────────────────────────────
+// ⚠️ IMPORTANTE: subtotal/total/itemCount NO son getters. Zustand combina
+// cada `set()` haciendo `Object.assign({}, estadoViejo, parcialNuevo)`, y
+// eso EVALÚA cualquier getter sobre el `estadoViejo` (antes de aplicar el
+// cambio) y lo deja fijo como un número en el objeto resultante. Con un
+// getter, el subtotal terminaba mostrando siempre el valor de ANTES del
+// último cambio (ej: agregás una unidad y el total tarda un paso en
+// reflejarlo, o directamente arranca en 0 y queda pegado ahí). Por eso acá
+// se recalculan a mano en cada acción y se guardan como número plano —
+// así siempre coinciden con `items` en el mismo instante en que cambian.
+function deriveTotals(items: CartItem[]) {
+  const subtotal = items.reduce((acc, i) => acc + i.subtotal, 0);
+  return {
+    subtotal,
+    // El envío se coordina manualmente (WhatsApp / Tawk.to / en persona),
+    // no se calcula ni se suma acá — el total del carrito es el subtotal.
+    total: subtotal,
+    itemCount: items.reduce((acc, i) => acc + i.cantidadPacks, 0),
+  };
+}
+
 interface CartStore {
   items: CartItem[];
+  subtotal: number;
+  total: number;
+  itemCount: number;
 
   addItem: (item: Omit<CartItem, 'subtotal'>) => Promise<{ ok: boolean; error?: string }>;
   removeItem: (productId: string, tipoPack: TipoPack, variantId?: string | null) => void;
   updateQuantity: (productId: string, tipoPack: TipoPack, cantidadPacks: number, variantId?: string | null) => Promise<{ ok: boolean; error?: string }>;
   clearCart: () => void;
-
-  readonly subtotal: number;
-  readonly total: number;
-  readonly itemCount: number;
 }
 
 export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      subtotal: 0,
+      total: 0,
+      itemCount: 0,
 
       // ── addItem — NO reserva stock, solo valida por lectura ──────────────
       addItem: async (item) => {
@@ -94,25 +117,25 @@ export const useCartStore = create<CartStore>()(
             const precioUnitario = existing.tipoPack === 'docena' && existing.precioBaseDocena != null
               ? getPrecioEscalonado(existing.precioTiers, newCantidadPacks, existing.precioBaseDocena)
               : existing.precioUnitario;
-            return {
-              items: state.items.map((i) =>
-                sameLine(i, item.productId, item.tipoPack, item.variantId)
-                  ? {
-                      ...i,
-                      cantidadPacks: newCantidadPacks,
-                      unidades:      i.unidades + item.unidades,
-                      precioUnitario,
-                      subtotal:      newCantidadPacks * precioUnitario,
-                    }
-                  : i
-              ),
-            };
+            const newItems = state.items.map((i) =>
+              sameLine(i, item.productId, item.tipoPack, item.variantId)
+                ? {
+                    ...i,
+                    cantidadPacks: newCantidadPacks,
+                    unidades:      i.unidades + item.unidades,
+                    precioUnitario,
+                    subtotal:      newCantidadPacks * precioUnitario,
+                  }
+                : i
+            );
+            return { items: newItems, ...deriveTotals(newItems) };
           }
           // Línea nueva: si es docena, aplicar el escalón que corresponda desde el inicio.
           const precioUnitarioInicial = item.tipoPack === 'docena' && item.precioBaseDocena != null
             ? getPrecioEscalonado(item.precioTiers, item.cantidadPacks, item.precioBaseDocena)
             : item.precioUnitario;
-          return { items: [...state.items, { ...item, precioUnitario: precioUnitarioInicial, subtotal: item.cantidadPacks * precioUnitarioInicial }] };
+          const newItems = [...state.items, { ...item, precioUnitario: precioUnitarioInicial, subtotal: item.cantidadPacks * precioUnitarioInicial }];
+          return { items: newItems, ...deriveTotals(newItems) };
         });
 
         pixelAddToCart({
@@ -125,9 +148,10 @@ export const useCartStore = create<CartStore>()(
 
       // ── removeItem — puramente local, no llama a Supabase ────────────────
       removeItem: (productId, tipoPack, variantId = null) => {
-        set((state) => ({
-          items: state.items.filter((i) => !sameLine(i, productId, tipoPack, variantId)),
-        }));
+        set((state) => {
+          const newItems = state.items.filter((i) => !sameLine(i, productId, tipoPack, variantId));
+          return { items: newItems, ...deriveTotals(newItems) };
+        });
       },
 
       // ── updateQuantity — valida por lectura, no reserva ───────────────────
@@ -150,8 +174,8 @@ export const useCartStore = create<CartStore>()(
           return { ok: false, error: `Solo hay ${stockActual} unidades disponibles` };
         }
 
-        set((state) => ({
-          items: state.items.map((i) => {
+        set((state) => {
+          const newItems = state.items.map((i) => {
             if (!sameLine(i, productId, tipoPack, variantId)) return i;
             // Docena: recalcular precio escalonado según la nueva cantidad
             // de docenas (puede subir o bajar de escalón al cambiar cantidad).
@@ -159,41 +183,30 @@ export const useCartStore = create<CartStore>()(
               ? getPrecioEscalonado(i.precioTiers, cantidadPacks, i.precioBaseDocena)
               : i.precioUnitario;
             return { ...i, cantidadPacks, unidades: newPackUnits, precioUnitario, subtotal: cantidadPacks * precioUnitario };
-          }),
-        }));
+          });
+          return { items: newItems, ...deriveTotals(newItems) };
+        });
         return { ok: true };
       },
 
       // ── clearCart — puramente local ────────────────────────────────────────
       clearCart: () => {
-        set({ items: [] });
+        set({ items: [], subtotal: 0, total: 0, itemCount: 0 });
       },
-
-      get subtotal() { return get().items.reduce((acc, i) => acc + i.subtotal, 0); },
-      // El envío se coordina manualmente (WhatsApp / Tawk.to / en persona),
-      // no se calcula ni se suma acá — el total del carrito es el subtotal.
-      get total()    { return get().subtotal; },
-      get itemCount(){ return get().items.reduce((acc, i) => acc + i.cantidadPacks, 0); },
     }),
     {
       name: 'cart-storage',
       partialize: (state) => ({
         items: state.items,
       }),
-      // ⚠️ FIX crítico: no usar el merge por defecto de zustand/persist acá.
-      // Ese merge hace `{ ...currentState, ...persistedState }`, y un
-      // `{...obj}` EVALÚA los getters de `obj` (subtotal/total/itemCount)
-      // en ese instante — cuando `items` todavía está vacío — y los
-      // "congela" como un 0 fijo para siempre, aunque después se agreguen
-      // productos. Acá reconstruimos el objeto preservando los getters
-      // como getters reales (no como valores ya calculados) y solo
-      // pisamos `items` con lo que vino guardado.
+      // Al hidratar desde localStorage solo se restauran los `items` (ver
+      // partialize). subtotal/total/itemCount se recalculan acá a partir de
+      // esos items para que arranquen siempre sincronizados, en vez de
+      // heredar los valores en 0 del estado inicial.
       merge: (persistedState, currentState) => {
-        const merged = Object.create(Object.getPrototypeOf(currentState));
-        Object.defineProperties(merged, Object.getOwnPropertyDescriptors(currentState));
         const persistedItems = (persistedState as Partial<CartStore> | undefined)?.items;
-        if (Array.isArray(persistedItems)) merged.items = persistedItems;
-        return merged;
+        const items = Array.isArray(persistedItems) ? persistedItems : currentState.items;
+        return { ...currentState, items, ...deriveTotals(items) };
       },
     }
   )
