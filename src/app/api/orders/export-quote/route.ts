@@ -4,6 +4,18 @@ import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
 import { formatPrice } from '@/utils';
 import { rateLimiters } from '@/lib/rateLimit';
 
+/**
+ * Las fuentes estándar de pdf-lib (Helvetica) solo soportan WinAnsi
+ * (ISO-8859-1 + algunos extras de cp1252). Si un nombre de producto tiene
+ * un emoji u otro carácter fuera de ese rango, pdf-lib TIRA UNA EXCEPCIÓN
+ * al dibujarlo y toda la generación del PDF falla con un 500 genérico.
+ * Esta función reemplaza cualquier carácter no soportado por algo inocuo
+ * en vez de romper todo el presupuesto.
+ */
+function pdfSafe(text: string): string {
+  return text.replace(/[^\x00-\xFF]/g, '');
+}
+
 interface QuoteItem {
   nombre: string;
   tipoPack: 'media_docena' | 'docena' | 'unidad';
@@ -48,7 +60,7 @@ export async function POST(req: NextRequest) {
       admin.from('bank_info').select('*').single(),
       admin.from('site_settings').select('valor').eq('clave', 'nombre_tienda').single(),
     ]);
-    const nombreTienda = nombreRow?.valor ?? 'Mi Tienda';
+    const nombreTienda = pdfSafe(nombreRow?.valor ?? 'Mi Tienda');
 
     const subtotal = items.reduce((a, i) => a + i.subtotal, 0);
     const total    = subtotal + costoEnvio;
@@ -101,7 +113,7 @@ export async function POST(req: NextRequest) {
 
       page.drawRectangle({ x: margin - 4, y: y - 10, width: pageW - margin * 2 + 8, height: 20, color: lightRow, opacity: 0.5 });
 
-      const nombreTrunc = item.nombre.length > 32 ? item.nombre.slice(0, 29) + '…' : item.nombre;
+      const nombreTrunc = pdfSafe(item.nombre.length > 32 ? item.nombre.slice(0, 29) + '...' : item.nombre);
       page.drawText(nombreTrunc, { x: margin, y, size: 9.5, font, color: dark });
       page.drawText(PACK_LABEL[item.tipoPack] ?? item.tipoPack, { x: 280, y, size: 9.5, font, color: gray });
       page.drawText(String(item.cantidadPacks), { x: 350, y, size: 9.5, font, color: gray });
@@ -147,7 +159,7 @@ export async function POST(req: NextRequest) {
         bankInfo.banco       ? `Banco: ${bankInfo.banco}` : null,
         bankInfo.cuit        ? `CUIT: ${bankInfo.cuit}` : null,
         bankInfo.tipo_cuenta ? `Tipo de cuenta: ${bankInfo.tipo_cuenta}` : null,
-      ].filter(Boolean) as string[];
+      ].filter(Boolean).map((line) => pdfSafe(line as string));
       for (const line of bankLines) {
         page.drawText(line, { x: margin, y, size: 9.5, font, color: dark });
         y -= 15;
@@ -158,7 +170,7 @@ export async function POST(req: NextRequest) {
     // ── Leyenda obligatoria ───────────────────────────────────────────
     if (y < margin + 60) newPage();
     page.drawRectangle({ x: margin - 4, y: y - 34, width: pageW - margin * 2 + 8, height: 40, color: rgb(0.99, 0.95, 0.85) });
-    page.drawText('⚠ Presupuesto válido por 48 horas.', { x: margin, y: y - 8, size: 9.5, font: fontBold, color: rgb(0.6, 0.35, 0) });
+    page.drawText('Presupuesto válido por 48 horas.', { x: margin, y: y - 8, size: 9.5, font: fontBold, color: rgb(0.6, 0.35, 0) });
     page.drawText('El stock no se reserva hasta acreditar el pago.', { x: margin, y: y - 24, size: 9.5, font, color: rgb(0.6, 0.35, 0) });
 
     // ── Footer de página ──────────────────────────────────────────────
