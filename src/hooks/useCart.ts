@@ -57,7 +57,6 @@ interface CartStore {
   clearCart: () => void;
 
   readonly subtotal: number;
-  /** @deprecated El envío ya no se calcula automáticamente — total === subtotal. Se mantiene para no romper componentes que aún lo lean. */
   readonly total: number;
   readonly itemCount: number;
 }
@@ -171,7 +170,9 @@ export const useCartStore = create<CartStore>()(
       },
 
       get subtotal() { return get().items.reduce((acc, i) => acc + i.subtotal, 0); },
-      get total()    { return get().subtotal; }, // envío ya no incluido — se coordina aparte
+      // El envío se coordina manualmente (WhatsApp / Tawk.to / en persona),
+      // no se calcula ni se suma acá — el total del carrito es el subtotal.
+      get total()    { return get().subtotal; },
       get itemCount(){ return get().items.reduce((acc, i) => acc + i.cantidadPacks, 0); },
     }),
     {
@@ -179,6 +180,21 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({
         items: state.items,
       }),
+      // ⚠️ FIX crítico: no usar el merge por defecto de zustand/persist acá.
+      // Ese merge hace `{ ...currentState, ...persistedState }`, y un
+      // `{...obj}` EVALÚA los getters de `obj` (subtotal/total/itemCount)
+      // en ese instante — cuando `items` todavía está vacío — y los
+      // "congela" como un 0 fijo para siempre, aunque después se agreguen
+      // productos. Acá reconstruimos el objeto preservando los getters
+      // como getters reales (no como valores ya calculados) y solo
+      // pisamos `items` con lo que vino guardado.
+      merge: (persistedState, currentState) => {
+        const merged = Object.create(Object.getPrototypeOf(currentState));
+        Object.defineProperties(merged, Object.getOwnPropertyDescriptors(currentState));
+        const persistedItems = (persistedState as Partial<CartStore> | undefined)?.items;
+        if (Array.isArray(persistedItems)) merged.items = persistedItems;
+        return merged;
+      },
     }
   )
 );
