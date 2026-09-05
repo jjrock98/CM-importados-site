@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, getCashCouponExpiry } from '@/utils';
 import { PACK_CONFIG } from '@/types';
 import type { Order } from '@/types';
-import { ArrowLeft, Package, Printer, ExternalLink, MapPin, Store, Navigation, Receipt, CalendarClock } from 'lucide-react';
+import { ArrowLeft, Package, Printer, ExternalLink, MapPin, Store, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
 import { OrderCancelButton } from '@/components/orders/OrderCancelButton';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -55,6 +55,18 @@ export default async function OrderDetailPage({ params }: Props) {
   const mapsUrl = contactInfo?.direccion
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactInfo.direccion)}`
     : 'https://maps.google.com';
+
+  // ✅ Envío a coordinar por WhatsApp — mismo número que se usa en el resto
+  // del sitio (carrito, checkout, footer). Solo tiene sentido si el pedido
+  // no es retiro en local, no está cancelado, y el envío aún no tiene un
+  // costo cargado (sigue "a coordinar").
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
+  const showEnvioWhatsApp = !isRetiro && !isCancelled && o.costo_envio === 0 && !!whatsappNumber;
+  const envioWhatsAppUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+        `Hola! Quiero coordinar el envío de mi pedido #${o.id.slice(0, 8).toUpperCase()}.`
+      )}`
+    : '';
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -302,6 +314,15 @@ export default async function OrderDetailPage({ params }: Props) {
             {o.telefono && <p className="text-muted">{o.telefono}</p>}
             {!isRetiro && <><p className="text-muted">{o.direccion}</p><p className="text-muted">{o.ciudad} ({o.codigo_postal})</p></>}
             {o.notas && <p className="text-muted italic text-xs border-t border-border pt-2">Nota: {o.notas}</p>}
+            {showEnvioWhatsApp && (
+              <a
+                href={envioWhatsAppUrl}
+                target="_blank" rel="noopener noreferrer"
+                className="btn-secondary w-full text-center text-xs py-2 gap-1.5 mt-1"
+              >
+                <MessageCircle size={13} /> Coordinar envío por WhatsApp
+              </a>
+            )}
           </div>
           <div className="card p-5 space-y-2 text-sm">
             <h2 className="font-semibold">Pago</h2>
