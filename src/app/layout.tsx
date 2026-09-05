@@ -20,8 +20,8 @@ import './globals.css';
 const inter    = Inter({ subsets: ['latin'], variable: '--font-body',    display: 'swap' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL       ?? 'https://localhost:3000';
-const tienda = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
+const appUrl = process.env.NEXT_PUBLIC_APP_URL       || 'https://localhost:3000';
+const tienda = process.env.NEXT_PUBLIC_TIENDA_NOMBRE || 'Mi Tienda';
 const fbAppId = process.env.NEXT_PUBLIC_FB_APP_ID;
 
 export const metadata: Metadata = {
