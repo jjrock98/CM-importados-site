@@ -97,6 +97,9 @@ export default async function ProductoPage({ params }: Props) {
     image:       p.imagenes,
     sku:         p.id,
     mpn:         p.id,
+    // No manejamos GTIN (productos importados sin código de barras propio),
+    // así que declaramos la marca de la tienda como identificador.
+    brand: { '@type': 'Brand', name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda' },
     offers: [
       // Media docena es opcional: solo se agrega como offer si el producto la tiene cargada
       ...(p.precio_media_docena != null ? [{
@@ -108,6 +111,15 @@ export default async function ProductoPage({ params }: Props) {
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
         seller: { '@type': 'Organization', name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda' },
+        // Política real: solo se aceptan cambios por defecto de fábrica,
+        // reportado dentro de los 3 días de recibido el pedido.
+        hasMerchantReturnPolicy: {
+          '@type': 'MerchantReturnPolicy',
+          returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+          merchantReturnDays: 3,
+          applicableCountry: 'AR',
+          refundType: 'https://schema.org/ExchangeRefund',
+        },
         // Sin shippingDetails: el envío se coordina manualmente (WhatsApp,
         // chat en vivo o personalmente) y su costo varía — declarar acá
         // "envío gratis" o un monto fijo sería inexacto para Google y
@@ -123,6 +135,13 @@ export default async function ProductoPage({ params }: Props) {
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
         seller: { '@type': 'Organization', name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda' },
+        hasMerchantReturnPolicy: {
+          '@type': 'MerchantReturnPolicy',
+          returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+          merchantReturnDays: 3,
+          applicableCountry: 'AR',
+          refundType: 'https://schema.org/ExchangeRefund',
+        },
       },
     ],
   };
