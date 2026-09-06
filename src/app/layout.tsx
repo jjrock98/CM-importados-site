@@ -130,6 +130,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           que es el método soportado y seguro para hidratación con
           scripts de terceros (no se declara dentro de <head> a mano). */}
       <body className="min-h-screen bg-surface text-foreground antialiased">
+        {/* fb:app_id no es un campo soportado por openGraph en la Metadata
+            API de Next.js (se descarta en silencio si se lo pone ahí).
+            Un <meta> suelto acá se "eleva" solo al <head> del documento
+            sin declarar un <head> JSX propio, así que no reintroduce el
+            problema de hidratación que se documentó arriba. */}
+        {fbAppId && <meta property="fb:app_id" content={fbAppId} />}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <PageProgress />
           <EmailVerificationBanner />
