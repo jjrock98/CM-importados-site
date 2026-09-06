@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { Suspense } from 'react';
 import { Inter, Playfair_Display } from 'next/font/google';
 import Script from 'next/script';
 import { ThemeProvider } from 'next-themes';
@@ -109,14 +110,27 @@ export const viewport: Viewport = {
   ],
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+// Se aisló la consulta a Supabase del contact_info en su propio componente
+// async, envuelto en <Suspense> más abajo. Antes vivía directo en
+// RootLayout (que era `async function`), lo que obligaba a Next.js a
+// esperar esa consulta antes de poder mandar CUALQUIER parte del <head>
+// o del <body> — incluida la etiqueta fb:app_id de más abajo, que por
+// eso terminaba viajando solo en el chunk de hidratación por JS y nunca
+// llegaba al HTML inicial que ven los rastreadores (Facebook no ejecuta
+// JS). Con RootLayout sincrónico, todo el shell —meta tag incluido— se
+// manda de una, y solo el contenido del Footer que depende de la DB se
+// transmite (stream) por separado.
+async function FooterWithContact() {
   let contactInfo: ContactInfo | null = null;
   try {
     const supabase = await createClient();
     const { data } = await supabase.from('contact_info').select('*').limit(1).single();
     contactInfo = data;
   } catch { /* Footer usa fallbacks de env vars */ }
+  return <Footer contactInfo={contactInfo} />;
+}
 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" suppressHydrationWarning
       className={`${inter.variable} ${playfair.variable}`}>
@@ -141,7 +155,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <EmailVerificationBanner />
           <Navbar />
           <main id="print-root">{children}</main>
-          <Footer contactInfo={contactInfo} />
+          <Suspense fallback={<Footer contactInfo={null} />}>
+            <FooterWithContact />
+          </Suspense>
           <WhatsAppButton />
           <TawkTo />
           <CookieConsent />
