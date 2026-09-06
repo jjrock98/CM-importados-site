@@ -91,7 +91,13 @@ export function AdminOrdersClient({ initialOrders }: Props) {
     });
     const data = await res.json();
     if (data.error) { toast.error(data.error); }
-    else { setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, estado } : o)); toast.success('Estado actualizado'); }
+    // ✅ FIX: antes era `{ ...o, estado }` — un merge "a ciegas" que solo
+    // tocaba el estado y dejaba stock_descontado con el valor viejo en
+    // pantalla, aunque el servidor ya lo hubiera actualizado (al
+    // restaurar stock por un rechazo/cancelación). Ahora se usa el
+    // pedido real que devuelve la API, así el badge de Stock se
+    // actualiza en el momento, sin necesidad de recargar la página.
+    else { setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, ...data.order } : o)); toast.success('Estado actualizado'); }
     setLoading(null);
   };
 
@@ -448,7 +454,17 @@ export function AdminOrdersClient({ initialOrders }: Props) {
                     )}
                     <div>
                       <p className="text-xs text-muted mb-1">Stock</p>
-                      <p>{order.stock_descontado ? '✅ Descontado' : '⏳ Pendiente'}</p>
+                      {/* ✅ FIX: antes era binario (Descontado / Pendiente), pero
+                          "nunca se descontó" y "se descontó y se devolvió al
+                          cancelar/rechazar" son cosas distintas para el
+                          vendedor — se agrega el tercer estado "Restablecido". */}
+                      <p>
+                        {order.stock_descontado
+                          ? '✅ Descontado'
+                          : (order.estado === 'cancelado' || order.estado === 'rechazado')
+                            ? '↩️ Restablecido'
+                            : '⏳ Pendiente'}
+                      </p>
                     </div>
                     {(order as Order & { rejection_reason?: string }).rejection_reason && (
                       <div className="sm:col-span-2">

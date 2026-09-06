@@ -102,5 +102,11 @@ export async function PATCH(req: NextRequest) {
   // que ya se guardó bien en la base.
   if (order) await sendOrderStatusEmail(order).catch(console.error);
 
-  return NextResponse.json({ ok: true });
+  // ✅ FIX: antes devolvía solo { ok: true } — el frontend no tenía forma
+  // de saber que stock_descontado había cambiado en el servidor (por el
+  // restore de stock de arriba) y actualizaba el estado "a mano" en
+  // pantalla sin ese dato, quedando desactualizado hasta refrescar la
+  // página. Ahora se devuelve el pedido completo tal como quedó en la
+  // base, para que el panel se actualice con los datos reales.
+  return NextResponse.json({ ok: true, order });
 }
