@@ -39,10 +39,14 @@ export async function sendAdminPushNotification(payload: PushPayload): Promise<v
     .from('push_subscriptions')
     .select('endpoint, p256dh, auth');
 
-  if (!subscriptions || subscriptions.length === 0) return;
+  if (!subscriptions || subscriptions.length === 0) {
+    console.warn('[Push] No hay suscripciones registradas en push_subscriptions — no se envía nada.');
+    return;
+  }
 
   const payloadStr = JSON.stringify(payload);
   const expiredEndpoints: string[] = [];
+  let sentCount = 0;
 
   await Promise.allSettled(
     subscriptions.map(async (sub) => {
@@ -51,6 +55,7 @@ export async function sendAdminPushNotification(payload: PushPayload): Promise<v
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payloadStr
         );
+        sentCount++;
       } catch (err: unknown) {
         const status = (err as { statusCode?: number }).statusCode;
         if (status === 404 || status === 410) {
@@ -62,6 +67,8 @@ export async function sendAdminPushNotification(payload: PushPayload): Promise<v
       }
     })
   );
+
+  console.log(`[Push] "${payload.title}" → enviada a ${sentCount}/${subscriptions.length} dispositivo(s)${expiredEndpoints.length ? `, ${expiredEndpoints.length} suscripción(es) expirada(s) eliminada(s)` : ''}.`);
 
   // Limpiar suscripciones expiradas
   if (expiredEndpoints.length > 0) {
