@@ -32,6 +32,16 @@ export async function PATCH(req: NextRequest) {
   // (el admin lo rechaza por pago no acreditado, comprobante apócrifo,
   // etc.) — debe restaurar stock/saldo exactamente igual si se llega a
   // setear desde este selector genérico, para no repetir el mismo bug.
+  //
+  // ✅ FIX: además de cancelado/rechazado, si el admin retrocede el
+  // pedido a 'pendiente' o 'pendiente_pago' (ej. se equivocó al marcar
+  // pagado, o el pago se cae) el stock tampoco debería seguir
+  // "Descontado" — nadie garpó todavía. Se separa en dos listas: una
+  // amplia para decidir si hay que devolver el stock, y otra angosta
+  // (solo cancelado/rechazado) para decidir si hay que revertir el
+  // saldo de cuenta corriente — retroceder a pendiente no es lo mismo
+  // que cancelar la deuda del cliente, eso sigue siendo decisión
+  // explícita de cancelar/rechazar.
   // ══════════════════════════════════════════════════════════════════
   const { data: current } = await admin
     .from('orders')
@@ -41,15 +51,21 @@ export async function PATCH(req: NextRequest) {
 
   if (!current) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
+  const ESTADOS_SIN_STOCK_DESCONTADO = ['cancelado', 'rechazado', 'pendiente', 'pendiente_pago'];
   const ESTADOS_FINALES_NEGATIVOS = ['cancelado', 'rechazado'];
+
+  const debeRestaurarStock =
+    ESTADOS_SIN_STOCK_DESCONTADO.includes(estado) &&
+    !ESTADOS_SIN_STOCK_DESCONTADO.includes(current.estado);
+
   const pasaACancelado =
     ESTADOS_FINALES_NEGATIVOS.includes(estado) &&
     !ESTADOS_FINALES_NEGATIVOS.includes(current.estado);
 
-  if (pasaACancelado && current.stock_descontado) {
+  if (debeRestaurarStock && current.stock_descontado) {
     const { data: restoreResult } = await admin.rpc('devolver_stock_seguro', { p_order_id: orderId });
     if (!restoreResult?.success) {
-      console.error('[orders PATCH] Error restaurando stock al cancelar:', restoreResult);
+      console.error('[orders PATCH] Error restaurando stock:', restoreResult);
       return NextResponse.json({
         error: 'No se pudo restaurar el stock de este pedido. Cambio de estado cancelado para no perder inventario — reintentá en unos segundos.',
       }, { status: 500 });
@@ -77,8 +93,14 @@ export async function PATCH(req: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Send status email
-  if (order) sendOrderStatusEmail(order).catch(console.error);
+  // ✅ FIX: antes era sendOrderStatusEmail(order).catch(console.error) sin
+  // `await` — en Vercel la función puede cortarse apenas se manda la
+  // respuesta, matando el envío a Resend a mitad de camino. Por eso a
+  // veces el cliente no recibía el aviso de cambio de estado. Ahora se
+  // espera a que termine (o falle) antes de responder — el .catch sigue
+  // ahí para que un error de Resend no rompa el cambio de estado en sí,
+  // que ya se guardó bien en la base.
+  if (order) await sendOrderStatusEmail(order).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }
