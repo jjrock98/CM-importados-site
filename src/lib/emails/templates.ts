@@ -125,6 +125,22 @@ export function contactNotificationHtml(nombre: string, email: string, asunto: s
   return base(`Nuevo mensaje: ${esc(asunto) || esc(nombre)}`, body);
 }
 
+// ─── NUEVO: Aviso al admin — alguien pidió "Avísame cuando haya stock" ───────
+
+export function stockNotifyAdminHtml(productName: string, email: string, productUrl: string): string {
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:800;color:#111827;">Nueva solicitud de stock</h1>
+    <p style="margin:0 0 24px;color:#6b7280;font-size:14px;">Un cliente quiere que le avisen cuando este producto vuelva a tener stock.</p>
+    <table width="100%" style="margin-bottom:24px;">
+      <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;color:#9ca3af;width:100px;">Producto</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600;">${esc(productName)}</td></tr>
+      <tr><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;color:#9ca3af;">Email</td><td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-size:13px;font-weight:600;">${esc(email)}</td></tr>
+    </table>
+    <p style="margin:0 0 20px;font-size:13px;color:#6b7280;">Cuando cargues stock nuevo para este producto desde el panel de admin, se le va a avisar automáticamente por email — no hace falta que le escribas vos.</p>
+    <a href="${productUrl}" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;">Ver producto</a>`;
+
+  return base(`Nueva solicitud de stock: ${esc(productName)}`, body);
+}
+
 // ─── NUEVO: Cupón de pago en efectivo ────────────────────────────────────────
 
 export function cashPaymentPendingHtml(order: Order): string {

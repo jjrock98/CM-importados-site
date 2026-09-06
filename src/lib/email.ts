@@ -9,6 +9,7 @@ import {
   adminOrderNotificationHtml,
   orderExpiredHtml,
   orderRefundedHtml,
+  stockNotifyAdminHtml,
 } from './emails/templates';
 
 const FROM   = `${process.env.RESEND_FROM_NAME ?? 'Mi Tienda'} <${process.env.RESEND_FROM_EMAIL ?? 'noreply@mitienda.com'}>`;
@@ -86,6 +87,18 @@ export async function sendContactMessageEmail(
     from: FROM, to: email,
     subject: `Recibimos tu mensaje — ${process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda'}`,
     html: contactConfirmationHtml(nombre, asunto),
+  });
+}
+
+/** Avisa al admin que un cliente pidió "Avísame cuando haya stock". No rompe
+ *  el flujo del cliente si falla: se llama con .catch(console.error) desde
+ *  la ruta, igual que sendContactMessageEmail. */
+export async function sendStockNotifyAdminEmail(productName: string, customerEmail: string, productUrl: string) {
+  if (!ADMIN) return;
+  return getResend().emails.send({
+    from: FROM, to: ADMIN, reply_to: customerEmail,
+    subject: `Piden aviso de stock: ${productName}`,
+    html: stockNotifyAdminHtml(productName, customerEmail, productUrl),
   });
 }
 
