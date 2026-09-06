@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendAdminPushNotification } from '@/lib/webpush';
 import { createOrderSchema, parseBody } from '@/lib/validations';
 import { rateLimiters } from '@/lib/rateLimit';
 import { getPrecioEscalonado } from '@/utils';
@@ -412,6 +413,12 @@ export async function POST(req: NextRequest) {
               `🛒 Nuevo pedido #${data.id.slice(0,8).toUpperCase()} — ${data.metodo_pago}`
             ).catch(console.error);
           });
+          sendAdminPushNotification({
+            title: '🛒 Nuevo pedido pendiente',
+            body:  `Pedido #${data.id.slice(0,8).toUpperCase()} de ${data.nombre} (${data.metodo_pago}) — esperando comprobante.`,
+            tag:   'order-new',
+            data:  { url: '/admin/pedidos' },
+          }).catch(console.error);
         }
       });
 

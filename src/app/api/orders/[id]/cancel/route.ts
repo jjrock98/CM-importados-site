@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { sendAdminPushNotification } from '@/lib/webpush';
 
 // ✅ Next 16: params ahora es una Promise, hay que await-earlo
 export async function POST(
@@ -17,7 +18,7 @@ export async function POST(
   // Verificar que el pedido pertenece al usuario
   const { data: order } = await admin
     .from('orders')
-    .select('id, user_id, estado, stock_descontado')
+    .select('id, user_id, nombre, estado, stock_descontado')
     .eq('id', id)
     .single();
 
@@ -44,6 +45,13 @@ export async function POST(
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  sendAdminPushNotification({
+    title: '❌ Pedido cancelado por el cliente',
+    body:  `Pedido #${id.slice(0,8).toUpperCase()} de ${order.nombre} fue cancelado. Revisá stock/logística.`,
+    tag:   'order-cancelled',
+    data:  { url: '/admin/pedidos' },
+  }).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }

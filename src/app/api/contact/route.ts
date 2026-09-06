@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendContactMessageEmail } from '@/lib/email';
+import { sendAdminPushNotification } from '@/lib/webpush';
 import { contactMessageSchema, parseBody } from '@/lib/validations';
 import { rateLimiters } from '@/lib/rateLimit';
 
@@ -29,6 +30,12 @@ export async function POST(req: NextRequest) {
 
     sendContactMessageEmail(data.nombre, data.email, data.asunto ?? '', data.mensaje)
       .catch(console.error);
+    sendAdminPushNotification({
+      title: '💬 Nuevo mensaje de contacto',
+      body:  `${data.nombre}: "${data.mensaje.slice(0, 80)}${data.mensaje.length > 80 ? '…' : ''}"`,
+      tag:   'contact-new',
+      data:  { url: '/admin/mensajes' },
+    }).catch(console.error);
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

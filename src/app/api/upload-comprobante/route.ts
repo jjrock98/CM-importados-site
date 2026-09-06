@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimiters } from '@/lib/rateLimit';
 import { sendAdminOrderStatusEmail } from '@/lib/email';
+import { sendAdminPushNotification } from '@/lib/webpush';
 import type { Order } from '@/types';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -112,6 +113,12 @@ export async function POST(req: NextRequest) {
         updatedOrder as Order,
         '📎 Nuevo comprobante de transferencia subido — pendiente de revisión'
       ).catch(console.error);
+      sendAdminPushNotification({
+        title: '📎 Comprobante subido',
+        body:  `Pedido #${String(updatedOrder.id).slice(0,8).toUpperCase()} de ${(updatedOrder as Order).nombre} — listo para verificar.`,
+        tag:   'order-comprobante',
+        data:  { url: '/admin/pedidos' },
+      }).catch(console.error);
     }
 
     return NextResponse.json({ ok: true });
