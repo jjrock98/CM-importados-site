@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderConfirmationEmail, sendAdminOrderStatusEmail } from '@/lib/email';
@@ -66,6 +67,11 @@ export async function POST(req: NextRequest) {
     fecha_pago:           new Date().toISOString(),
     updated_at:           new Date().toISOString(),
   }).eq('id', orderId);
+
+  // ✅ El dashboard de /admin cachea sus números por 60s (revalidate = 60).
+  // Sin esto, un cambio de estado tardaba hasta un minuto en reflejarse
+  // ahí. revalidatePath fuerza a recalcularlo en el próximo request.
+  revalidatePath('/admin');
 
   const { data: fullOrder } = await admin
     .from('orders').select('*, order_items(*)').eq('id', orderId).single();

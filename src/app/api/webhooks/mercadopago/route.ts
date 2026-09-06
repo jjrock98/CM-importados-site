@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import {
@@ -159,6 +160,13 @@ export async function POST(req: NextRequest) {
 
     // ── 3. Procesar según el estado del pago ─────────────────────────────────
     await processPaymentStatus(admin, orderId, payment);
+
+    // ✅ Este es EL webhook que confirma pagos automáticos con tarjeta —
+    // toca la revalidación acá, una sola vez después de processPaymentStatus,
+    // en vez de duplicarla en cada `case` del switch de adentro (approved,
+    // pending, cancelled, etc.). Cubre todos los casos por igual y evita
+    // que el dashboard tarde hasta 60s en reflejar un pago recién llegado.
+    revalidatePath('/admin');
 
     return ackOk();
   } catch (err: unknown) {

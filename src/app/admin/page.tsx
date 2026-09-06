@@ -29,8 +29,17 @@ export default async function AdminDashboard() {
     admin.from('products').select('*', { count: 'exact', head: true }).lt('stock_unidades', 12).eq('activo', true),
     admin.from('contact_messages').select('*', { count: 'exact', head: true }).eq('leido', false),
     admin.from('orders').select('id,total,estado,nombre,created_at,tipo_venta').order('created_at', { ascending: false }).limit(8),
-    admin.from('orders').select('total,created_at').eq('estado', 'pagado').gte('created_at', thirtyDaysAgo),
-    admin.from('orders').select('total,created_at').eq('estado', 'pagado').gte('created_at', thirtyDaysAgo),
+    // ✅ FIX: antes era .eq('estado', 'pagado') — solo contaba pedidos que
+    // en ESE momento estuvieran literalmente en "pagado". En cuanto un
+    // pedido avanzaba a procesando/enviado/entregado (el flujo normal
+    // después de cobrar), dejaba de aparecer acá y los ingresos "bajaban"
+    // con el tiempo a medida que se completaban entregas — exactamente al
+    // revés de lo esperado. Ahora se cuentan todos los estados donde el
+    // pago ya está confirmado, sin importar en qué etapa de entrega esté.
+    // cancelado/rechazado/pendiente/pendiente_pago siguen excluidos, como
+    // corresponde (nunca se cobraron o se revirtió el cobro).
+    admin.from('orders').select('total,created_at').in('estado', ['pagado', 'procesando', 'enviado', 'entregado']).gte('created_at', thirtyDaysAgo),
+    admin.from('orders').select('total,created_at').in('estado', ['pagado', 'procesando', 'enviado', 'entregado']).gte('created_at', thirtyDaysAgo),
     admin.from('order_items').select('nombre_snap,unidades').limit(200),
   ]);
 

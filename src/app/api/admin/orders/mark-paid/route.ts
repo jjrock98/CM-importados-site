@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderConfirmationEmail, sendAdminOrderStatusEmail } from '@/lib/email';
@@ -51,6 +52,9 @@ export async function POST(req: NextRequest) {
     fecha_pago:  new Date().toISOString(),
     updated_at:  new Date().toISOString(),
   }).eq('id', orderId);
+
+  // ✅ Mismo motivo que en approve/reject — refresca el dashboard al instante.
+  revalidatePath('/admin');
 
   const { data: order } = await admin.from('orders').select('*, order_items(*)').eq('id', orderId).single();
   if (order) {

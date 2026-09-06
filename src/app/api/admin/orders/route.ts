@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderStatusEmail } from '@/lib/email';
@@ -101,6 +102,10 @@ export async function PATCH(req: NextRequest) {
   // ahí para que un error de Resend no rompa el cambio de estado en sí,
   // que ya se guardó bien en la base.
   if (order) await sendOrderStatusEmail(order).catch(console.error);
+
+  // ✅ Mismo motivo que approve/reject/mark-paid — refresca el dashboard
+  // al instante en vez de esperar el cache de 60s.
+  revalidatePath('/admin');
 
   // ✅ FIX: antes devolvía solo { ok: true } — el frontend no tenía forma
   // de saber que stock_descontado había cambiado en el servidor (por el

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderExpiredEmail } from '@/lib/email';
 import type { Order } from '@/types';
@@ -115,6 +116,11 @@ export async function GET(req: NextRequest) {
     .eq('stock_descontado', false)
     .lt('created_at', cutoffCash)
     .select('id');
+
+  // ✅ Este cron cancela pedidos automáticamente por fuera de cualquier
+  // acción del admin — igual conviene refrescar el dashboard para que
+  // "Pendientes de pago" no quede desactualizado hasta el próximo minuto.
+  revalidatePath('/admin');
 
   return NextResponse.json({
     ok:        true,

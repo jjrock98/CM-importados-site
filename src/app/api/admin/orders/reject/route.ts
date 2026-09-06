@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderStatusEmail, sendAdminOrderStatusEmail } from '@/lib/email';
@@ -70,6 +71,11 @@ export async function POST(req: NextRequest) {
   }).eq('id', orderId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // ✅ Ver comentario igual en approve/route.ts — fuerza a que el
+  // dashboard refleje este cambio al instante en vez de esperar el
+  // cache de 60s.
+  revalidatePath('/admin');
 
   const { data: cancelledOrder } = await admin
     .from('orders').select('*, order_items(*)').eq('id', orderId).single();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendAdminPushNotification } from '@/lib/webpush';
@@ -45,6 +46,11 @@ export async function POST(
     .eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // ✅ El cliente cancelando su propio pedido también mueve el conteo de
+  // "Pendientes de pago" del dashboard — mismo motivo que en los
+  // endpoints de admin, se refresca al instante.
+  revalidatePath('/admin');
 
   sendAdminPushNotification({
     title: '❌ Pedido cancelado por el cliente',
