@@ -4,7 +4,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Heart } from 'lucide-react';
 import type { Product } from '@/types';
 
-export const metadata = { title: 'Mi Wishlist' };
+export const metadata = { title: 'Mi Wishlist', robots: { index: false } };
 
 export default async function WishlistPage() {
   const supabase = await createClient();

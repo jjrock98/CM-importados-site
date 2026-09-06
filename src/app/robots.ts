@@ -20,10 +20,13 @@ export default function robots(): MetadataRoute.Robots {
           '/mis-pedidos',
           '/mis-pedidos/*',
           '/minorista', // canal desactivado — no indexar
+          '/pago',
+          '/pago/*', // páginas de resultado de pago — sin contenido útil para buscar
           '/pedido-confirmado',
           '/perfil',
           '/subir-comprobante',
           '/pago-exitoso',
+          '/wishlist', // personal por usuario — requiere login
           '/mantenimiento',
         ],
       },

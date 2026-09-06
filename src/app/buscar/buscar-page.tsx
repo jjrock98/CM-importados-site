@@ -14,7 +14,12 @@ export function generateMetadata({ searchParams }: Props): Metadata {
   return {
     title:       q ? `Resultados para "${q}"` : 'Buscar productos',
     description: q ? `Encontrá "${q}" en nuestra tienda. Comprá por packs de media docena o docena.` : 'Buscá productos en nuestra tienda.',
-    robots:      { index: !!q, follow: true },
+    // ✅ Al revés de lo intuitivo: se indexa la página vacía (landing
+    // genérica y útil, "Buscar productos") pero NO los resultados con
+    // query (?q=...) — son combinaciones infinitas de contenido ya
+    // indexado individualmente en /productos/[slug], y Google
+    // desaconseja indexar páginas de resultados de búsqueda interna.
+    robots:      { index: !q, follow: true },
   };
 }
 
