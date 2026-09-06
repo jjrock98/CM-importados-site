@@ -40,7 +40,17 @@ export default async function AdminDashboard() {
     // corresponde (nunca se cobraron o se revirtió el cobro).
     admin.from('orders').select('total,created_at').in('estado', ['pagado', 'procesando', 'enviado', 'entregado']).gte('created_at', thirtyDaysAgo),
     admin.from('orders').select('total,created_at').in('estado', ['pagado', 'procesando', 'enviado', 'entregado']).gte('created_at', thirtyDaysAgo),
-    admin.from('order_items').select('nombre_snap,unidades').limit(200),
+    // ✅ FIX: antes era .select('nombre_snap,unidades').limit(200) sin
+    // ningún filtro — sumaba unidades de pedidos cancelados, rechazados
+    // e incluso pendientes de pago (nunca cobrados) como si fueran
+    // ventas reales, e inflaba el ranking de "más vendidos" con
+    // productos que en realidad no generaron ni un peso. El límite de
+    // 200 sin ORDER BY tampoco garantizaba traer los ítems más
+    // recientes (Postgres no asegura orden sin ORDER BY explícito).
+    // Ahora se filtra por el mismo criterio de "pago confirmado" que
+    // Ingresos (pagado/procesando/enviado/entregado) vía el join con
+    // orders, para que el ranking refleje ventas reales únicamente.
+    admin.from('order_items').select('nombre_snap,unidades,orders!inner(estado)').in('orders.estado', ['pagado', 'procesando', 'enviado', 'entregado']).limit(1000),
   ]);
 
   // Build daily chart data (last 30 days)
