@@ -120,7 +120,7 @@ export const productSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   orderId: z.string().uuid(),
-  estado:  z.enum(['pendiente','pagado','procesando','enviado','entregado','cancelado']),
+  estado:  z.enum(['pendiente','pagado','procesando','enviado','entregado','cancelado','rechazado']),
 });
 
 export const uploadComprobanteSchema = z.object({

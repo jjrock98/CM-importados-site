@@ -42,7 +42,7 @@ export default async function OrderDetailPage({ params }: Props) {
   const o = order as unknown as Order;
 
   const isRetiro    = o.tipo_entrega === 'retiro';
-  const isCancelled = o.estado === 'cancelado';
+  const isCancelled = o.estado === 'cancelado' || o.estado === 'rechazado';
   const canCancel   = o.estado === 'pendiente' && !o.stock_descontado;
   const steps       = isRetiro ? RETIRO_STEPS : ALL_STEPS;
   const currentStep = isCancelled ? -1 : steps.indexOf(normalizeStepEstado(o.estado));
@@ -120,7 +120,7 @@ export default async function OrderDetailPage({ params }: Props) {
 
       {isCancelled && (
         <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3 mb-5 text-sm text-red-600 dark:text-red-400">
-          <p className="font-medium">Pedido cancelado.</p>
+          <p className="font-medium">{o.estado === 'rechazado' ? 'Pedido rechazado.' : 'Pedido cancelado.'}</p>
           {o.rejection_reason && <p className="mt-1">Motivo: {o.rejection_reason}</p>}
         </div>
       )}

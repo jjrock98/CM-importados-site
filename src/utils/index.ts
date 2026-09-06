@@ -67,6 +67,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   enviado:         'Enviado',
   entregado:       'Entregado',
   cancelado:       'Cancelado',
+  rechazado:       'Rechazado',
 };
 
 export const ORDER_STATUS_COLORS: Record<string, string> = {
@@ -77,6 +78,7 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   enviado:         'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   entregado:       'bg-teal-100   text-teal-800   dark:bg-teal-900/30   dark:text-teal-400',
   cancelado:       'bg-red-100    text-red-800    dark:bg-red-900/30    dark:text-red-400',
+  rechazado:       'bg-rose-100   text-rose-800   dark:bg-rose-900/30   dark:text-rose-400',
 };
 
 /** Calcula la fecha de vencimiento de un cupón de efectivo (+3 días) */

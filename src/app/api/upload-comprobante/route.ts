@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (order.estado === 'cancelado' || order.estado === 'pagado') {
+    if (order.estado === 'cancelado' || order.estado === 'rechazado' || order.estado === 'pagado') {
       return NextResponse.json({ error: 'Este pedido ya no admite comprobantes' }, { status: 409 });
     }
 

@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!order || order.user_id !== user.id) {
       return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
     }
-    if (order.estado === 'cancelado' || order.estado === 'pagado') {
+    if (order.estado === 'cancelado' || order.estado === 'rechazado' || order.estado === 'pagado') {
       return NextResponse.json({ error: 'Este pedido ya no admite comprobantes' }, { status: 409 });
     }
 

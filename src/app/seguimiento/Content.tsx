@@ -147,7 +147,7 @@ export function SeguimientoContent() {
                 const estados = ['pendiente','pendiente_pago','pagado','procesando','enviado','entregado'];
                 const currentIdx = estados.indexOf(order.estado);
                 const stepIdx    = estados.indexOf(step!);
-                const done       = currentIdx >= stepIdx && order.estado !== 'cancelado';
+                const done       = currentIdx >= stepIdx && order.estado !== 'cancelado' && order.estado !== 'rechazado';
                 const active     = step === order.estado;
                 return (
                   <div key={step} className="flex items-start gap-3 mb-3 last:mb-0">
@@ -172,10 +172,10 @@ export function SeguimientoContent() {
                   </div>
                 );
             })}
-            {order.estado === 'cancelado' && (
+            {(order.estado === 'cancelado' || order.estado === 'rechazado') && (
               <div className="mt-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 px-4 py-3">
                 <p className="text-sm text-red-600 dark:text-red-400">
-                  ❌ Pedido cancelado.
+                  {order.estado === 'rechazado' ? '❌ Pedido rechazado.' : '❌ Pedido cancelado.'}
                   {order.rejection_reason && ` Motivo: ${order.rejection_reason}`}
                 </p>
               </div>

@@ -44,6 +44,9 @@ export function buildOrderWhatsAppLink(order: Order): string | null {
     case 'cancelado':
       mensaje = `Hola ${nombre}, te escribimos por tu pedido ${codigoPedido} que quedó cancelado. Cualquier consulta, contactanos.`;
       break;
+    case 'rechazado':
+      mensaje = `Hola ${nombre}, te escribimos por tu pedido ${codigoPedido}: no pudimos validar el comprobante de pago${order.rejection_reason ? ` (motivo: ${order.rejection_reason})` : ''}. Contactanos para resolverlo.`;
+      break;
     default:
       mensaje = `Hola ${nombre}! Te escribimos por tu pedido ${codigoPedido}.`;
   }

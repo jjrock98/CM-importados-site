@@ -33,7 +33,7 @@ export default async function AdminClientesPage() {
     .from('orders')
     .select('user_id, total, estado, created_at')
     .not('user_id', 'is', null)
-    .neq('estado', 'cancelado');
+    .not('estado', 'in', '(cancelado,rechazado)');
 
   // Calcular stats por cliente
   type ClientStat = {

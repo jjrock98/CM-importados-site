@@ -90,6 +90,7 @@ export function orderStatusHtml(order: Order): string {
     enviado: 'Tu pedido está en camino. ¡Pronto llegará!',
     entregado: '¡Tu pedido fue entregado exitosamente!',
     cancelado: 'Tu pedido fue cancelado. Si tenés dudas, contactanos.',
+    rechazado: 'No pudimos validar el comprobante de tu pedido.',
     pendiente_pago: 'Tu cupón de pago en efectivo fue generado.',
   };
 
@@ -100,8 +101,9 @@ export function orderStatusHtml(order: Order): string {
       <p style="margin:0 0 4px;font-size:12px;color:#9ca3af;text-transform:uppercase;">Estado actual</p>
       <p style="margin:0;font-size:20px;font-weight:800;color:${BRAND_COLOR};">${ORDER_STATUS_LABELS[order.estado] ?? order.estado}</p>
     </div>
-    <p style="font-size:15px;color:#374151;margin:0 0 28px;line-height:1.6;">${msgs[order.estado] ?? 'El estado de tu pedido fue actualizado.'}</p>
-    <p style="font-size:13px;color:#9ca3af;margin:0 0 24px;">Pedido <strong style="color:#374151;font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</strong> · Total: <strong style="color:#374151;">${formatARS(order.total)}</strong></p>
+    <p style="font-size:15px;color:#374151;margin:0 0 8px;line-height:1.6;">${msgs[order.estado] ?? 'El estado de tu pedido fue actualizado.'}</p>
+    ${order.rejection_reason ? `<p style="font-size:14px;color:#b91c1c;margin:0 0 20px;line-height:1.6;"><strong>Motivo:</strong> ${esc(order.rejection_reason)}</p>` : ''}
+    <p style="font-size:13px;color:#9ca3af;margin:${order.rejection_reason ? '0' : '20px'} 0 24px;">Pedido <strong style="color:#374151;font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</strong> · Total: <strong style="color:#374151;">${formatARS(order.total)}</strong></p>
     <div style="text-align:center;"><a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
 
   return base(`Tu pedido está ${ORDER_STATUS_LABELS[order.estado]?.toLowerCase() ?? 'actualizado'}`, body);

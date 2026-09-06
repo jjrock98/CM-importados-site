@@ -13,7 +13,7 @@ import { buildOrderWhatsAppLink } from '@/lib/whatsapp';
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 
-const ESTADOS: OrderEstado[] = ['pendiente','pendiente_pago','pagado','procesando','enviado','entregado','cancelado'];
+const ESTADOS: OrderEstado[] = ['pendiente','pendiente_pago','pagado','procesando','enviado','entregado','cancelado','rechazado'];
 
 interface Props { initialOrders: Order[] }
 
@@ -126,7 +126,7 @@ export function AdminOrdersClient({ initialOrders }: Props) {
     else {
       setOrders((prev) => prev.map((o) =>
         o.id === rejectModal.orderId
-          ? { ...o, estado: 'cancelado', comprobante_revisado: true, rejection_reason: rejectMotivo }
+          ? { ...o, estado: 'rechazado', comprobante_revisado: true, rejection_reason: rejectMotivo }
           : o
       ));
       toast.success('❌ Comprobante rechazado — cliente notificado');

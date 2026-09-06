@@ -82,7 +82,8 @@ export type OrderEstado =
   | 'procesando'
   | 'enviado'
   | 'entregado'
-  | 'cancelado';
+  | 'cancelado'
+  | 'rechazado';
 
 export type MetodoPago  = 'mercadopago' | 'transferencia' | 'cuenta_corriente';
 export type TipoPack    = 'media_docena' | 'docena' | 'unidad';

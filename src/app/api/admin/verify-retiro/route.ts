@@ -103,6 +103,9 @@ export async function POST(req: NextRequest) {
   if (order.estado === 'cancelado') {
     return NextResponse.json({ error: 'Este pedido está cancelado' }, { status: 409 });
   }
+  if (order.estado === 'rechazado') {
+    return NextResponse.json({ error: 'Este pedido fue rechazado (comprobante no válido)' }, { status: 409 });
+  }
   if (!['pagado', 'procesando', 'enviado'].includes(order.estado)) {
     return NextResponse.json({ error: 'Este pedido todavía no está listo para retirar (falta confirmar el pago)' }, { status: 409 });
   }

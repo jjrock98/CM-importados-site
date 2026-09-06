@@ -33,8 +33,8 @@ export async function POST(req: NextRequest) {
   if (order.metodo_pago !== 'transferencia') {
     return NextResponse.json({ error: 'Solo aplica para pagos por transferencia' }, { status: 400 });
   }
-  if (order.estado === 'cancelado') {
-    return NextResponse.json({ error: 'El pedido ya fue cancelado' }, { status: 409 });
+  if (order.estado === 'cancelado' || order.estado === 'rechazado') {
+    return NextResponse.json({ error: 'El pedido ya fue cancelado o rechazado' }, { status: 409 });
   }
 
   // ══════════════════════════════════════════════════════════════════════
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error } = await admin.from('orders').update({
-    estado:               'cancelado',
+    estado:               'rechazado',
     rejection_reason:      motivo,
     comprobante_revisado:  true,
     reviewed_by:           user.id,

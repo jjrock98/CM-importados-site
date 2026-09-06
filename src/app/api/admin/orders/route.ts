@@ -27,6 +27,11 @@ export async function PATCH(req: NextRequest) {
   // corriente — el stock quedaba perdido para siempre y el cliente
   // seguía debiendo un pedido cancelado. Se agrega esa lógica acá,
   // igual que ya la tienen approve/reject/mark-paid.
+  //
+  // 'rechazado' es un estado final negativo igual que 'cancelado'
+  // (el admin lo rechaza por pago no acreditado, comprobante apócrifo,
+  // etc.) — debe restaurar stock/saldo exactamente igual si se llega a
+  // setear desde este selector genérico, para no repetir el mismo bug.
   // ══════════════════════════════════════════════════════════════════
   const { data: current } = await admin
     .from('orders')
@@ -36,7 +41,10 @@ export async function PATCH(req: NextRequest) {
 
   if (!current) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
-  const pasaACancelado = estado === 'cancelado' && current.estado !== 'cancelado';
+  const ESTADOS_FINALES_NEGATIVOS = ['cancelado', 'rechazado'];
+  const pasaACancelado =
+    ESTADOS_FINALES_NEGATIVOS.includes(estado) &&
+    !ESTADOS_FINALES_NEGATIVOS.includes(current.estado);
 
   if (pasaACancelado && current.stock_descontado) {
     const { data: restoreResult } = await admin.rpc('devolver_stock_seguro', { p_order_id: orderId });
