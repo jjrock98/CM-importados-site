@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { env } from '@/env';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimiters } from '@/lib/rateLimit';
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
   const email = body?.email?.toString().trim().toLowerCase();
   if (!email) return NextResponse.json({ error: 'Email requerido' }, { status: 422 });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
+  const appUrl = env.APP_URL || new URL(req.url).origin;
   const supabase = await createClient();
   await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${appUrl}/auth/update-password`,

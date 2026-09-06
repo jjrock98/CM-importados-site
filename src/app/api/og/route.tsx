@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import { env } from '@/env';
 import { NextRequest } from 'next/server';
 
 export const runtime = 'edge';
@@ -106,7 +107,7 @@ export async function GET(req: NextRequest) {
         }}>
           <span style={{ color: '#9ca3af', fontSize: 16 }}>Venta por packs · Envíos a todo el país</span>
           <span style={{ color: '#2c4270', fontWeight: 700, fontSize: 18 }}>
-            {(process.env.NEXT_PUBLIC_APP_URL ?? '').replace('https://', '')}
+            {env.APP_URL.replace('https://', '')}
           </span>
         </div>
       </div>

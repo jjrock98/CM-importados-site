@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
@@ -57,7 +58,7 @@ export default async function HomePage({
   const haySiguiente   = pagina < totalPaginas;
   const contactInfo = rawContact as import('@/types').ContactInfo | null;
 
-  const appUrl  = process.env.NEXT_PUBLIC_APP_URL       ?? '';
+  const appUrl  = env.APP_URL;
   const tienda  = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
 
@@ -94,10 +95,10 @@ export default async function HomePage({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda',
-    url: process.env.NEXT_PUBLIC_APP_URL,
+    url: env.APP_URL,
     potentialAction: {
       '@type': 'SearchAction',
-      target: `${process.env.NEXT_PUBLIC_APP_URL}/?q={search_term_string}`,
+      target: `${env.APP_URL}/?q={search_term_string}`,
       'query-input': 'required name=search_term_string',
     },
   };
