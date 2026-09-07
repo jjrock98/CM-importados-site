@@ -23,7 +23,11 @@ export default async function AdminDashboard() {
     { data: chartData30d },
     { data: topProducts },
   ] = await Promise.all([
-    admin.from('orders').select('*', { count: 'exact', head: true }),
+    // ✅ FIX: antes contaba TODOS los pedidos sin excepción, incluidos
+    // cancelados y rechazados — inflaba el número mostrado como si fueran
+    // pedidos "reales". Ahora excluye esos dos estados, igual criterio
+    // que el resto de las métricas del dashboard.
+    admin.from('orders').select('*', { count: 'exact', head: true }).not('estado', 'in', '(cancelado,rechazado)'),
     admin.from('orders').select('*', { count: 'exact', head: true }).in('estado', ['pendiente','pendiente_pago']),
     admin.from('products').select('*', { count: 'exact', head: true }).eq('activo', true),
     admin.from('products').select('*', { count: 'exact', head: true }).lt('stock_unidades', 12).eq('activo', true),
