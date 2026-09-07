@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ZoomIn, X, Plus, Minus } from 'lucide-react';
 import Image from 'next/image';
 
@@ -12,6 +13,8 @@ interface Props {
   alt: string;
 }
 
+const PANEL_GAP = 16; // separación entre la imagen y el panel ampliado (px)
+
 /**
  * Lupa de imagen de producto.
  *
@@ -19,6 +22,19 @@ interface Props {
  *   con el recorte ampliado, generado con `background-image` apuntando
  *   directo al archivo original en Supabase Storage (bypass del
  *   optimizador de Next → resolución completa).
+ *
+ *   El panel se monta con un PORTAL a `document.body` y se posiciona con
+ *   `position: fixed` calculado a partir del `getBoundingClientRect()` del
+ *   contenedor. Antes se posicionaba `absolute` dentro del propio
+ *   contenedor con `left: calc(100% + 1rem)`, lo que lo dejaba SIEMPRE
+ *   invisible apenas el contenedor (o cualquier ancestro) tuviera
+ *   `overflow-hidden` — como pasa en la galería de producto y en el modal
+ *   de vista rápida. El portal + fixed lo saca de ese problema por
+ *   completo. Además, ahora elige de qué lado aparece (derecha, izquierda,
+ *   o superpuesto si no entra en ningún lado) según el espacio real
+ *   disponible en el viewport, para no cortarse contra el borde de la
+ *   pantalla ni quedar tapado por otra columna del layout.
+ *
  * - Mobile/touch (tap): abre un visor a pantalla completa. Arranca SIEMPRE
  *   con la imagen completa visible (object-contain) — nunca renderizada a
  *   tamaño nativo con `overflow` centrado, que es lo que dejaba la pantalla
@@ -32,10 +48,44 @@ interface Props {
 export function ImageZoom({ src, alt }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [hovering, setHovering] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
   const [bgPos, setBgPos] = useState('50% 50%');
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
+
+  // El portal necesita `document`, que no existe en el render de servidor.
+  useEffect(() => setMounted(true), []);
+
+  const positionPanel = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    const fitsRight = rect.right + PANEL_GAP + rect.width <= vw;
+    const fitsLeft  = rect.left - PANEL_GAP - rect.width >= 0;
+
+    let left: number;
+    if (fitsRight) {
+      left = rect.right + PANEL_GAP;
+    } else if (fitsLeft) {
+      left = rect.left - PANEL_GAP - rect.width;
+    } else {
+      // No hay lugar de ningún lado (pantallas angostas/medianas con poco
+      // margen, ej. el modal de vista rápida): se superpone a la imagen
+      // en vez de quedar invisible. Como solo aparece en hover y tiene
+      // sombra propia, se lee como un panel flotante temporal.
+      left = Math.max(0, Math.min(rect.left, vw - rect.width));
+    }
+
+    // Nunca se sale por arriba/abajo del viewport.
+    const top = Math.max(0, Math.min(rect.top, vh - rect.height));
+
+    setPanelStyle({ left, top, width: rect.width, height: rect.height });
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = containerRef.current;
@@ -45,6 +95,24 @@ export function ImageZoom({ src, alt }: Props) {
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setBgPos(`${x}% ${y}%`);
   }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    positionPanel();
+    setHovering(true);
+  }, [positionPanel]);
+
+  // Si la ventana cambia de tamaño o hace scroll mientras se está mostrando
+  // el panel, se recalcula la posición (el portal ya no se mueve solo con
+  // el layout porque es `fixed` respecto al viewport, no al contenedor).
+  useEffect(() => {
+    if (!hovering) return;
+    window.addEventListener('scroll', positionPanel, true);
+    window.addEventListener('resize', positionPanel);
+    return () => {
+      window.removeEventListener('scroll', positionPanel, true);
+      window.removeEventListener('resize', positionPanel);
+    };
+  }, [hovering, positionPanel]);
 
   // Al abrir el visor, siempre arranca mostrando la imagen completa.
   useEffect(() => {
@@ -81,7 +149,7 @@ export function ImageZoom({ src, alt }: Props) {
       <div
         ref={containerRef}
         className="group/zoom relative h-full w-full cursor-zoom-in"
-        onMouseEnter={() => setHovering(true)}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setHovering(false)}
         onMouseMove={handleMouseMove}
         onClick={() => setLightboxOpen(true)}
@@ -100,28 +168,28 @@ export function ImageZoom({ src, alt }: Props) {
           <ZoomIn size={12} />
           <span className="hidden sm:inline">Ver en detalle</span>
         </div>
-
-        {/* Panel de zoom — solo desktop (se apoya en hover, que no existe en touch) */}
-        {hovering && (
-          <div
-            className="pointer-events-none absolute inset-0 z-20 hidden rounded-2xl border border-border bg-surface shadow-xl md:block"
-            style={{
-              // Se posiciona al costado de la imagen en pantallas grandes.
-              left: 'calc(100% + 1rem)',
-              top: 0,
-              width: '100%',
-              height: '100%',
-              backgroundImage: `url(${src})`,
-              backgroundRepeat: 'no-repeat',
-              backgroundSize: '250%', // nivel de ampliación
-              backgroundPosition: bgPos,
-            }}
-          />
-        )}
       </div>
 
+      {/* Panel de zoom — solo desktop (se apoya en hover, que no existe en
+          touch). Portal a document.body + position:fixed: así no depende
+          de que el contenedor (o cualquier ancestro) tenga overflow
+          visible ni espacio propio reservado en el layout. */}
+      {mounted && hovering && createPortal(
+        <div
+          className="pointer-events-none fixed z-[70] hidden rounded-2xl border border-border bg-surface shadow-2xl md:block"
+          style={{
+            ...panelStyle,
+            backgroundImage: `url(${src})`,
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: '250%', // nivel de ampliación
+            backgroundPosition: bgPos,
+          }}
+        />,
+        document.body
+      )}
+
       {/* ── Lightbox fullscreen ── */}
-      {lightboxOpen && (
+      {mounted && lightboxOpen && createPortal(
         <div
           className="fixed inset-0 z-[100] flex flex-col bg-black/95"
           onClick={() => setLightboxOpen(false)}
@@ -175,7 +243,8 @@ export function ImageZoom({ src, alt }: Props) {
               draggable={false}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

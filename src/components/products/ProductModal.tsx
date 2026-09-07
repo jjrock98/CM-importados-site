@@ -7,6 +7,7 @@ import { useCartStore } from '@/hooks/useCart';
 import type { Product, TipoPack } from '@/types';
 import toast from 'react-hot-toast';
 import { ProductWhatsAppButton } from './ProductWhatsAppButton';
+import { ImageZoom } from './ImageZoom';
 
 interface Props {
   product: Product;
@@ -81,11 +82,15 @@ export function ProductModal({ product, onClose }: Props) {
           <div className="bg-surface-2 rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none overflow-hidden">
             <div className="relative aspect-square">
               {product.imagenes[imgIndex] ? (
-                <Image
+                // Misma lupa que la página de producto: hover-magnifier en
+                // desktop (tap para pantalla completa en mobile). El panel
+                // ampliado usa un portal a document.body, así funciona
+                // igual acá aunque el modal tenga overflow-y-auto y poco
+                // margen a los costados.
+                <ImageZoom
+                  key={product.imagenes[imgIndex]}
                   src={product.imagenes[imgIndex]}
                   alt={product.nombre}
-                  fill className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted"><Package size={60} /></div>
