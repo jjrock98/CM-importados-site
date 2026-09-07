@@ -179,7 +179,14 @@ export function ImageZoom({ src, alt }: Props) {
           className="pointer-events-none fixed z-[70] hidden rounded-2xl border border-border bg-surface shadow-2xl md:block"
           style={{
             ...panelStyle,
-            backgroundImage: `url(${src})`,
+            // encodeURI + comillas: si el nombre del archivo subido tiene
+            // paréntesis, espacios sin codificar, etc. (ver comentario en
+            // AdminProductsClient.uploadImages), un `url(...)` SIN
+            // comillas corta el valor en el primer paréntesis/espacio y
+            // el panel queda negro (sin imagen). Esto cubre también las
+            // imágenes que ya están subidas con esos nombres, no solo
+            // las nuevas.
+            backgroundImage: `url("${encodeURI(src)}")`,
             backgroundRepeat: 'no-repeat',
             backgroundSize: '250%', // nivel de ampliación
             backgroundPosition: bgPos,

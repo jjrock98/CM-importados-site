@@ -155,7 +155,21 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     setUploading(true);
     const urls: string[] = [];
     for (const file of Array.from(files)) {
-      const path = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+      // ✅ Antes solo se reemplazaban espacios por guiones. Nombres de
+      // archivo con paréntesis, acentos, apóstrofes, etc. (típico de
+      // fotos sacadas con el celular, ej. "IMG_2024 (3).jpg") quedaban
+      // con esos caracteres literales en la URL pública. Eso no rompe el
+      // <img src=...> normal, pero SÍ rompe el `background-image:
+      // url(...)` que usa la lupa de zoom (el paréntesis cierra el token
+      // url() antes de tiempo) — el resultado es un panel de zoom
+      // completamente negro, sin la imagen. Ahora se sanitiza todo el
+      // nombre: se sacan los acentos y se reemplaza cualquier caracter
+      // que no sea letra/número/punto/guion por "-".
+      const cleanName = file.name
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // saca acentos (á→a, ñ→n, etc.)
+        .replace(/[^a-zA-Z0-9.-]+/g, '-')                  // cualquier otro caracter → "-"
+        .replace(/-+/g, '-');                              // colapsa guiones repetidos
+      const path = `${Date.now()}-${cleanName}`;
       const { error } = await supabase.storage.from('products').upload(path, file, { upsert: true });
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(path);
