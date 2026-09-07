@@ -103,9 +103,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    theme(colors.gray.100) 25%,
-    theme(colors.gray.200) 50%,
-    theme(colors.gray.100) 75%
+    theme('colors.gray.100') 25%,
+    theme('colors.gray.200') 50%,
+    theme('colors.gray.100') 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -113,9 +113,9 @@
 .dark .skeleton {
   background: linear-gradient(
     90deg,
-    theme(colors.gray.800) 25%,
-    theme(colors.gray.700) 50%,
-    theme(colors.gray.800) 75%
+    theme('colors.gray.800') 25%,
+    theme('colors.gray.700') 50%,
+    theme('colors.gray.800') 75%
   );
   background-size: 200% 100%;
 }
@@ -167,7 +167,7 @@
   body {
     background: white !important;
     color: black !important;
-    font-size: 12pt;
+    font-size: 9.5pt;
     font-family: 'Arial', sans-serif;
   }
 
@@ -180,9 +180,56 @@
   a { color: inherit !important; text-decoration: none !important; }
 
   @page {
-    margin: 1.5cm;
+    margin: 1cm;
     size: A4 portrait;
   }
+
+  /* ── Compactado para que entre en una sola hoja ────────────────────────
+     Todo lo de acá abajo SOLO corre dentro de @media print — la pantalla
+     normal de /mis-pedidos y /mis-pedidos/[id] queda intacta. Se apunta
+     directo a las clases de utilidad de Tailwind que ya usa la página
+     (en vez de agregar clases nuevas al componente) para no tener que
+     tocar el JSX de la vista en pantalla. */
+
+  /* Menos aire en el contenedor general y entre bloques */
+  .max-w-3xl { max-width: 100% !important; }
+  .px-4 { padding-left: 0 !important; padding-right: 0 !important; }
+  .py-10 { padding-top: 0.2cm !important; padding-bottom: 0 !important; }
+  .mb-6, .mb-5, .mb-4 { margin-bottom: 0.25cm !important; }
+  .mb-3, .mb-2 { margin-bottom: 0.15cm !important; }
+  .mt-4, .pt-4 { margin-top: 0.2cm !important; padding-top: 0.2cm !important; }
+  .mt-2, .pt-2 { margin-top: 0.1cm !important; padding-top: 0.1cm !important; }
+  .gap-4, .gap-5, .gap-3 { gap: 0.25cm !important; }
+  .gap-2, .gap-1\.5, .gap-1 { gap: 0.1cm !important; }
+
+  .card { padding: 0.35cm !important; }
+  .p-4, .p-3 { padding: 0.2cm !important; }
+  .space-y-4 > * + * { margin-top: 0.25cm !important; }
+  .space-y-2 > * + *, .space-y-2\.5 > * + * { margin-top: 0.12cm !important; }
+
+  /* Títulos más chicos */
+  h1, .text-2xl { font-size: 13pt !important; }
+  h2, .font-semibold { font-size: 9.5pt !important; }
+
+  /* Timeline de estado: más bajo */
+  .card.overflow-x-auto { padding: 0.25cm 0.35cm !important; }
+
+  /* Recuadro de retiro en local y código: mucho más chico que en pantalla */
+  .rounded-xl.border-2 { padding: 0.25cm !important; }
+  .font-mono.text-4xl { font-size: 20pt !important; letter-spacing: 0.15em !important; }
+
+  /* Layout de dos columnas (productos + datos) forzado en impresión,
+     igual que se ve en pantalla desde md: — así no se apila todo en
+     una sola columna larga y se aprovecha el ancho de la hoja */
+  .grid.gap-5.md\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0.4cm !important;
+  }
+  .md\:col-span-3 { grid-column: span 3 / span 3 !important; }
+  .md\:col-span-2 { grid-column: span 2 / span 2 !important; }
+
+  /* Imágenes de producto más chicas para no comer espacio vertical */
+  .h-14.w-14 { height: 0.9cm !important; width: 0.9cm !important; }
 }
 
 .print-only { display: none; }
