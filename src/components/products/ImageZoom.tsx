@@ -156,13 +156,14 @@ export function ImageZoom({ src, alt }: Props) {
               object-contain (siempre visible, sin trampa de overflow
               centrado). En modo "zoomed" se muestra a tamaño nativo
               anclada arriba-a-la-izquierda, así el scroll (0,0) siempre
-              cae dentro de la imagen — nunca queda todo en negro. El
-              touch-action: pinch-zoom deja además pellizcar con los dedos
-              en cualquiera de los dos modos. */}
+              cae dentro de la imagen — nunca queda todo en negro.
+              touch-action: manipulation (no "pinch-zoom") habilita pan
+              con un dedo Y pinch con dos — "pinch-zoom" a secas deja
+              pellizcar pero BLOQUEA el arrastre, que era el bug. */}
           <div
             ref={scrollRef}
             className={zoomed ? 'flex-1 overflow-auto' : 'flex flex-1 items-center justify-center overflow-hidden p-4'}
-            style={{ touchAction: 'pinch-zoom' }}
+            style={{ touchAction: 'manipulation' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
