@@ -90,7 +90,7 @@ export function ProductCard({ product: p }: Props) {
   return (
     <>
       <motion.article
-        className="card-hover group relative overflow-hidden"
+        className="card-hover group relative flex h-full flex-col overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.1 }}
@@ -154,7 +154,7 @@ export function ProductCard({ product: p }: Props) {
         </Link>
 
         {/* Info */}
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4">
           <Link href={`/productos/${p.slug}`}>
             <h3 className="line-clamp-2 text-sm font-semibold leading-tight hover:text-brand-600 transition-colors">
               {p.nombre}
@@ -219,10 +219,14 @@ export function ProductCard({ product: p }: Props) {
           </div>
 
           {/* ── Estado A y B: botón normal ─────────────────────────────────── */}
+          {/* mt-auto: ancla el botón al fondo de la tarjeta sin importar cuánto
+              contenido haya arriba (talles/colores que hacen wrap en mobile
+              según el largo de texto), así todas las tarjetas de una fila
+              quedan con el botón perfectamente alineado. */}
           {!sinStock && (
             <button
               onClick={handleAddCart}
-              className="btn-primary mt-4 w-full py-2 text-xs"
+              className="btn-primary mt-auto w-full py-2 text-xs"
               aria-label={`Agregar ${p.nombre} al carrito`}
             >
               {canBuyDocena ? 'Elegir pack' : tieneMediaDocena ? 'Comprar ½ Docena' : 'Sin stock para Docena'}
@@ -231,7 +235,7 @@ export function ProductCard({ product: p }: Props) {
 
           {/* ── Estado C: Agotado + formulario "Avísame" ──────────────────── */}
           {sinStock && (
-            <div className="mt-4 space-y-2">
+            <div className="mt-auto space-y-2">
               <p className="text-center text-xs font-semibold text-red-500">Agotado</p>
 
               {!notifSent ? (

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { cn } from '@/utils';
+import { ImageZoom } from './ImageZoom';
 
 interface Props {
   images: string[];
@@ -27,16 +28,11 @@ export function ProductPageClient({ images, nombre }: Props) {
 
   return (
     <div className="space-y-3">
-      {/* Main image */}
+      {/* Main image — con lupa: hover-magnifier en desktop, tap para
+          pantalla completa con pinch-zoom en mobile. Siempre sobre el
+          archivo original, sin recomprimir. */}
       <div className="relative aspect-square overflow-hidden rounded-2xl bg-surface-2 group">
-        <Image
-          src={images[current]}
-          alt={`${nombre} - imagen ${current + 1}`}
-          fill
-          priority
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 1024px) 100vw, 50vw"
-        />
+        <ImageZoom src={images[current]} alt={`${nombre} - imagen ${current + 1}`} />
 
         {images.length > 1 && (
           <>
