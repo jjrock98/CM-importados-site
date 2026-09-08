@@ -147,6 +147,13 @@ export interface CartReservation {
   unidades: number; expires_at: string; created_at: string;
 }
 
+export interface ProductReview {
+  id: string; product_id: string; user_id: string;
+  nombre_cliente: string; rating: number; comentario: string;
+  aprobado: boolean; created_at: string;
+}
+
+
 export interface WishlistItem {
   id: string; user_id: string; product_id: string;
   created_at: string; products?: Product;

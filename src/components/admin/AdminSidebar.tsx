@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Users, LayoutDashboard, Package, ShoppingBag, MapPin, Mail,
-  MessageSquare, Settings, Building2, ChevronRight
+  MessageSquare, Settings, Building2, ChevronRight, Star
 } from 'lucide-react';
 import { cn } from '@/utils';
 
@@ -12,6 +12,7 @@ const LINKS = [
   { href: '/admin/productos',      icon: Package,         label: 'Productos' },
   { href: '/admin/pedidos',        icon: ShoppingBag,     label: 'Pedidos' },
   { href: '/admin/clientes',       icon: Users,           label: 'Clientes' },
+  { href: '/admin/resenas',        icon: Star,            label: 'Reseñas' },
   { href: '/admin/mensajes',       icon: MessageSquare,   label: 'Mensajes' },
   { href: '/admin/configuracion',  icon: Settings,        label: 'Configuración' },
 ];

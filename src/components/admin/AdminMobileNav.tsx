@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, LayoutDashboard, Package, ShoppingBag,
-  Users, MessageSquare, Settings,
+  Users, MessageSquare, Settings, Star,
 } from 'lucide-react';
 import { cn } from '@/utils';
 
@@ -13,11 +13,19 @@ const LINKS = [
   { href: '/admin/productos',     icon: Package,         label: 'Productos'     },
   { href: '/admin/pedidos',       icon: ShoppingBag,     label: 'Pedidos'       },
   { href: '/admin/clientes',      icon: Users,           label: 'Clientes'      },
+  { href: '/admin/resenas',       icon: Star,            label: 'Reseñas'       },
   { href: '/admin/mensajes',      icon: MessageSquare,   label: 'Mensajes'      },
   { href: '/admin/configuracion', icon: Settings,        label: 'Configuración' },
 ];
 
-export function AdminMobileNav() {
+interface Props {
+  /** Campana de notificaciones/push — se recibe como prop en vez de
+   *  importarla acá para no duplicar su propio import en cada lugar que
+   *  compone la topbar; se ubica al lado del botón de menú. */
+  notifications?: React.ReactNode;
+}
+
+export function AdminMobileNav({ notifications }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -26,9 +34,12 @@ export function AdminMobileNav() {
       {/* Top bar */}
       <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
         <p className="font-display font-bold text-brand-600 text-sm">Admin Panel</p>
-        <button onClick={() => setOpen(!open)} className="btn-ghost p-2" aria-label="Menú admin">
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="flex items-center gap-1">
+          {notifications}
+          <button onClick={() => setOpen(!open)} className="btn-ghost p-2" aria-label="Menú admin">
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Drawer overlay */}

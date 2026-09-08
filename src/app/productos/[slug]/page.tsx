@@ -9,10 +9,11 @@ import { ProductModalTrigger } from '@/components/products/ProductModalTrigger';
 import { VariantSelector } from '@/components/products/VariantSelector';
 import { SimpleUnitBuyBox } from '@/components/products/SimpleUnitBuyBox';
 import { ProductWhatsAppButton } from '@/components/products/ProductWhatsAppButton';
+import { ProductReviews } from '@/components/products/ProductReviews';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { formatPrice, cn } from '@/utils';
 import { Package, ArrowLeft, Star } from 'lucide-react';
-import type { Product } from '@/types';
+import type { Product, ProductReview } from '@/types';
 
 interface Props { params: Promise<{ slug: string }> }
 
@@ -89,6 +90,21 @@ export default async function ProductoPage({ params }: Props) {
   const maxMediaDocena = Math.floor(p.stock_unidades / 6);
   const maxDocena      = Math.floor(p.stock_unidades / 12);
 
+  // ✅ Reseñas reales y aprobadas de este producto. Solo con esto en mano
+  // se arma aggregateRating/review más abajo — nunca con datos inventados
+  // (Google penaliza structured data falseado quitando TODOS los rich
+  // results del sitio, no solo el de estrellas).
+  const { data: reviewsData } = await admin
+    .from('product_reviews')
+    .select('*')
+    .eq('product_id', p.id)
+    .eq('aprobado', true)
+    .order('created_at', { ascending: false });
+  const reviews = (reviewsData ?? []) as ProductReview[];
+  const ratingPromedio = reviews.length
+    ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+    : 0;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type':    'Product',
@@ -100,6 +116,24 @@ export default async function ProductoPage({ params }: Props) {
     // No manejamos GTIN (productos importados sin código de barras propio),
     // así que declaramos la marca de la tienda como identificador.
     brand: { '@type': 'Brand', name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda' },
+    // Solo se agregan si hay AL MENOS UNA reseña real aprobada — sin esto,
+    // Google marca "falta aggregateRating/review" pero es una advertencia
+    // opcional, no un error; declarar un promedio sin reseñas de verdad
+    // sería structured data spam.
+    ...(reviews.length > 0 ? {
+      aggregateRating: {
+        '@type':      'AggregateRating',
+        ratingValue:  Number(ratingPromedio.toFixed(2)),
+        reviewCount:  reviews.length,
+      },
+      review: reviews.map((r) => ({
+        '@type': 'Review',
+        author: { '@type': 'Person', name: r.nombre_cliente },
+        datePublished: r.created_at,
+        reviewBody: r.comentario,
+        reviewRating: { '@type': 'Rating', ratingValue: r.rating, bestRating: 5, worstRating: 1 },
+      })),
+    } : {}),
     offers: [
       // Media docena es opcional: solo se agrega como offer si el producto la tiene cargada
       ...(p.precio_media_docena != null ? [{
@@ -306,6 +340,9 @@ export default async function ProductoPage({ params }: Props) {
             </Link>
           </div>
         </div>
+
+        {/* Reseñas reales de clientes con compra verificada */}
+        <ProductReviews productId={p.id} initialReviews={reviews} />
 
         {/* Related products */}
         <RelatedProducts currentProductId={p.id} />
