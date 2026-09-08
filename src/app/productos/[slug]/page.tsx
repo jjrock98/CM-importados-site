@@ -90,6 +90,24 @@ export default async function ProductoPage({ params }: Props) {
   const maxMediaDocena = Math.floor(p.stock_unidades / 6);
   const maxDocena      = Math.floor(p.stock_unidades / 12);
 
+  // ✅ Google marca como "falta el campo description" cuando descripcion Y
+  // descripcion_corta están vacíos en el admin — pasa seguido porque
+  // cargar una descripción a mano por cada producto no escala. En vez de
+  // depender de que siempre se complete a mano, si ambos están vacíos se
+  // arma una descripción real (no inventada: son los mismos datos que ya
+  // se muestran en la página) a partir de talles/colores/tipo de venta.
+  const descripcionFallback = () => {
+    const partes: string[] = [];
+    if (p.talles?.length)  partes.push(`Talles ${p.talles.join(', ')}`);
+    if (p.colores?.length) partes.push(`colores ${p.colores.join(', ')}`);
+    const detalle = partes.length ? p.nombre + ' — ' + partes.join(', ') + '.' : `${p.nombre}.`;
+    const venta = p.venta_mayorista
+      ? ` Venta por pack: ${p.precio_media_docena != null ? 'media docena o docena.' : 'docena.'}`
+      : ' Venta por unidad.';
+    return detalle + venta;
+  };
+  const jsonLdDescription = p.descripcion ?? p.descripcion_corta ?? descripcionFallback();
+
   // ✅ Reseñas reales y aprobadas de este producto. Solo con esto en mano
   // se arma aggregateRating/review más abajo — nunca con datos inventados
   // (Google penaliza structured data falseado quitando TODOS los rich
@@ -109,7 +127,7 @@ export default async function ProductoPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type':    'Product',
     name:        p.nombre,
-    description: p.descripcion ?? p.descripcion_corta,
+    description: jsonLdDescription,
     image:       p.imagenes,
     sku:         p.id,
     mpn:         p.id,
