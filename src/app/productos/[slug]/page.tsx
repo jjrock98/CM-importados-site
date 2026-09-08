@@ -180,6 +180,13 @@ export default async function ProductoPage({ params }: Props) {
           applicableCountry: 'AR',
           refundType: 'https://schema.org/ExchangeRefund',
           returnMethod: ['https://schema.org/ReturnByMail', 'https://schema.org/ReturnInStore'],
+          // returnFees = caso general (motivo del cliente, no defecto):
+          // lo paga el cliente. itemDefectReturnFees lo sobreescribe a
+          // gratis específicamente cuando el motivo es un defecto de
+          // fábrica. Se declaran los tres porque el validador de Google
+          // chequea "returnFees" de forma puntual y no lo da por cubierto
+          // solo con los campos específicos por motivo.
+          returnFees: 'https://schema.org/ReturnShippingFees',
           itemDefectReturnFees: 'https://schema.org/FreeReturn',
           customerRemorseReturnFees: 'https://schema.org/ReturnShippingFees',
         },
@@ -205,6 +212,7 @@ export default async function ProductoPage({ params }: Props) {
           applicableCountry: 'AR',
           refundType: 'https://schema.org/ExchangeRefund',
           returnMethod: ['https://schema.org/ReturnByMail', 'https://schema.org/ReturnInStore'],
+          returnFees: 'https://schema.org/ReturnShippingFees',
           itemDefectReturnFees: 'https://schema.org/FreeReturn',
           customerRemorseReturnFees: 'https://schema.org/ReturnShippingFees',
         },
