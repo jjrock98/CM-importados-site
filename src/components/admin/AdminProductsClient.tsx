@@ -108,9 +108,37 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     }
   };
 
-  /** Genera texto de surtido leyendo las variantes reales (talla/color) del producto */
+  /**
+   * Genera texto de surtido para "Descripción corta".
+   * — Productos minorista (venta_minorista=true): lee la tabla de variantes
+   *   real (talla/color/stock) y agrupa talles por color, porque ahí cada
+   *   combinación tiene su propio stock independiente.
+   * — Productos mayorista (por docena/curva): NO usan esa tabla de
+   *   variantes — talles y colores son los campos simples del formulario
+   *   ("guía orientativa" de lo que trae la docena/curva, sin stock por
+   *   combinación). Antes el botón solo miraba la tabla de variantes y
+   *   tiraba error acá aunque el producto sí tuviera talles/colores
+   *   cargados. Ahora, si es mayorista, arma el texto desde esos campos.
+   */
   const generarDescripcionSurtido = async () => {
     if (!editing?.id) { toast.error('Guardá el producto primero'); return; }
+
+    if (!editing.venta_minorista) {
+      const colores = editing.colores ?? [];
+      const talles  = editing.talles ?? [];
+      if (colores.length === 0 && talles.length === 0) {
+        toast.error('Cargá colores y/o talles para poder generar la descripción');
+        return;
+      }
+      const partes: string[] = [];
+      if (colores.length) partes.push(`colores ${colores.join(', ')}`);
+      if (talles.length)  partes.push(`talles ${talles.join(', ')}`);
+      const texto = 'Incluye ' + partes.join(' y ') + '.';
+      setEditing((prev) => ({ ...prev, descripcion_corta: texto }));
+      toast.success('Descripción generada desde colores/talles cargados');
+      return;
+    }
+
     const res  = await fetch(`/api/admin/products/${editing.id}/variants`);
     const json = await res.json();
     const variantes = (json.data ?? []) as { talla: string; color: string; stock_unidades: number }[];
@@ -461,7 +489,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                       onClick={generarDescripcionSurtido}
                       type="button"
                       className="text-[10px] text-brand-600 hover:underline flex items-center gap-1"
-                      title="Arma el texto leyendo las variantes reales cargadas (talla/color/stock)"
+                      title="Mayorista: arma el texto desde Colores/Talles cargados. Minorista: lee el stock real por variante."
                     >
                       ✨ Generar desde stock real
                     </button>
