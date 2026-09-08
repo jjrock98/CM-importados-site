@@ -163,14 +163,25 @@ export default async function ProductoPage({ params }: Props) {
           ? 'https://schema.org/InStock'
           : 'https://schema.org/OutOfStock',
         seller: { '@type': 'Organization', name: process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda' },
-        // Política real: solo se aceptan cambios por defecto de fábrica,
-        // reportado dentro de los 3 días de recibido el pedido.
+        // Política real: cambios dentro de los 3 días de recibido. El
+        // método de devolución es flexible (correo/transporte, en persona,
+        // o retiro por cadete) — no hay un valor exacto de schema.org para
+        // "retiro con cadete", así que se lo agrupa bajo ReturnByMail
+        // (cualquier variante en la que el producto viaja de vuelta, sin
+        // que el cliente vaya a un local). Los gastos de envío de la
+        // devolución dependen del motivo: gratis si es defecto de fábrica,
+        // a cargo del cliente si es cambio sin defecto — por eso se usan
+        // los campos específicos por motivo en vez de un "returnFees"
+        // único, que no podría representar esta diferencia.
         hasMerchantReturnPolicy: {
           '@type': 'MerchantReturnPolicy',
           returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
           merchantReturnDays: 3,
           applicableCountry: 'AR',
           refundType: 'https://schema.org/ExchangeRefund',
+          returnMethod: ['https://schema.org/ReturnByMail', 'https://schema.org/ReturnInStore'],
+          itemDefectReturnFees: 'https://schema.org/FreeReturn',
+          customerRemorseReturnFees: 'https://schema.org/ReturnShippingFees',
         },
         // Sin shippingDetails: el envío se coordina manualmente (WhatsApp,
         // chat en vivo o personalmente) y su costo varía — declarar acá
@@ -193,6 +204,9 @@ export default async function ProductoPage({ params }: Props) {
           merchantReturnDays: 3,
           applicableCountry: 'AR',
           refundType: 'https://schema.org/ExchangeRefund',
+          returnMethod: ['https://schema.org/ReturnByMail', 'https://schema.org/ReturnInStore'],
+          itemDefectReturnFees: 'https://schema.org/FreeReturn',
+          customerRemorseReturnFees: 'https://schema.org/ReturnShippingFees',
         },
       },
     ],
