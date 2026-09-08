@@ -47,6 +47,36 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // ── Bloqueo geográfico anti-fraude (solo rutas de pago/pedidos) ───────────
+  // Vercel agrega el header x-vercel-ip-country en su borde de red antes de
+  // que el request llegue acá — no se puede falsificar desde el navegador
+  // (el proxy de Vercel pisa cualquier valor que mande el cliente con ese
+  // nombre). A propósito NO se bloquea todo el sitio: solo las rutas que
+  // efectivamente crean un pedido o cobran, para no afectar a Googlebot, a
+  // los bots de vista previa de WhatsApp/Meta al compartir un link, ni a un
+  // comprador argentino navegando el catálogo desde afuera del país (solo
+  // se corta si además intenta pagar/generar el pedido). El webhook de
+  // Mercado Pago queda afuera: ese tráfico es servidor-a-servidor, no del
+  // comprador, y ya se valida por firma criptográfica en la propia ruta.
+  const GEO_RESTRICTED_ROUTES = ['/api/orders', '/api/checkout'];
+  const PAIS_PERMITIDO = 'AR';
+  if (
+    request.method === 'POST' &&
+    GEO_RESTRICTED_ROUTES.some((r) => pathname.startsWith(r)) &&
+    !pathname.startsWith('/api/webhooks/')
+  ) {
+    const pais = request.headers.get('x-vercel-ip-country');
+    // Si el header no viene (dev local, o proveedor sin geolocalización) se
+    // deja pasar — fail-open — para no romper nunca el flujo de compra por
+    // un dato que no siempre está disponible fuera de producción en Vercel.
+    if (pais && pais !== PAIS_PERMITIDO) {
+      return NextResponse.json(
+        { error: 'Por el momento solo procesamos pedidos realizados desde Argentina.' },
+        { status: 403 }
+      );
+    }
+  }
+
   // ── Modo mantenimiento ────────────────────────────────────────────────────
   // Lee de ENV como toggle rápido (para activar sin redeploy vía Vercel UI),
   // o de site_settings en DB (para que el admin lo controle desde el panel).
