@@ -1,0 +1,51 @@
+/**
+ * Notificación instantánea al admin vía bot de Telegram.
+ *
+ * Por qué Telegram y no WhatsApp: mandar un WhatsApp de forma automática
+ * (sin que nadie haga clic en un link wa.me) requiere la API de WhatsApp
+ * Business de Meta — cuenta de negocio verificada + plantillas de mensaje
+ * aprobadas, un trámite que puede tardar días. Telegram no pide ninguna
+ * aprobación: se crea el bot hablándole a @BotFather, se consigue el
+ * chat_id, y ya se pueden mandar mensajes gratis e instantáneos. El día
+ * que la integración de WhatsApp esté lista, se puede sumar como canal
+ * extra acá mismo sin tocar los puntos donde se llama a esta función.
+ *
+ * No lanza si falta configuración ni si falla el request — mismo patrón
+ * que sendAdminPushNotification: nunca debe romper el flujo de una venta,
+ * cancelación o subida de comprobante por un problema de notificaciones.
+ *
+ * Configuración necesaria (variables de entorno en Vercel):
+ *   TELEGRAM_BOT_TOKEN → el token que te da @BotFather al crear el bot.
+ *   TELEGRAM_CHAT_ID   → tu chat_id (se consigue escribiéndole una vez al
+ *                        bot y consultando https://api.telegram.org/bot<TOKEN>/getUpdates).
+ */
+export async function sendAdminTelegramNotification(title: string, body: string): Promise<void> {
+  const token  = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) {
+    console.warn('[Telegram] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID no configuradas — no se envía nada.');
+    return;
+  }
+
+  try {
+    // Texto plano (sin parse_mode): el título y el cuerpo incluyen datos
+    // dinámicos (nombre del cliente, email, motivo de rechazo) que no
+    // deberían tener que pasar por un escapado de Markdown para no romper
+    // el formato del mensaje si traen caracteres como "_" o "*".
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `${title}\n${body}`,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('[Telegram] Error enviando notificación:', await res.text());
+    }
+  } catch (err) {
+    console.error('[Telegram] Error de red enviando notificación:', err);
+  }
+}

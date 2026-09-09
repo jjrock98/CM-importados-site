@@ -109,6 +109,38 @@ export function orderStatusHtml(order: Order): string {
   return base(`Tu pedido está ${ORDER_STATUS_LABELS[order.estado]?.toLowerCase() ?? 'actualizado'}`, body);
 }
 
+// ─── Pedido de reseña (post-entrega) ────────────────────────────────────────
+// Se dispara junto con el email de "pedido entregado" — es la forma más
+// simple de arrancar ya mismo (no requiere aprobación de nadie, a
+// diferencia de un mensaje de WhatsApp Business con plantilla). El día que
+// esté lista la integración real de WhatsApp, este mismo evento puede
+// disparar también ese canal sin tocar el resto del flujo.
+export function reviewRequestHtml(order: Order): string {
+  const nombre = order.nombre?.split(' ')[0] || '';
+  const items  = order.order_items ?? [];
+
+  const filas = items.map((it) => {
+    const slug = it.products?.slug;
+    const link = slug ? `${APP_URL}/productos/${slug}` : `${APP_URL}/mis-pedidos`;
+    return `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid #f0ede6;font-size:14px;color:#374151;">${esc(it.nombre_snap)}</td>
+        <td style="padding:10px 0;border-bottom:1px solid #f0ede6;text-align:right;">
+          <a href="${link}" style="color:${BRAND_COLOR};text-decoration:none;font-weight:700;font-size:13px;">Dejar reseña →</a>
+        </td>
+      </tr>`;
+  }).join('');
+
+  const body = `
+    <h1 style="margin:0 0 6px;font-size:24px;font-weight:800;color:#111827;">¿Qué te pareció tu compra?</h1>
+    <p style="margin:0 0 24px;color:#6b7280;font-size:15px;">Hola <strong style="color:#374151;">${esc(nombre)}</strong>, esperamos que estés disfrutando tu pedido <strong style="font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</strong>.</p>
+    <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">Tu opinión ayuda un montón a otros compradores a elegir. ¿Nos dejás una reseña de lo que compraste? Te toma un minuto:</p>
+    ${filas ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">${filas}</table>` : ''}
+    <div style="text-align:center;"><a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
+
+  return base('¿Qué te pareció tu compra?', body);
+}
+
 // ─── Contacto ─────────────────────────────────────────────────────────────────
 
 export function contactNotificationHtml(nombre: string, email: string, asunto: string, mensaje: string): string {

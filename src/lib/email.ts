@@ -10,6 +10,7 @@ import {
   orderExpiredHtml,
   orderRefundedHtml,
   stockNotifyAdminHtml,
+  reviewRequestHtml,
 } from './emails/templates';
 
 const FROM   = `${process.env.RESEND_FROM_NAME ?? 'Mi Tienda'} <${process.env.RESEND_FROM_EMAIL ?? 'noreply@mitienda.com'}>`;
@@ -32,11 +33,25 @@ export async function sendOrderConfirmationEmail(order: Order) {
 }
 
 export async function sendOrderStatusEmail(order: Order) {
-  return getResend().emails.send({
+  const result = await getResend().emails.send({
     from: FROM, to: order.email,
     subject: `Tu pedido está ${order.estado} – ${process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda'}`,
     html: orderStatusHtml(order),
   });
+
+  // Pedido de reseña: se manda junto con el aviso de entrega, no antes —
+  // no tiene sentido pedirla si todavía no le llegó el producto. Por email
+  // mientras se gestiona la aprobación de WhatsApp Business (ver
+  // reviewRequestHtml). No debe romper el flujo si falla.
+  if (order.estado === 'entregado') {
+    getResend().emails.send({
+      from: FROM, to: order.email,
+      subject: `¿Qué te pareció tu compra? — ${process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda'}`,
+      html: reviewRequestHtml(order),
+    }).catch(console.error);
+  }
+
+  return result;
 }
 
 export async function sendCashPaymentPendingEmail(order: Order) {

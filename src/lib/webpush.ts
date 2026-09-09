@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { createAdminClient } from './supabase/admin';
+import { sendAdminTelegramNotification } from './telegram';
 
 // ✅ Lazy init — igual que Resend y MP, no instanciar a nivel de módulo
 let configured = false;
@@ -25,8 +26,20 @@ export interface PushPayload {
  * Envía una notificación push a TODOS los dispositivos registrados
  * del admin (puede tener múltiples: PC + celular).
  * Silencia errores de subscripciones expiradas (las borra automáticamente).
+ *
+ * También dispara, en paralelo, la misma notificación por Telegram (ver
+ * ./telegram.ts) — es un canal independiente del push por navegador, así
+ * que llega igual aunque no tengas el push del navegador configurado o
+ * activo en ese momento. Se llama desde acá y no en cada ruta porque esta
+ * función ya es el punto único donde el resto del código avisa "pasó algo
+ * que el admin necesita ver ahora" (pedido nuevo, cancelación, comprobante
+ * a verificar, pago aprobado, reembolso automático).
  */
 export async function sendAdminPushNotification(payload: PushPayload): Promise<void> {
+  sendAdminTelegramNotification(payload.title, payload.body).catch((err) =>
+    console.error('[Telegram] Error enviando notificación:', err)
+  );
+
   configureWebPush();
   if (!configured) {
     // VAPID no configurado — no falla, solo loguea
