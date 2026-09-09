@@ -23,6 +23,26 @@ export function AdminOrdersClient({ initialOrders }: Props) {
   const [filter,   setFilter]   = useState<string>('todos');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading,  setLoading]  = useState<string | null>(null);
+  const [comprobanteLoading, setComprobanteLoading] = useState<string | null>(null);
+
+  // ── Ver comprobante: el bucket es privado, no hay URL fija guardada.
+  // Se pide una signed URL fresca (vence a los pocos minutos) cada vez.
+  const verComprobante = useCallback(async (orderId: string) => {
+    setComprobanteLoading(orderId);
+    try {
+      const res = await fetch(`/api/comprobante-url?orderId=${orderId}`);
+      const data = await res.json();
+      if (!res.ok || !data.url) {
+        toast.error(data.error ?? 'No se pudo abrir el comprobante');
+        return;
+      }
+      window.open(data.url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('No se pudo abrir el comprobante');
+    } finally {
+      setComprobanteLoading(null);
+    }
+  }, []);
 
   // ── Reject modal state ──────────────────────────────────────
   const [rejectModal, setRejectModal] = useState<{ orderId: string } | null>(null);
@@ -517,10 +537,17 @@ export function AdminOrdersClient({ initialOrders }: Props) {
 
                   {/* Comprobante */}
                   {order.comprobante_url && (
-                    <a href={order.comprobante_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-brand-600 hover:underline">
-                      <ExternalLink size={14} /> Ver comprobante de transferencia
-                    </a>
+                    <button
+                      type="button"
+                      onClick={() => verComprobante(order.id)}
+                      disabled={comprobanteLoading === order.id}
+                      className="inline-flex items-center gap-2 text-sm text-brand-600 hover:underline disabled:opacity-60"
+                    >
+                      {comprobanteLoading === order.id
+                        ? <Loader2 size={14} className="animate-spin" />
+                        : <ExternalLink size={14} />}
+                      Ver comprobante de transferencia
+                    </button>
                   )}
 
                   {/* ── ACCIONES ──────────────────────────────── */}

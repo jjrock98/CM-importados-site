@@ -93,7 +93,7 @@ export default async function MisPedidosPage() {
               {order.comprobante_url && (
                 <>
                   <span>·</span>
-                  <VerComprobanteLink url={order.comprobante_url} />
+                  <VerComprobanteLink orderId={order.id} />
                 </>
               )}
 

@@ -6,8 +6,9 @@ import Image from 'next/image';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, getCashCouponExpiry } from '@/utils';
 import { PACK_CONFIG } from '@/types';
 import type { Order } from '@/types';
-import { ArrowLeft, Package, Printer, ExternalLink, MapPin, Store, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Package, Printer, MapPin, Store, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
 import { OrderCancelButton } from '@/components/orders/OrderCancelButton';
+import { VerComprobanteLink } from '@/components/orders/OrderCardActions';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -125,13 +126,8 @@ export default async function OrderDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* ✅ Comprobante de transferencia en revisión — antes esto se
-          disparaba con estado === 'pendiente_pago', pero ese estado ya
-          no se usa para transferencia (ver /api/upload-comprobante).
-          Ahora se basa en la misma señal que ya usa el admin para su
-          cola de revisión: hay comprobante subido y todavía no fue
-          revisado. */}
-      {o.metodo_pago === 'transferencia' && !!o.comprobante_url && !o.comprobante_revisado && (
+      {/* ✅ Comprobante de transferencia en revisión */}
+      {o.estado === 'pendiente_pago' && o.metodo_pago === 'transferencia' && (
         <div className="card border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/10 p-5 mb-5">
           <h2 className="font-semibold text-blue-800 dark:text-blue-400 flex items-center gap-2 mb-2">
             🔎 Comprobante en revisión
@@ -333,12 +329,7 @@ export default async function OrderDetailPage({ params }: Props) {
             <h2 className="font-semibold">Pago</h2>
             <p className="text-muted capitalize">{o.metodo_pago}</p>
             <p className="text-muted">{o.stock_descontado ? '✅ Pago confirmado' : '⏳ Pendiente de confirmación'}</p>
-            {o.comprobante_url && (
-              <a href={o.comprobante_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-brand-600 hover:underline text-xs">
-                <ExternalLink size={12} /> Ver comprobante
-              </a>
-            )}
+            {o.comprobante_url && <VerComprobanteLink orderId={o.id} />}
           </div>
           <div className="space-y-2">
             {o.estado === 'pendiente' && o.metodo_pago === 'transferencia' && !o.comprobante_url && (
