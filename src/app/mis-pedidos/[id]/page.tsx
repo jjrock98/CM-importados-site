@@ -125,8 +125,13 @@ export default async function OrderDetailPage({ params }: Props) {
         </div>
       )}
 
-      {/* ✅ Comprobante de transferencia en revisión */}
-      {o.estado === 'pendiente_pago' && o.metodo_pago === 'transferencia' && (
+      {/* ✅ Comprobante de transferencia en revisión — antes esto se
+          disparaba con estado === 'pendiente_pago', pero ese estado ya
+          no se usa para transferencia (ver /api/upload-comprobante).
+          Ahora se basa en la misma señal que ya usa el admin para su
+          cola de revisión: hay comprobante subido y todavía no fue
+          revisado. */}
+      {o.metodo_pago === 'transferencia' && !!o.comprobante_url && !o.comprobante_revisado && (
         <div className="card border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/10 p-5 mb-5">
           <h2 className="font-semibold text-blue-800 dark:text-blue-400 flex items-center gap-2 mb-2">
             🔎 Comprobante en revisión

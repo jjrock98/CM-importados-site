@@ -87,14 +87,22 @@ export async function POST(req: NextRequest) {
       .upload(path, bytes, { contentType: file.type, upsert: true });
     if (uploadErr) throw uploadErr;
 
-    const { data: { publicUrl } } = admin.storage.from('comprobantes').getPublicUrl(path);
-
-    const sessionId = req.headers.get('x-session-id') ?? '';
-    // Nota: el bucket es privado (RLS exige dueño o admin para leer), así
-    // que aunque getPublicUrl arma una URL "pública", solo el admin o el
-    // dueño autenticado pueden efectivamente descargarla — es la misma
-    // guardia que ya usaba el flujo anterior.
-    void sessionId; // se mantiene el header por compatibilidad con el cliente, sin uso adicional acá
+    // OJO: el comentario que había acá antes decía que getPublicUrl era
+    // seguro porque el bucket es privado y las políticas RLS filtran por
+    // dueño/admin — eso es incorrecto. La ruta "pública" de Supabase
+    // Storage (/storage/v1/object/public/...) NO chequea RLS en absoluto:
+    // solo funciona si el bucket tiene public=true. Con el bucket privado
+    // (como está definido en sql/schema.sql), ese link directamente no
+    // sirve — por eso el error "Bucket not found"/"Object not found" al
+    // abrirlo. Se genera en cambio una URL firmada (createSignedUrl), que
+    // sí respeta que el bucket sea privado: solo funciona quien tenga ese
+    // link exacto, con una expiración larga para no tener que regenerarla
+    // cada vez que se muestra en el admin o en "Mis pedidos".
+    const { data: signedData, error: signErr } = await admin.storage
+      .from('comprobantes')
+      .createSignedUrl(path, 60 * 60 * 24 * 365 * 10); // ~10 años
+    if (signErr || !signedData) throw signErr ?? new Error('No se pudo generar el link del comprobante');
+    const publicUrl = signedData.signedUrl;
 
     const { error } = await admin
       .from('orders')
@@ -109,24 +117,16 @@ export async function POST(req: NextRequest) {
     const { data: updatedOrder } = await admin
       .from('orders').select('*, order_items(*)').eq('id', orderId).single();
     if (updatedOrder) {
-      // ⚠️ Se esperan (await) antes de responder: en runtime serverless de
-      // Vercel una llamada "fire-and-forget" (sin await) corre el riesgo de
-      // que la función termine su ejecución apenas se manda la respuesta,
-      // cortando el fetch a Resend/Telegram/webpush a mitad de camino y
-      // perdiendo la notificación sin ningún error visible. Promise.allSettled
-      // para que un fallo de un canal (ej. email) no bloquee al otro (push).
-      await Promise.allSettled([
-        sendAdminOrderStatusEmail(
-          updatedOrder as Order,
-          '📎 Nuevo comprobante de transferencia subido — pendiente de revisión'
-        ),
-        sendAdminPushNotification({
-          title: '📎 Comprobante subido',
-          body:  `Pedido #${String(updatedOrder.id).slice(0,8).toUpperCase()} de ${(updatedOrder as Order).nombre} — listo para verificar.`,
-          tag:   'order-comprobante',
-          data:  { url: '/admin/pedidos' },
-        }),
-      ]);
+      sendAdminOrderStatusEmail(
+        updatedOrder as Order,
+        '📎 Nuevo comprobante de transferencia subido — pendiente de revisión'
+      ).catch(console.error);
+      sendAdminPushNotification({
+        title: '📎 Comprobante subido',
+        body:  `Pedido #${String(updatedOrder.id).slice(0,8).toUpperCase()} de ${(updatedOrder as Order).nombre} — listo para verificar.`,
+        tag:   'order-comprobante',
+        data:  { url: '/admin/pedidos' },
+      }).catch(console.error);
     }
 
     return NextResponse.json({ ok: true });

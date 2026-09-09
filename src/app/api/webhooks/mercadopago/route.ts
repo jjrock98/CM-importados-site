@@ -244,9 +244,10 @@ async function processPaymentStatus(
     // ════════════════════════════════════════════════════════════════════
     // PENDING — pago en efectivo (Rapipago, Pago Fácil, etc.)
     // El cupón fue generado pero el cliente aún no fue a pagarlo.
+    // Es el ÚNICO caso real de "esperando pago": acá sí corresponde el
+    // estado 'pendiente_pago' y el email del cupón.
     // ════════════════════════════════════════════════════════════════════
-    case 'pending':
-    case 'in_process': {
+    case 'pending': {
       // Idempotencia: si ya está en 'pendiente_pago' con el mismo payment_id,
       // no reenviamos el email de nuevo.
       const alreadyNotified =
@@ -275,6 +276,31 @@ async function processPaymentStatus(
       }
 
       console.log(`[MP Webhook] Pedido ${orderId} → pendiente_pago (${status_detail})`);
+      break;
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // IN_PROCESS — pago con tarjeta/dinero en cuenta que MP está
+    // revisando (antifraude, demora normal de segundos/minutos). El
+    // cliente YA pagó, no está "esperando pagar" — así que el pedido NO
+    // pasa a 'pendiente_pago' (eso confundía con el cupón de efectivo y
+    // mandaba de más el email de "tu cupón fue generado"). Se deja el
+    // pedido como estaba ('pendiente', de la creación) y solo se guarda
+    // el payment_id/status_detail para trazabilidad — cuando MP termine
+    // de revisar, va a llegar un nuevo webhook con 'approved' o
+    // 'rejected' que sí mueve el estado.
+    // ════════════════════════════════════════════════════════════════════
+    case 'in_process': {
+      await admin
+        .from('orders')
+        .update({
+          mp_payment_id:    String(mpPaymentId),
+          mp_status_detail: status_detail,
+          updated_at:       new Date().toISOString(),
+        })
+        .eq('id', orderId);
+
+      console.log(`[MP Webhook] Pedido ${orderId} → en revisión por MP, estado sin cambios (${status_detail})`);
       break;
     }
 
@@ -351,20 +377,17 @@ async function processPaymentStatus(
               console.error('[MP Webhook] Error enviando email de reembolso:', err)
             );
           }
-          // ⚠️ Se espera (await) antes de seguir — ver nota en upload-comprobante/route.ts
-          await Promise.all([
-            sendAdminOrderStatusEmail(o,
-              refund.success
-                ? `💳 Reembolso automático procesado — Pedido #${o.id.slice(0,8).toUpperCase()}`
-                : `🚨 URGENTE: reembolso automático FALLÓ — Pedido #${o.id.slice(0,8).toUpperCase()}`
-            ).catch(console.error),
-            sendAdminPushNotification({
-              title: refund.success ? '💳 Reembolso automático procesado' : '🚨 Reembolso falló — acción requerida',
-              body:  `Pedido #${o.id.slice(0,8).toUpperCase()} — doble venta detectada.`,
-              tag:   'auto-refund',
-              data:  { url: '/admin/pedidos' },
-            }).catch(console.error),
-          ]);
+          sendAdminOrderStatusEmail(o,
+            refund.success
+              ? `💳 Reembolso automático procesado — Pedido #${o.id.slice(0,8).toUpperCase()}`
+              : `🚨 URGENTE: reembolso automático FALLÓ — Pedido #${o.id.slice(0,8).toUpperCase()}`
+          ).catch(console.error);
+          sendAdminPushNotification({
+            title: refund.success ? '💳 Reembolso automático procesado' : '🚨 Reembolso falló — acción requerida',
+            body:  `Pedido #${o.id.slice(0,8).toUpperCase()} — doble venta detectada.`,
+            tag:   'auto-refund',
+            data:  { url: '/admin/pedidos' },
+          }).catch(console.error);
         }
 
         break;
@@ -389,16 +412,13 @@ async function processPaymentStatus(
         await sendOrderConfirmationEmail(paidOrder as Order).catch((err) =>
           console.error('[MP Webhook] Error enviando email de confirmación:', err)
         );
-        // ⚠️ Se espera (await) antes de seguir — ver nota en upload-comprobante/route.ts
-        await Promise.all([
-          sendAdminOrderStatusEmail(paidOrder as Order, 'Pago aprobado por Mercado Pago').catch(console.error),
-          sendAdminPushNotification({
-            title: '💳 Nuevo pago aprobado',
-            body:  `Pedido #${(paidOrder as Order).id.slice(0,8).toUpperCase()} de ${(paidOrder as Order).nombre} — Mercado Pago.`,
-            tag:   'mp-payment',
-            data:  { url: '/admin/pedidos' },
-          }).catch(console.error),
-        ]);
+        sendAdminOrderStatusEmail(paidOrder as Order, 'Pago aprobado por Mercado Pago').catch(console.error);
+        sendAdminPushNotification({
+          title: '💳 Nuevo pago aprobado',
+          body:  `Pedido #${(paidOrder as Order).id.slice(0,8).toUpperCase()} de ${(paidOrder as Order).nombre} — Mercado Pago.`,
+          tag:   'mp-payment',
+          data:  { url: '/admin/pedidos' },
+        }).catch(console.error);
       }
 
       console.log(`[MP Webhook] Pedido ${orderId} → pagado ✅ (stock descontado)`);

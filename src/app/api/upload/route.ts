@@ -49,7 +49,10 @@ export async function POST(req: NextRequest) {
       .from('orders')
       .update({
         comprobante_url: data.comprobanteUrl,
-        estado:          'pendiente_pago',
+        // ✅ Ver el mismo comentario en /api/upload-comprobante: no
+        // corresponde pasar a 'pendiente_pago' ("Esperando pago") acá —
+        // el cliente ya pagó, se queda 'pendiente' hasta que el admin
+        // lo revise.
         updated_at:      new Date().toISOString(),
       })
       .eq('id', data.orderId);
