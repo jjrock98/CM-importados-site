@@ -10,8 +10,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body:    payload.body   ?? 'Revisá el panel de administración.',
-    icon:    payload.icon   ?? '/icons/icon-192x192.png',
-    badge:   payload.badge  ?? '/icons/icon-72x72.png',
+    icon:    payload.icon   ?? '/icons/icon-192.png',
+    badge:   payload.badge  ?? '/icons/icon-32.png',
     tag:     payload.tag    ?? 'admin-notification',
     data:    payload.data   ?? { url: '/admin/pedidos' },
     actions: [
