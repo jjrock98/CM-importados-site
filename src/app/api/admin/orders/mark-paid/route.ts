@@ -59,14 +59,17 @@ export async function POST(req: NextRequest) {
   const { data: order } = await admin.from('orders').select('*, order_items(*)').eq('id', orderId).single();
   if (order) {
     const o = order as Order;
-    sendOrderConfirmationEmail(o).catch(console.error);
-    sendAdminOrderStatusEmail(o, `✅ Pedido marcado como pagado manualmente — #${o.id.slice(0,8).toUpperCase()}`).catch(console.error);
-    sendAdminPushNotification({
-      title: '✅ Pedido pagado',
-      body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre} marcado como pagado.`,
-      tag:   'order-paid',
-      data:  { url: '/admin/pedidos' },
-    }).catch(console.error);
+    // ⚠️ Se espera (await) antes de responder — ver nota en upload-comprobante/route.ts
+    await Promise.all([
+      sendOrderConfirmationEmail(o).catch(console.error),
+      sendAdminOrderStatusEmail(o, `✅ Pedido marcado como pagado manualmente — #${o.id.slice(0,8).toUpperCase()}`).catch(console.error),
+      sendAdminPushNotification({
+        title: '✅ Pedido pagado',
+        body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre} marcado como pagado.`,
+        tag:   'order-paid',
+        data:  { url: '/admin/pedidos' },
+      }).catch(console.error),
+    ]);
   }
 
   return NextResponse.json({ ok: true });

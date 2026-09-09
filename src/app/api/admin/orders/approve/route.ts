@@ -78,18 +78,23 @@ export async function POST(req: NextRequest) {
 
   if (fullOrder) {
     const o = fullOrder as Order;
-    sendOrderConfirmationEmail(o).catch(console.error);
-    sendAdminOrderStatusEmail(o,
-      `✅ Transferencia aprobada — Pedido #${o.id.slice(0,8).toUpperCase()}`
-    ).catch(console.error);
-    sendAdminPushNotification({
-      title: '✅ Transferencia aprobada',
-      body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre} — ${
-        new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(o.total)
-      }`,
-      tag:  'transfer-approved',
-      data: { url: '/admin/pedidos' },
-    }).catch(console.error);
+    // ⚠️ Se espera (await) antes de responder — ver nota en upload-comprobante/route.ts:
+    // sin esto, la función serverless puede cortar el fetch de email/push/Telegram
+    // a mitad de camino apenas se manda la respuesta de más abajo.
+    await Promise.all([
+      sendOrderConfirmationEmail(o).catch(console.error),
+      sendAdminOrderStatusEmail(o,
+        `✅ Transferencia aprobada — Pedido #${o.id.slice(0,8).toUpperCase()}`
+      ).catch(console.error),
+      sendAdminPushNotification({
+        title: '✅ Transferencia aprobada',
+        body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre} — ${
+          new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(o.total)
+        }`,
+        tag:  'transfer-approved',
+        data: { url: '/admin/pedidos' },
+      }).catch(console.error),
+    ]);
   }
 
   return NextResponse.json({ ok: true, message: 'Pago aprobado' });

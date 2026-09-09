@@ -83,21 +83,24 @@ export async function POST(req: NextRequest) {
   if (cancelledOrder) {
     const o = cancelledOrder as Order;
 
-    // ✅ MÓDULO 5 — Email al cliente (usa el helper centralizado, no new Resend() directo)
-    sendOrderStatusEmail(o).catch(console.error);
+    // ⚠️ Se espera (await) antes de responder — ver nota en upload-comprobante/route.ts
+    await Promise.all([
+      // ✅ MÓDULO 5 — Email al cliente (usa el helper centralizado, no new Resend() directo)
+      sendOrderStatusEmail(o).catch(console.error),
 
-    // ✅ MÓDULO 5 — Notificación al admin
-    sendAdminOrderStatusEmail(o,
-      `❌ Comprobante rechazado — Pedido #${o.id.slice(0,8).toUpperCase()}`
-    ).catch(console.error);
+      // ✅ MÓDULO 5 — Notificación al admin
+      sendAdminOrderStatusEmail(o,
+        `❌ Comprobante rechazado — Pedido #${o.id.slice(0,8).toUpperCase()}`
+      ).catch(console.error),
 
-    // ✅ MÓDULO 5 — Push al dispositivo del admin
-    sendAdminPushNotification({
-      title: '❌ Comprobante rechazado',
-      body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre}. Motivo: ${motivo}`,
-      tag:   'transfer-rejected',
-      data:  { url: '/admin/pedidos' },
-    }).catch(console.error);
+      // ✅ MÓDULO 5 — Push al dispositivo del admin
+      sendAdminPushNotification({
+        title: '❌ Comprobante rechazado',
+        body:  `Pedido #${o.id.slice(0,8).toUpperCase()} de ${o.nombre}. Motivo: ${motivo}`,
+        tag:   'transfer-rejected',
+        data:  { url: '/admin/pedidos' },
+      }).catch(console.error),
+    ]);
   }
 
   return NextResponse.json({ ok: true });

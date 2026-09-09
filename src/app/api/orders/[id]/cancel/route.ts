@@ -52,7 +52,8 @@ export async function POST(
   // endpoints de admin, se refresca al instante.
   revalidatePath('/admin');
 
-  sendAdminPushNotification({
+  // ⚠️ Se espera (await) antes de responder — ver nota en upload-comprobante/route.ts
+  await sendAdminPushNotification({
     title: '❌ Pedido cancelado por el cliente',
     body:  `Pedido #${id.slice(0,8).toUpperCase()} de ${order.nombre} fue cancelado. Revisá stock/logística.`,
     tag:   'order-cancelled',

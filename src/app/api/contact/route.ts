@@ -28,14 +28,17 @@ export async function POST(req: NextRequest) {
     });
     if (error) throw error;
 
-    sendContactMessageEmail(data.nombre, data.email, data.asunto ?? '', data.mensaje)
-      .catch(console.error);
-    sendAdminPushNotification({
-      title: '💬 Nuevo mensaje de contacto',
-      body:  `${data.nombre}: "${data.mensaje.slice(0, 80)}${data.mensaje.length > 80 ? '…' : ''}"`,
-      tag:   'contact-new',
-      data:  { url: '/admin/mensajes' },
-    }).catch(console.error);
+    // ⚠️ Se espera (await) antes de responder — ver nota en upload-comprobante/route.ts
+    await Promise.all([
+      sendContactMessageEmail(data.nombre, data.email, data.asunto ?? '', data.mensaje)
+        .catch(console.error),
+      sendAdminPushNotification({
+        title: '💬 Nuevo mensaje de contacto',
+        body:  `${data.nombre}: "${data.mensaje.slice(0, 80)}${data.mensaje.length > 80 ? '…' : ''}"`,
+        tag:   'contact-new',
+        data:  { url: '/admin/mensajes' },
+      }).catch(console.error),
+    ]);
 
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {

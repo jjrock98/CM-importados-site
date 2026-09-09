@@ -399,28 +399,33 @@ export async function POST(req: NextRequest) {
     // vía descontar_stock_seguro (también variant-aware).
 
     // ✅ Notificar al admin sobre nuevo pedido
-    admin
+    // ⚠️ Todo este bloque (el SELECT y las notificaciones) se espera con
+    // await antes de responder: sin esto, en runtime serverless de Vercel
+    // la función puede terminar apenas se manda el `return` de más abajo,
+    // cortando el SELECT y los fetch de email/push/Telegram a mitad de
+    // camino — se pierde la notificación sin ningún error visible.
+    const { data: notifyOrder } = await admin
       .from('orders')
       .select('*, order_items(*)')
       .eq('id', order.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          sendOrderConfirmationEmail(data as Parameters<typeof sendOrderConfirmationEmail>[0]).catch(console.error);
-          import('@/lib/email').then(({ sendAdminOrderStatusEmail }) => {
-            sendAdminOrderStatusEmail(
-              data as Parameters<typeof sendAdminOrderStatusEmail>[0],
-              `🛒 Nuevo pedido #${data.id.slice(0,8).toUpperCase()} — ${data.metodo_pago}`
-            ).catch(console.error);
-          });
-          sendAdminPushNotification({
-            title: '🛒 Nuevo pedido pendiente',
-            body:  `Pedido #${data.id.slice(0,8).toUpperCase()} de ${data.nombre} (${data.metodo_pago}) — esperando comprobante.`,
-            tag:   'order-new',
-            data:  { url: '/admin/pedidos' },
-          }).catch(console.error);
-        }
-      });
+      .single();
+
+    if (notifyOrder) {
+      const { sendAdminOrderStatusEmail } = await import('@/lib/email');
+      await Promise.all([
+        sendOrderConfirmationEmail(notifyOrder as Parameters<typeof sendOrderConfirmationEmail>[0]).catch(console.error),
+        sendAdminOrderStatusEmail(
+          notifyOrder as Parameters<typeof sendAdminOrderStatusEmail>[0],
+          `🛒 Nuevo pedido #${notifyOrder.id.slice(0,8).toUpperCase()} — ${notifyOrder.metodo_pago}`
+        ).catch(console.error),
+        sendAdminPushNotification({
+          title: '🛒 Nuevo pedido pendiente',
+          body:  `Pedido #${notifyOrder.id.slice(0,8).toUpperCase()} de ${notifyOrder.nombre} (${notifyOrder.metodo_pago}) — esperando comprobante.`,
+          tag:   'order-new',
+          data:  { url: '/admin/pedidos' },
+        }).catch(console.error),
+      ]);
+    }
 
     return NextResponse.json({ data: order });
   } catch (err: unknown) {

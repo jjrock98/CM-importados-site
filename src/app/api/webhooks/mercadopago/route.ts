@@ -351,17 +351,20 @@ async function processPaymentStatus(
               console.error('[MP Webhook] Error enviando email de reembolso:', err)
             );
           }
-          sendAdminOrderStatusEmail(o,
-            refund.success
-              ? `💳 Reembolso automático procesado — Pedido #${o.id.slice(0,8).toUpperCase()}`
-              : `🚨 URGENTE: reembolso automático FALLÓ — Pedido #${o.id.slice(0,8).toUpperCase()}`
-          ).catch(console.error);
-          sendAdminPushNotification({
-            title: refund.success ? '💳 Reembolso automático procesado' : '🚨 Reembolso falló — acción requerida',
-            body:  `Pedido #${o.id.slice(0,8).toUpperCase()} — doble venta detectada.`,
-            tag:   'auto-refund',
-            data:  { url: '/admin/pedidos' },
-          }).catch(console.error);
+          // ⚠️ Se espera (await) antes de seguir — ver nota en upload-comprobante/route.ts
+          await Promise.all([
+            sendAdminOrderStatusEmail(o,
+              refund.success
+                ? `💳 Reembolso automático procesado — Pedido #${o.id.slice(0,8).toUpperCase()}`
+                : `🚨 URGENTE: reembolso automático FALLÓ — Pedido #${o.id.slice(0,8).toUpperCase()}`
+            ).catch(console.error),
+            sendAdminPushNotification({
+              title: refund.success ? '💳 Reembolso automático procesado' : '🚨 Reembolso falló — acción requerida',
+              body:  `Pedido #${o.id.slice(0,8).toUpperCase()} — doble venta detectada.`,
+              tag:   'auto-refund',
+              data:  { url: '/admin/pedidos' },
+            }).catch(console.error),
+          ]);
         }
 
         break;
@@ -386,13 +389,16 @@ async function processPaymentStatus(
         await sendOrderConfirmationEmail(paidOrder as Order).catch((err) =>
           console.error('[MP Webhook] Error enviando email de confirmación:', err)
         );
-        sendAdminOrderStatusEmail(paidOrder as Order, 'Pago aprobado por Mercado Pago').catch(console.error);
-        sendAdminPushNotification({
-          title: '💳 Nuevo pago aprobado',
-          body:  `Pedido #${(paidOrder as Order).id.slice(0,8).toUpperCase()} de ${(paidOrder as Order).nombre} — Mercado Pago.`,
-          tag:   'mp-payment',
-          data:  { url: '/admin/pedidos' },
-        }).catch(console.error);
+        // ⚠️ Se espera (await) antes de seguir — ver nota en upload-comprobante/route.ts
+        await Promise.all([
+          sendAdminOrderStatusEmail(paidOrder as Order, 'Pago aprobado por Mercado Pago').catch(console.error),
+          sendAdminPushNotification({
+            title: '💳 Nuevo pago aprobado',
+            body:  `Pedido #${(paidOrder as Order).id.slice(0,8).toUpperCase()} de ${(paidOrder as Order).nombre} — Mercado Pago.`,
+            tag:   'mp-payment',
+            data:  { url: '/admin/pedidos' },
+          }).catch(console.error),
+        ]);
       }
 
       console.log(`[MP Webhook] Pedido ${orderId} → pagado ✅ (stock descontado)`);
