@@ -109,16 +109,24 @@ export async function POST(req: NextRequest) {
     const { data: updatedOrder } = await admin
       .from('orders').select('*, order_items(*)').eq('id', orderId).single();
     if (updatedOrder) {
-      sendAdminOrderStatusEmail(
-        updatedOrder as Order,
-        '📎 Nuevo comprobante de transferencia subido — pendiente de revisión'
-      ).catch(console.error);
-      sendAdminPushNotification({
-        title: '📎 Comprobante subido',
-        body:  `Pedido #${String(updatedOrder.id).slice(0,8).toUpperCase()} de ${(updatedOrder as Order).nombre} — listo para verificar.`,
-        tag:   'order-comprobante',
-        data:  { url: '/admin/pedidos' },
-      }).catch(console.error);
+      // ⚠️ Se esperan (await) antes de responder: en runtime serverless de
+      // Vercel una llamada "fire-and-forget" (sin await) corre el riesgo de
+      // que la función termine su ejecución apenas se manda la respuesta,
+      // cortando el fetch a Resend/Telegram/webpush a mitad de camino y
+      // perdiendo la notificación sin ningún error visible. Promise.allSettled
+      // para que un fallo de un canal (ej. email) no bloquee al otro (push).
+      await Promise.allSettled([
+        sendAdminOrderStatusEmail(
+          updatedOrder as Order,
+          '📎 Nuevo comprobante de transferencia subido — pendiente de revisión'
+        ),
+        sendAdminPushNotification({
+          title: '📎 Comprobante subido',
+          body:  `Pedido #${String(updatedOrder.id).slice(0,8).toUpperCase()} de ${(updatedOrder as Order).nombre} — listo para verificar.`,
+          tag:   'order-comprobante',
+          data:  { url: '/admin/pedidos' },
+        }),
+      ]);
     }
 
     return NextResponse.json({ ok: true });
