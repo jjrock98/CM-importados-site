@@ -28,24 +28,32 @@ export async function sendAdminTelegramNotification(title: string, body: string)
     return;
   }
 
-  try {
-    // Texto plano (sin parse_mode): el título y el cuerpo incluyen datos
-    // dinámicos (nombre del cliente, email, motivo de rechazo) que no
-    // deberían tener que pasar por un escapado de Markdown para no romper
-    // el formato del mensaje si traen caracteres como "_" o "*".
-    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `${title}\n${body}`,
-      }),
-    });
+  // Reintento único ante fallas de red transitorias: en funciones
+  // serverless (Vercel) es común que el primer fetch de una conexión
+  // "en frío" falle con ECONNRESET al establecer TLS — un problema
+  // conocido de reciclado de conexiones en Node, no un error de la
+  // configuración. Un segundo intento casi siempre conecta bien, así que
+  // no vale la pena perder la notificación por eso.
+  for (let intento = 1; intento <= 2; intento++) {
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `${title}\n${body}`,
+        }),
+      });
 
-    if (!res.ok) {
-      console.error('[Telegram] Error enviando notificación:', await res.text());
+      if (!res.ok) {
+        console.error('[Telegram] Error enviando notificación:', await res.text());
+      }
+      return; // éxito (o error de la API, no de red) — no reintentar
+    } catch (err) {
+      if (intento === 2) {
+        console.error('[Telegram] Error de red enviando notificación (tras reintento):', err);
+      }
+      // si es el primer intento, sigue el loop y reintenta una vez
     }
-  } catch (err) {
-    console.error('[Telegram] Error de red enviando notificación:', err);
   }
 }
