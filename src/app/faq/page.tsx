@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   openGraph: {
     title:       'Preguntas frecuentes',
     description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
+    url:         `${process.env.NEXT_PUBLIC_APP_URL}/faq`,
     type:        'website',
   },
 };

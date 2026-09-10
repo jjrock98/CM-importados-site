@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   openGraph: {
     title:       'Venta Minorista — Comprá por unidad',
     description: 'Sin necesidad de pack — elegí exactamente lo que necesitás.',
+    url:         `${process.env.NEXT_PUBLIC_APP_URL}/minorista`,
     type:        'website',
   },
 };

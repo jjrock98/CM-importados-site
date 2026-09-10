@@ -1,6 +1,14 @@
 import type { Metadata } from 'next';
 import { PageHero } from '@/components/common/PageHero';
-export const metadata: Metadata = { title: 'Políticas de privacidad' };
+export const metadata: Metadata = {
+  title:       'Políticas de privacidad',
+  alternates:  { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/politicas` },
+  openGraph: {
+    title: 'Políticas de privacidad',
+    url:   `${process.env.NEXT_PUBLIC_APP_URL}/politicas`,
+    type:  'website',
+  },
+};
 export default function PoliticasPage() {
   return (
     <>

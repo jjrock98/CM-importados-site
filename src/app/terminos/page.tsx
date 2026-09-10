@@ -1,6 +1,14 @@
 import type { Metadata } from 'next';
 import { PageHero } from '@/components/common/PageHero';
-export const metadata: Metadata = { title: 'Términos y condiciones' };
+export const metadata: Metadata = {
+  title:       'Términos y condiciones',
+  alternates:  { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/terminos` },
+  openGraph: {
+    title: 'Términos y condiciones',
+    url:   `${process.env.NEXT_PUBLIC_APP_URL}/terminos`,
+    type:  'website',
+  },
+};
 export default function TerminosPage() {
   return (
     <>
