@@ -9,6 +9,14 @@ const AUTH_REQUIRED_ROUTES    = ['/mis-pedidos', '/wishlist', '/completar-perfil
 // ✅ /checkout NO requiere login — permite compra como invitado
 const ADMIN_ROUTES             = ['/admin'];
 
+// ✅ NUEVO: límite de inactividad propio y más estricto para el panel de
+// admin, además del que se configura a nivel proyecto en el dashboard de
+// Supabase (Authentication → Sessions → Inactivity timeout, 2hs para
+// clientes). El de Supabase aplica a TODAS las sesiones por igual — esto
+// es una capa extra solo para /admin, que maneja datos sensibles del
+// negocio (pedidos, clientes, configuración de pagos).
+const ADMIN_IDLE_LIMIT_SECONDS = 30 * 60; // 30 min sin actividad → logout
+
 const MAINTENANCE_BYPASS = ['/admin', '/auth', '/api', '/mantenimiento'];
 
 export async function middleware(request: NextRequest) {
@@ -138,6 +146,40 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
     }
+
+    // ✅ NUEVO: logout automático del admin por inactividad (30 min).
+    // Se guarda la marca de "última actividad" en una cookie propia,
+    // separada de la sesión de Supabase, y se renueva en cada request a
+    // /admin. Si pasó más tiempo del límite desde la última vez, se cierra
+    // la sesión de verdad (signOut revoca el refresh token en el server,
+    // no alcanza con borrar la cookie del navegador) y se manda a login.
+    const lastActivityRaw = request.cookies.get('admin_last_activity')?.value;
+    const now = Date.now();
+    const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw, 10) : null;
+    const isIdle = lastActivity !== null && !isNaN(lastActivity) &&
+      now - lastActivity > ADMIN_IDLE_LIMIT_SECONDS * 1000;
+
+    if (isIdle) {
+      await supabase.auth.signOut();
+      const url = new URL('/auth/login', request.url);
+      url.searchParams.set('redirect', '/admin');
+      url.searchParams.set('expired', '1');
+      const redirectResponse = NextResponse.redirect(url);
+      // Propaga a esta respuesta las cookies que signOut() acaba de vaciar
+      // en supabaseResponse (el signOut real pasa por el callback setAll
+      // de arriba, que escribe ahí).
+      supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c));
+      redirectResponse.cookies.delete('admin_last_activity');
+      return redirectResponse;
+    }
+
+    supabaseResponse.cookies.set('admin_last_activity', String(now), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: ADMIN_IDLE_LIMIT_SECONDS,
+    });
   }
 
   // ── Datos mínimos de contacto para rutas críticas ─────────────────────────

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -16,6 +16,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
+
+  // ✅ NUEVO: aviso cuando el middleware redirige acá por inactividad
+  // (ver ADMIN_IDLE_LIMIT_SECONDS en middleware.ts)
+  useEffect(() => {
+    if (params.get('expired') === '1') {
+      toast('Tu sesión se cerró por inactividad. Volvé a iniciar sesión.', { icon: '⏱️' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
