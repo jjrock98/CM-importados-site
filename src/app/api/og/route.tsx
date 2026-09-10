@@ -14,7 +14,26 @@ export async function GET(req: NextRequest) {
   const title    = searchParams.get('title')  ?? 'Mi Tienda';
   const subtitle = searchParams.get('subtitle') ?? 'Comprá por packs';
   const price    = searchParams.get('price')  ?? '';
-  const image    = searchParams.get('image')  ?? '';
+  let   image    = searchParams.get('image')  ?? '';
+
+  // ✅ FIX: si la foto del producto no responde rápido (o no responde),
+  // ImageResponse podía colgarse o fallar tratando de bajarla, y
+  // WhatsApp/redes se quedaban sin preview. Se chequea antes con un
+  // timeout corto — si no contesta a tiempo, se genera la tarjeta sin
+  // foto en vez de no generar nada.
+  if (image) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 4000);
+      const check = await fetch(image, { method: 'HEAD', signal: controller.signal });
+      clearTimeout(timeout);
+      // Algunos hosts no soportan HEAD (405) — eso no es una falla real,
+      // solo un 4xx/5xx claro descarta la imagen.
+      if (!check.ok && check.status !== 405) image = '';
+    } catch {
+      image = '';
+    }
+  }
 
   return new ImageResponse(
     (
@@ -112,6 +131,8 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     ),
-    { ...size }
+    // ✅ Cache en el CDN — evita regenerar la imagen (y volver a chequear
+    // la foto) en cada visita del crawler de WhatsApp/Facebook/Twitter.
+    { ...size, headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=86400' } }
   );
 }

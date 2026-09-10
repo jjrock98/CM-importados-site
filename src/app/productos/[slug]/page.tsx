@@ -35,6 +35,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const image       = product.imagenes?.[0];
   const appUrl      = process.env.NEXT_PUBLIC_APP_URL;
 
+  // ✅ FIX: la imagen "con marca" (/api/og) se genera al vuelo y necesita
+  // bajar la foto del producto desde Supabase para componerla — si esa
+  // descarga tarda o falla, la generación entera falla y WhatsApp/redes
+  // se quedan sin imagen (preview solo texto, que es lo que reportaste).
+  // Ahora la foto real del producto va PRIMERO como og:image — es un
+  // archivo estático ya servido por el CDN de Supabase, no depende de
+  // nada más, así que siempre está disponible. La versión con marca y
+  // precio queda como segunda opción para las plataformas que soportan
+  // varias imágenes candidatas.
+  const ogImageBranded = {
+    url:    `${appUrl}/api/og?title=${encodeURIComponent(product.nombre)}&subtitle=${encodeURIComponent('Comprá por pack')}&price=${encodeURIComponent(
+      new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(product.precio_media_docena ?? product.precio_docena)
+    )}${image ? `&image=${encodeURIComponent(image)}` : ''}`,
+    width:  1200,
+    height: 630,
+    alt:    product.nombre,
+  };
+  const ogImages = image
+    ? [{ url: image, width: 1200, height: 1200, alt: product.nombre }, ogImageBranded]
+    : [ogImageBranded];
+
   return {
     title:      product.nombre,
     description,
@@ -44,21 +65,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url:         `${appUrl}/productos/${slug}`,
       type:        'website',
-      // ✅ OG image dinámica generada por /og/route.tsx con branding de la tienda
-      images: [{
-        url:    `${appUrl}/api/og?title=${encodeURIComponent(product.nombre)}&subtitle=${encodeURIComponent('Comprá por pack')}&price=${encodeURIComponent(
-          new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(product.precio_media_docena ?? product.precio_docena)
-        )}${image ? `&image=${encodeURIComponent(image)}` : ''}`,
-        width:  1200,
-        height: 630,
-        alt:    product.nombre,
-      }],
+      images:      ogImages,
     },
     twitter: {
       card:        'summary_large_image',
       title:       product.nombre,
       description,
-      images: [`${appUrl}/api/og?title=${encodeURIComponent(product.nombre)}&subtitle=${encodeURIComponent('Comprá por pack')}${image ? `&image=${encodeURIComponent(image)}` : ''}`],
+      images: [image ?? ogImageBranded.url],
     },
   };
 }
