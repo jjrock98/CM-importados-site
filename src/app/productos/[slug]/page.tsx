@@ -398,7 +398,7 @@ export default async function ProductoPage({ params }: Props) {
         <ProductReviews productId={p.id} initialReviews={reviews} />
 
         {/* Related products */}
-        <RelatedProducts currentProductId={p.id} />
+        <RelatedProducts currentProductId={p.id} categoria={p.categoria} />
       </div>
     </>
   );
