@@ -3,10 +3,17 @@ import { useState, useCallback, useMemo, useTransition } from 'react';
 import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { cn, formatPrice } from '@/utils';
-import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product } from '@/types';
 
-interface Props { products: Product[] }
+interface Props {
+  products: Product[];
+  /** Categorías con al menos un producto en TODO el catálogo (no solo esta página) — viene calculado del servidor. */
+  categoriasDisponibles: { value: string; label: string }[];
+  /** Categoría activa, leída de la URL (?categoria=...) — el filtro real ya se aplicó server-side. */
+  categoriaActual: string;
+  /** Búsqueda activa (?q=...), para no perderla al cambiar de categoría. */
+  busqueda?: string;
+}
 
 type SortKey = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre' | 'stock';
 
@@ -18,22 +25,25 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'stock',       label: 'Mayor stock primero' },
 ];
 
-export function ProductFilters({ products }: Props) {
+export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda }: Props) {
   const [query,       setQuery]       = useState('');
   const [sort,        setSort]        = useState<SortKey>('relevancia');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceMax,    setPriceMax]    = useState<number | ''>('');
-  const [categoria,   setCategoria]   = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [,            startTransition] = useTransition();
 
-  // ✅ Solo se muestran como chips las categorías que tienen al menos un
-  // producto cargado — si Javier no tiene remeras todavía, ese chip ni
-  // aparece; en cuanto cargue una remera desde el admin, aparece solo.
-  const categoriasDisponibles = useMemo(() => {
-    const presentes = new Set(products.map((p) => p.categoria));
-    return CATEGORIAS.filter((c) => presentes.has(c.value));
-  }, [products]);
+  // Arma el link de cada chip preservando la búsqueda de texto activa
+  // (?q=...) y navegando siempre a página 1 — el filtro de categoría se
+  // aplica server-side, así que esto es una navegación normal, no estado
+  // local (por eso no se pierde al paginar).
+  const hrefCategoria = (value: string) => {
+    const qs = new URLSearchParams();
+    if (value) qs.set('categoria', value);
+    if (busqueda) qs.set('q', busqueda);
+    const s = qs.toString();
+    return s ? `/?${s}` : '/';
+  };
 
   // Precio de referencia para filtrar/ordenar: media docena si el producto
   // la tiene habilitada, si no la docena completa (hay productos que solo
@@ -65,8 +75,8 @@ export function ProductFilters({ products }: Props) {
     // Stock filter
     if (onlyInStock) list = list.filter((p) => p.stock_unidades >= 6);
 
-    // Category filter
-    if (categoria) list = list.filter((p) => p.categoria === categoria);
+    // ✅ La categoría YA viene filtrada del servidor (ver page.tsx) — acá
+    // no hace falta filtrar de nuevo, "products" ya es solo esa categoría.
 
     // Price filter (por precio de referencia: media docena u, si no tiene, docena)
     if (priceMax !== '') list = list.filter((p) => precioRef(p) <= Number(priceMax));
@@ -81,36 +91,36 @@ export function ProductFilters({ products }: Props) {
     }
 
     return list;
-  }, [products, query, sort, onlyInStock, priceMax, categoria]);
+  }, [products, query, sort, onlyInStock, priceMax]);
 
-  const hasFilters = query || onlyInStock || priceMax !== '' || categoria !== '';
-  const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setCategoria(''); setSort('relevancia'); };
+  const hasFilters = query || onlyInStock || priceMax !== '' || categoriaActual !== '';
+  const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setSort('relevancia'); };
 
   return (
     <div>
-      {/* Category chips — solo aparecen las categorías que tienen productos */}
+      {/* Category chips — solo aparecen las categorías que tienen productos, en TODO el catálogo */}
       {categoriasDisponibles.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setCategoria('')}
+          <a
+            href={hrefCategoria('')}
             className={cn(
               'rounded-full px-3 py-1.5 text-xs font-medium border transition-colors',
-              categoria === '' ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
+              categoriaActual === '' ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
             )}
           >
             Todos
-          </button>
+          </a>
           {categoriasDisponibles.map((c) => (
-            <button
+            <a
               key={c.value}
-              onClick={() => setCategoria(categoria === c.value ? '' : c.value)}
+              href={hrefCategoria(categoriaActual === c.value ? '' : c.value)}
               className={cn(
                 'rounded-full px-3 py-1.5 text-xs font-medium border transition-colors',
-                categoria === c.value ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
+                categoriaActual === c.value ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
               )}
             >
               {c.label}
-            </button>
+            </a>
           ))}
         </div>
       )}
@@ -158,9 +168,13 @@ export function ProductFilters({ products }: Props) {
         </button>
 
         {hasFilters && (
-          <button onClick={clearAll} className="text-xs text-muted hover:text-red-500 transition-colors flex items-center gap-1">
-            <X size={12} /> Limpiar filtros
-          </button>
+          categoriaActual
+            ? <a href={hrefCategoria('')} className="text-xs text-muted hover:text-red-500 transition-colors flex items-center gap-1">
+                <X size={12} /> Limpiar filtros
+              </a>
+            : <button onClick={clearAll} className="text-xs text-muted hover:text-red-500 transition-colors flex items-center gap-1">
+                <X size={12} /> Limpiar filtros
+              </button>
         )}
       </div>
 
@@ -211,9 +225,9 @@ export function ProductFilters({ products }: Props) {
         <div className="flex flex-col items-center justify-center py-20 text-muted gap-3">
           <Search size={40} className="opacity-20" />
           <p className="text-center">No hay productos que coincidan con los filtros.</p>
-          <button onClick={clearAll} className="btn-secondary text-sm py-2">
-            Ver todos los productos
-          </button>
+          {categoriaActual
+            ? <a href={hrefCategoria('')} className="btn-secondary text-sm py-2">Ver todos los productos</a>
+            : <button onClick={clearAll} className="btn-secondary text-sm py-2">Ver todos los productos</button>}
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

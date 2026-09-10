@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import { HeroVisual } from '@/components/home/HeroVisual';
+import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
 import { ShoppingBag, Truck, Shield, Star, ArrowRight, MessageCircle } from 'lucide-react';
@@ -18,16 +19,22 @@ export const revalidate = 60;
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string; q?: string }>;
+  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string }>;
 }) {
-  const params  = await searchParams;
-  const pagina  = Math.max(1, parseInt(params.pagina ?? '1', 10));
+  const params   = await searchParams;
+  const pagina   = Math.max(1, parseInt(params.pagina ?? '1', 10));
   const busqueda = params.q?.trim() ?? '';
+  // ✅ FIX: antes el filtro de categoría era client-side sobre los 12
+  // productos ya paginados — por eso mostraba de menos y se perdía al
+  // cambiar de página (navegación completa = el componente se remonta).
+  // Ahora viaja en la URL como los demás filtros y se aplica en la
+  // consulta, igual que "q" y "pagina".
+  const categoria = params.categoria?.trim() ?? '';
   const POR_PAGINA = 12;
   const offset     = (pagina - 1) * POR_PAGINA;
   const admin = createAdminClient();
 
-  // Query base con búsqueda opcional
+  // Query base con búsqueda y categoría opcionales
   let prodQuery = admin
     .from('products')
     .select('*', { count: 'exact' })
@@ -42,14 +49,21 @@ export default async function HomePage({
       `nombre.ilike.%${busqueda}%,descripcion_corta.ilike.%${busqueda}%`
     );
   }
+  if (categoria) {
+    prodQuery = prodQuery.eq('categoria', categoria);
+  }
 
-  const [{ data: products, count: totalProductos }, { data: rawContact }] = await Promise.all([
+  const [{ data: products, count: totalProductos }, { data: rawContact }, { data: categoriasRaw }] = await Promise.all([
     prodQuery,
     admin
       .from('contact_info')
       .select('email,telefono,direccion,horario,instagram,whatsapp')
       .limit(1)
       .single(),
+    // Categorías presentes en TODO el catálogo activo (sin paginar, sin el
+    // filtro de categoría actual) — así los chips no dependen de qué haya
+    // en la página que se está viendo.
+    admin.from('products').select('categoria').eq('activo', true).eq('venta_mayorista', true),
   ]);
 
   const productList    = (products ?? []) as Product[];
@@ -57,6 +71,8 @@ export default async function HomePage({
   const hayAnterior    = pagina > 1;
   const haySiguiente   = pagina < totalPaginas;
   const contactInfo = rawContact as import('@/types').ContactInfo | null;
+  const categoriasPresentes = new Set((categoriasRaw ?? []).map((r) => (r as { categoria: string }).categoria));
+  const categoriasDisponibles = CATEGORIAS.filter((c) => categoriasPresentes.has(c.value));
 
   const appUrl  = env.APP_URL;
   const tienda  = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
@@ -210,27 +226,34 @@ export default async function HomePage({
           <p className="text-sm text-muted">
             {totalProductos ?? 0} {(totalProductos ?? 0) === 1 ? 'producto' : 'productos'}
             {busqueda && <> para &ldquo;{busqueda}&rdquo;</>}
+            {categoria && <> en <strong>{categoriaLabel(categoria)}</strong></>}
           </p>
         </AnimateIn>
 
         {productList.length === 0 ? (
           <AnimateIn className="rounded-2xl border border-dashed border-border py-20 text-center text-muted">
             <ShoppingBag size={40} className="mx-auto mb-3 opacity-30" />
-            <p>{busqueda ? `Sin resultados para "${busqueda}"` : 'No hay productos disponibles aún.'}</p>
-            {busqueda && (
+            <p>
+              {busqueda
+                ? `Sin resultados para "${busqueda}"`
+                : categoria
+                  ? `No hay productos en "${categoriaLabel(categoria)}" todavía.`
+                  : 'No hay productos disponibles aún.'}
+            </p>
+            {(busqueda || categoria) && (
               <Link href="/" className="btn-secondary mt-4 text-sm px-4 py-2">Ver todo el catálogo</Link>
             )}
           </AnimateIn>
         ) : (
           <>
-            <ProductFilters products={productList} />
+            <ProductFilters products={productList} categoriasDisponibles={categoriasDisponibles} categoriaActual={categoria} busqueda={busqueda} />
 
           {/* Paginación */}
           {totalPaginas > 1 && (
             <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
               {hayAnterior && (
                 <a
-                  href={`/?pagina=${pagina - 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}`}
+                  href={`/?pagina=${pagina - 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
                   className="btn-secondary text-sm px-4 py-2 gap-1.5"
                 >
                   ← Anterior
@@ -251,7 +274,7 @@ export default async function HomePage({
                     : (
                       <a
                         key={p}
-                        href={`/?pagina=${p}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}`}
+                        href={`/?pagina=${p}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
                         className={`h-9 w-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors ${
                           p === pagina
                             ? 'bg-brand-500 text-white'
@@ -265,7 +288,7 @@ export default async function HomePage({
 
               {haySiguiente && (
                 <a
-                  href={`/?pagina=${pagina + 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}`}
+                  href={`/?pagina=${pagina + 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
                   className="btn-secondary text-sm px-4 py-2 gap-1.5"
                 >
                   Siguiente →
