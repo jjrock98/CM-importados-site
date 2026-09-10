@@ -173,12 +173,21 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
+    // ⚠️ FIX: el maxAge de esta cookie NO debe ser igual a
+    // ADMIN_IDLE_LIMIT_SECONDS. Si lo fuera, el propio navegador borra la
+    // cookie justo cuando pasan esos 30 min de inactividad — antes de que
+    // el chequeo de arriba (isIdle) pueda leerla — y entonces se interpreta
+    // como "primera visita" en vez de "sesión inactiva", por lo que el
+    // logout automático nunca se dispara. Por eso el maxAge acá es mucho
+    // más largo que el límite real: la decisión de cortar la sesión la
+    // toma SIEMPRE la comparación de timestamps de arriba, nunca la
+    // expiración nativa de la cookie.
     supabaseResponse.cookies.set('admin_last_activity', String(now), {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      maxAge: ADMIN_IDLE_LIMIT_SECONDS,
+      maxAge: 60 * 60 * 24, // 24hs — solo un piso de seguridad, no el límite real
     });
   }
 
