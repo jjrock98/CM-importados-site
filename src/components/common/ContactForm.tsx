@@ -26,7 +26,7 @@ export function ContactForm() {
       body: JSON.stringify({ ...form, turnstileToken: captchaToken }),
     });
     const data = await res.json();
-    if (data.error) { toast.error('Error al enviar. Intentá de nuevo.'); setCaptchaToken(null); }
+    if (data.error) { toast.error('Error al enviar. Debes escribir más de 10 caracteres, intentá de nuevo.'); setCaptchaToken(null); }
     else { setSent(true); toast.success('¡Mensaje enviado!'); }
     setLoading(false);
   };
