@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendAdminPushNotification } from '@/lib/webpush';
 import { rateLimiters } from '@/lib/rateLimit';
+import { secretsMatch } from '@/lib/secureCompare';
 
 /**
  * POST /api/send-notification
@@ -32,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   // ── Autorización: admin logueado O secret interno (para crons/servidor) ──
   const internalSecret = req.headers.get('x-internal-secret');
-  const isInternalCall = internalSecret && internalSecret === process.env.REVALIDATE_SECRET_TOKEN;
+  const isInternalCall = secretsMatch(internalSecret, process.env.REVALIDATE_SECRET_TOKEN);
 
   if (!isInternalCall) {
     const supabase = await createClient();

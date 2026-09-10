@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderExpiredEmail } from '@/lib/email';
+import { secretsMatch } from '@/lib/secureCompare';
 import type { Order } from '@/types';
 
 /**
@@ -32,7 +33,7 @@ import type { Order } from '@/types';
  */
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret');
-  if (secret !== process.env.REVALIDATE_SECRET_TOKEN) {
+  if (!secretsMatch(secret, process.env.REVALIDATE_SECRET_TOKEN)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 

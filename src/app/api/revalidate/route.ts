@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { secretsMatch } from '@/lib/secureCompare';
 
 /**
  * On-demand revalidation endpoint.
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   const tag    = req.nextUrl.searchParams.get('tag');
 
   // Verify secret
-  if (secret !== process.env.REVALIDATE_SECRET_TOKEN) {
+  if (!secretsMatch(secret, process.env.REVALIDATE_SECRET_TOKEN)) {
     return NextResponse.json({ message: 'Token inválido' }, { status: 401 });
   }
 
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret') ?? bodySecret;
   const slug   = req.nextUrl.searchParams.get('slug')   ?? bodySlug;
 
-  if (secret !== process.env.REVALIDATE_SECRET_TOKEN) {
+  if (!secretsMatch(secret, process.env.REVALIDATE_SECRET_TOKEN)) {
     return NextResponse.json({ message: 'Token inválido' }, { status: 401 });
   }
 

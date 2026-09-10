@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendAdminPushNotification } from '@/lib/webpush';
+import { secretsMatch } from '@/lib/secureCompare';
 
 /**
  * ══════════════════════════════════════════════════════════════════════
@@ -24,7 +25,7 @@ import { sendAdminPushNotification } from '@/lib/webpush';
  */
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get('secret');
-  if (secret !== process.env.REVALIDATE_SECRET_TOKEN) {
+  if (!secretsMatch(secret, process.env.REVALIDATE_SECRET_TOKEN)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
