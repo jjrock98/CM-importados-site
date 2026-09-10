@@ -9,15 +9,71 @@ const AUTH_REQUIRED_ROUTES    = ['/mis-pedidos', '/wishlist', '/completar-perfil
 // ✅ /checkout NO requiere login — permite compra como invitado
 const ADMIN_ROUTES             = ['/admin'];
 
-// ✅ NUEVO: límite de inactividad propio y más estricto para el panel de
-// admin, además del que se configura a nivel proyecto en el dashboard de
-// Supabase (Authentication → Sessions → Inactivity timeout, 2hs para
-// clientes). El de Supabase aplica a TODAS las sesiones por igual — esto
-// es una capa extra solo para /admin, que maneja datos sensibles del
-// negocio (pedidos, clientes, configuración de pagos).
-const ADMIN_IDLE_LIMIT_SECONDS = 30 * 60; // 30 min sin actividad → logout
+// ✅ NUEVO: timeout de inactividad implementado acá, a nivel app.
+// Originalmente la idea era usar Authentication → Sessions → "Tiempo de
+// espera de inactividad" del dashboard de Supabase, pero esa sección
+// completa está bloqueada en el plan Gratuito (pide Plan Pro) — con lo
+// cual, sin este código, NINGUNA sesión expiraba nunca, ni de clientes ni
+// de admin. Se resuelve con el mismo mecanismo para los dos casos (ver
+// enforceIdleTimeout más abajo), con un límite más estricto para /admin
+// por manejar datos sensibles del negocio (pedidos, clientes, pagos).
+const USER_IDLE_LIMIT_SECONDS  = 2 * 60 * 60; // 2hs sin actividad → logout (clientes)
+const ADMIN_IDLE_LIMIT_SECONDS = 30 * 60;     // 30 min sin actividad → logout (admin)
 
 const MAINTENANCE_BYPASS = ['/admin', '/auth', '/api', '/mantenimiento'];
+
+type UpdateSessionResult = Awaited<ReturnType<typeof updateSession>>;
+
+// Chequea inactividad comparando timestamps guardados en una cookie propia
+// (separada de la sesión de Supabase) y, si se venció, hace signOut() de
+// verdad — revoca el refresh token en el server, no alcanza con borrar la
+// cookie del navegador. Devuelve la respuesta de redirect si hay que cerrar
+// sesión, o null si todavía está dentro del límite.
+//
+// ⚠️ El maxAge de la cookie es siempre bastante más largo que limitSeconds.
+// Si fueran iguales, el propio navegador borraría la cookie justo cuando se
+// cumple el límite de inactividad — ANTES de que este código pueda leerla —
+// y entonces se interpretaría como "primera visita" en vez de "sesión
+// inactiva", y el logout automático nunca se dispararía. La decisión real
+// la toma siempre la comparación de timestamps de abajo, nunca la
+// expiración nativa de la cookie.
+async function enforceIdleTimeout(
+  request: NextRequest,
+  supabase: UpdateSessionResult['supabase'],
+  supabaseResponse: NextResponse,
+  cookieName: string,
+  limitSeconds: number,
+  redirectTo: string
+): Promise<NextResponse | null> {
+  const lastActivityRaw = request.cookies.get(cookieName)?.value;
+  const now = Date.now();
+  const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw, 10) : null;
+  const isIdle = lastActivity !== null && !isNaN(lastActivity) &&
+    now - lastActivity > limitSeconds * 1000;
+
+  if (isIdle) {
+    await supabase.auth.signOut();
+    const url = new URL('/auth/login', request.url);
+    url.searchParams.set('redirect', redirectTo);
+    url.searchParams.set('expired', '1');
+    const redirectResponse = NextResponse.redirect(url);
+    // Propaga a esta respuesta las cookies que signOut() acaba de vaciar en
+    // supabaseResponse (el signOut real pasa por el callback setAll que usa
+    // updateSession()).
+    supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c));
+    redirectResponse.cookies.delete(cookieName);
+    return redirectResponse;
+  }
+
+  supabaseResponse.cookies.set(cookieName, String(now), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: limitSeconds * 4, // piso de seguridad, no el límite real (ver comentario arriba)
+  });
+  return null;
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -118,6 +174,25 @@ export async function middleware(request: NextRequest) {
 
   const { supabaseResponse, user, supabase } = await updateSession(request);
 
+  // ── Timeout de inactividad para cualquier usuario logueado ────────────────
+  // Reemplaza la config de Supabase (Authentication → Sessions), que en el
+  // plan Gratuito está bloqueada — ver comentario junto a USER_IDLE_LIMIT_
+  // SECONDS. /admin queda afuera porque más abajo tiene su propio control,
+  // más estricto (30 min en vez de 2hs).
+  // Se excluye /api/: son llamadas fetch del frontend (ej. el panel de admin
+  // pega a /api/admin/*), no navegación de página — si se les devuelve un
+  // redirect en vez del JSON esperado, se rompen en silencio. La sesión
+  // igual queda cerrada del lado de Supabase la próxima vez que el usuario
+  // navegue a una página real; la ventana en la que una llamada a /api/
+  // pasa sin chequear inactividad es un trade-off aceptado.
+  if (user && !pathname.startsWith('/api/') && !ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
+    const idleResponse = await enforceIdleTimeout(
+      request, supabase, supabaseResponse,
+      'user_last_activity', USER_IDLE_LIMIT_SECONDS, pathname
+    );
+    if (idleResponse) return idleResponse;
+  }
+
   // ── Auth required ──────────────────────────────────────────────────────────
   if (AUTH_REQUIRED_ROUTES.some((r) => pathname.startsWith(r)) && !user) {
     const url = new URL('/auth/login', request.url);
@@ -147,48 +222,17 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // ✅ NUEVO: logout automático del admin por inactividad (30 min).
-    // Se guarda la marca de "última actividad" en una cookie propia,
-    // separada de la sesión de Supabase, y se renueva en cada request a
-    // /admin. Si pasó más tiempo del límite desde la última vez, se cierra
-    // la sesión de verdad (signOut revoca el refresh token en el server,
-    // no alcanza con borrar la cookie del navegador) y se manda a login.
-    const lastActivityRaw = request.cookies.get('admin_last_activity')?.value;
-    const now = Date.now();
-    const lastActivity = lastActivityRaw ? parseInt(lastActivityRaw, 10) : null;
-    const isIdle = lastActivity !== null && !isNaN(lastActivity) &&
-      now - lastActivity > ADMIN_IDLE_LIMIT_SECONDS * 1000;
-
-    if (isIdle) {
-      await supabase.auth.signOut();
-      const url = new URL('/auth/login', request.url);
-      url.searchParams.set('redirect', '/admin');
-      url.searchParams.set('expired', '1');
-      const redirectResponse = NextResponse.redirect(url);
-      // Propaga a esta respuesta las cookies que signOut() acaba de vaciar
-      // en supabaseResponse (el signOut real pasa por el callback setAll
-      // de arriba, que escribe ahí).
-      supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c));
-      redirectResponse.cookies.delete('admin_last_activity');
-      return redirectResponse;
+    // Logout automático del admin por inactividad (30 min) — ver
+    // enforceIdleTimeout arriba. Se excluye /api/admin/* por el mismo
+    // motivo que el bloque de arriba: son llamadas fetch del panel, no
+    // navegación de página.
+    if (!pathname.startsWith('/api/')) {
+      const idleResponse = await enforceIdleTimeout(
+        request, supabase, supabaseResponse,
+        'admin_last_activity', ADMIN_IDLE_LIMIT_SECONDS, '/admin'
+      );
+      if (idleResponse) return idleResponse;
     }
-
-    // ⚠️ FIX: el maxAge de esta cookie NO debe ser igual a
-    // ADMIN_IDLE_LIMIT_SECONDS. Si lo fuera, el propio navegador borra la
-    // cookie justo cuando pasan esos 30 min de inactividad — antes de que
-    // el chequeo de arriba (isIdle) pueda leerla — y entonces se interpreta
-    // como "primera visita" en vez de "sesión inactiva", por lo que el
-    // logout automático nunca se dispara. Por eso el maxAge acá es mucho
-    // más largo que el límite real: la decisión de cortar la sesión la
-    // toma SIEMPRE la comparación de timestamps de arriba, nunca la
-    // expiración nativa de la cookie.
-    supabaseResponse.cookies.set('admin_last_activity', String(now), {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24, // 24hs — solo un piso de seguridad, no el límite real
-    });
   }
 
   // ── Datos mínimos de contacto para rutas críticas ─────────────────────────
