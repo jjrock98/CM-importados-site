@@ -62,7 +62,10 @@ export function ContactForm() {
       </div>
       <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
       <button type="submit" disabled={loading || !captchaToken} className="btn-primary w-full">
-        {loading ? 'Enviando…' : <><Send size={16} /> Enviar mensaje</>}
+        {loading ? 'Enviando…' : <><Send size={16} /> Enviar mensa
+        
+        
+        je</>}
       </button>
     </form>
   );
