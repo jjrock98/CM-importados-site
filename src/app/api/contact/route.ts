@@ -4,6 +4,7 @@ import { sendContactMessageEmail } from '@/lib/email';
 import { sendAdminPushNotification } from '@/lib/webpush';
 import { contactMessageSchema, parseBody } from '@/lib/validations';
 import { rateLimiters } from '@/lib/rateLimit';
+import { verifyTurnstile, getClientIp } from '@/lib/turnstile';
 
 export async function POST(req: NextRequest) {
   const limited = rateLimiters.contact(req);
@@ -12,7 +13,17 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.json().catch(() => null);
   if (!rawBody) return NextResponse.json({ error: 'Cuerpo inválido' }, { status: 400 });
 
-  const { data, error: validationError } = parseBody(contactMessageSchema, rawBody);
+  // ✅ NUEVO: captcha (Cloudflare Turnstile) — se valida ANTES que el resto
+  // del body para no gastar una consulta a Supabase ni mandar emails por un
+  // request de bot. El token no es parte del schema de contactMessageSchema
+  // porque no es un dato del mensaje en sí, así que se saca del rawBody acá.
+  const { turnstileToken, ...bodyRest } = rawBody as Record<string, unknown>;
+  const captchaOk = await verifyTurnstile(turnstileToken, getClientIp(req));
+  if (!captchaOk) {
+    return NextResponse.json({ error: 'Verificación anti-bot fallida. Recargá la página e intentá de nuevo.' }, { status: 403 });
+  }
+
+  const { data, error: validationError } = parseBody(contactMessageSchema, bodyRest);
   if (validationError) return NextResponse.json({ error: validationError }, { status: 422 });
 
   // ✅ 'data' es non-null aquí porque parseBody devuelve error si falla

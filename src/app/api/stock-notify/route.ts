@@ -7,6 +7,9 @@ import { z } from 'zod';
 const schema = z.object({
   productId: z.string().uuid(),
   email:     z.string().email(),
+  // Honeypot: campo que un humano nunca completa (está oculto en el CSS del
+  // formulario). Opcional porque no lo manda ningún cliente legítimo viejo.
+  website:   z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +22,14 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Datos inválidos' }, { status: 422 });
     }
-    const { productId, email } = parsed.data;
+    const { productId, email, website } = parsed.data;
+
+    // ✅ NUEVO: si el honeypot viene completado, es un bot. Se responde
+    // 200/ok igual (nunca 4xx) para no darle feedback que le permita
+    // detectar y esquivar el honeypot — simplemente no se guarda nada.
+    if (website) {
+      return NextResponse.json({ ok: true });
+    }
 
     const admin = createAdminClient();
 

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminConfigClient } from '@/components/admin/AdminConfigClient';
+import { AdminMfaSettings } from '@/components/admin/AdminMfaSettings';
 
 export const metadata = { title: 'Configuración – Admin' };
 export const revalidate = 0;
@@ -26,6 +27,7 @@ export default async function AdminConfiguracionPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl font-bold">Configuración General</h1>
+      <AdminMfaSettings />
       <AdminConfigClient
         initialBank={bankInfo}
         initialContact={contactInfo}

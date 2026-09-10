@@ -22,6 +22,14 @@ export function ProductCard({ product: p }: Props) {
   const [notifEmail,  setNotifEmail]  = useState('');
   const [notifSent,   setNotifSent]   = useState(false);
   const [notifLoading,setNotifLoading]= useState(false);
+  // Honeypot anti-bot: campo invisible para humanos (oculto por CSS, nunca
+  // por atributo type="hidden", que los bots más básicos ya saben ignorar).
+  // Si viene completado, el request es casi seguro un bot rellenando todos
+  // los inputs del formulario. Se eligió honeypot en vez de un captcha
+  // visible acá porque este formulario se repite una vez por cada tarjeta
+  // "agotado" del catálogo — un widget de Turnstile por tarjeta sería
+  // pesado y arruinaría la experiencia de navegación.
+  const [website, setWebsite] = useState('');
 
   // ── MÓDULO 2: Stock en tiempo real via Supabase Realtime ─────────────────
   useEffect(() => {
@@ -74,7 +82,7 @@ export function ProductCard({ product: p }: Props) {
       const res = await fetch('/api/stock-notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: p.id, email: notifEmail }),
+        body: JSON.stringify({ productId: p.id, email: notifEmail, website }),
       });
       if (res.ok) {
         setNotifSent(true);
@@ -240,6 +248,18 @@ export function ProductCard({ product: p }: Props) {
 
               {!notifSent ? (
                 <form onSubmit={handleNotifSubmit} className="space-y-2">
+                  {/* Honeypot — oculto para personas, visible para bots que
+                     completan todos los campos del formulario */}
+                  <input
+                    type="text"
+                    name="website"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    className="absolute left-[-9999px] h-0 w-0 opacity-0"
+                  />
                   <input
                     type="email"
                     value={notifEmail}

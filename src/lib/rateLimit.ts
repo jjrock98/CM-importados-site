@@ -86,6 +86,11 @@ export const rateLimiters = {
   auth: (req: NextRequest) =>
     rateLimit(req, { limit: 10, windowSecs: 900, prefix: 'auth' }),
 
+  /** Registro de cuenta: 5 requests / 60 min — crear una cuenta es algo
+   *  mucho más raro que intentar loguearse, así que el límite es más chico */
+  register: (req: NextRequest) =>
+    rateLimit(req, { limit: 5, windowSecs: 3600, prefix: 'register' }),
+
   /** Orders: 10 requests / 5 min */
   orders: (req: NextRequest) =>
     rateLimit(req, { limit: 10, windowSecs: 300, prefix: 'orders' }),

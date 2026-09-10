@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { Send } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { TurnstileWidget } from './TurnstileWidget';
 
 export function ContactForm() {
   const [form, setForm] = useState({ nombre: '', email: '', asunto: '', mensaje: '' });
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const set = (k: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
@@ -14,13 +16,17 @@ export function ContactForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      toast.error('Completá la verificación anti-bot antes de enviar.');
+      return;
+    }
     setLoading(true);
     const res  = await fetch('/api/contact', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, turnstileToken: captchaToken }),
     });
     const data = await res.json();
-    if (data.error) { toast.error('Error al enviar. Intentá de nuevo.'); }
+    if (data.error) { toast.error('Error al enviar. Intentá de nuevo.'); setCaptchaToken(null); }
     else { setSent(true); toast.success('¡Mensaje enviado!'); }
     setLoading(false);
   };
@@ -54,7 +60,8 @@ export function ContactForm() {
         <textarea required value={form.mensaje} onChange={set('mensaje')} rows={5}
           className="input-base resize-none" />
       </div>
-      <button type="submit" disabled={loading} className="btn-primary w-full">
+      <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} />
+      <button type="submit" disabled={loading || !captchaToken} className="btn-primary w-full">
         {loading ? 'Enviando…' : <><Send size={16} /> Enviar mensaje</>}
       </button>
     </form>

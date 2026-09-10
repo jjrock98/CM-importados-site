@@ -123,6 +123,21 @@ export async function middleware(request: NextRequest) {
     const { data: profile } = await supabase
       .from('profiles').select('rol').eq('id', user.id).single();
     if (profile?.rol !== 'admin') return NextResponse.redirect(new URL('/', request.url));
+
+    // ✅ NUEVO: exige el segundo factor (2FA/TOTP) para entrar al panel.
+    // getAuthenticatorAssuranceLevel() lee el nivel actual de la sesión
+    // (aal1 = solo contraseña) vs el nivel que exige la cuenta según los
+    // factores que tenga registrados (aal2 en cuanto el admin activa 2FA
+    // desde /admin/configuracion). Si no coinciden, la sesión pasó el login
+    // pero todavía no pasó el segundo paso — se manda a completarlo antes
+    // de mostrar cualquier dato del panel. Si el admin nunca activó 2FA,
+    // currentLevel === nextLevel === 'aal1' y esto no lo afecta en nada.
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+      const url = new URL('/auth/mfa', request.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
   }
 
   // ── Datos mínimos de contacto para rutas críticas ─────────────────────────

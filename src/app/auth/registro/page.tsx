@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, User, Chrome, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
+import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 
 // ── Validation schema with smart rules ──────────────────────
 const schema = z.object({
@@ -70,6 +71,7 @@ export default function RegistroPage() {
 
   const [showPw,  setShowPw]  = useState(false);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const {
     register,
@@ -82,21 +84,28 @@ export default function RegistroPage() {
   const strength = getPasswordStrength(passwordValue);
 
   const handleRegister = async (data: FormData) => {
+    if (!captchaToken) {
+      toast.error('Completá la verificación anti-bot antes de registrarte.');
+      return;
+    }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email:    data.email,
-      password: data.password,
-      options: {
-        data:            { full_name: data.nombre.trim() },
-        emailRedirectTo: `${window.location.origin}/auth/verificar`,
-      },
+    // ✅ NUEVO: ya no se llama a supabase.auth.signUp() directo desde acá —
+    // pasa por /api/auth/register, que aplica captcha + rate limit antes de
+    // crear la cuenta (ver ese endpoint para el detalle).
+    const res = await fetch('/api/auth/register', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre:         data.nombre.trim(),
+        email:          data.email,
+        password:       data.password,
+        turnstileToken: captchaToken,
+      }),
     });
-    if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('Este email ya está registrado. ¿Querés iniciar sesión?');
-      } else {
-        toast.error(error.message);
-      }
+    const result = await res.json().catch(() => ({ error: 'Error inesperado' }));
+    if (!res.ok || result.error) {
+      toast.error(result.error ?? 'No se pudo crear la cuenta');
+      setCaptchaToken(null);
       setLoading(false);
       return;
     }
@@ -248,7 +257,9 @@ export default function RegistroPage() {
             <FieldError name="confirmPassword" />
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+          <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} className="mt-2 flex justify-center" />
+
+          <button type="submit" disabled={loading || !captchaToken} className="btn-primary w-full mt-2">
             {loading ? 'Creando cuenta…' : 'Crear cuenta gratuita'}
           </button>
         </form>

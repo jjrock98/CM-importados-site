@@ -15,6 +15,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .from('profiles').select('rol').eq('id', user.id).single();
   if (profile?.rol !== 'admin') redirect('/');
 
+  // Ver comentario en middleware.ts — mismo chequeo de 2FA como defensa en
+  // profundidad, por si algún día se renderiza este layout sin pasar por
+  // el middleware (edge runtime distinto, testing, etc.).
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel) {
+    redirect('/auth/mfa?redirect=/admin');
+  }
+
   return (
     <div className="flex min-h-screen">
       <AdminSidebar />
