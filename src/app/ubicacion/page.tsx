@@ -5,15 +5,16 @@ import { AnimateIn } from '@/components/common/AnimateIn';
 import { MapPin } from 'lucide-react';
 import type { LocationInfo } from '@/types';
 import type { Metadata } from 'next';
+import { env } from '@/env';
 
 export const metadata: Metadata = {
   title:       'Ubicación',
   description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
-  alternates:  { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/ubicacion` },
+  alternates:  { canonical: `${env.APP_URL}/ubicacion` },
   openGraph: {
     title:       'Ubicación',
     description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
-    url:         `${process.env.NEXT_PUBLIC_APP_URL}/ubicacion`,
+    url:         `${env.APP_URL}/ubicacion`,
     type:        'website',
   },
 };

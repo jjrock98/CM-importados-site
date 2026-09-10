@@ -3,6 +3,7 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { rateLimiters } from '@/lib/rateLimit';
+import { env } from '@/env';
 
 // ✅ Lazy singleton: igual que con Resend, no instanciar a nivel de
 // módulo. Si MERCADOPAGO_ACCESS_TOKEN no está disponible en el momento
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
 
     if (!order) return NextResponse.json({ error: 'Pedido no encontrado' }, { status: 404 });
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+    const appUrl = env.APP_URL;
 
     // ── Fecha de expiración: ahora + 3 días ──────────────────────────────
     // Mercado Pago cancela automáticamente el pago/cupón si no se paga antes.

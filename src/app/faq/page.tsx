@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { env } from '@/env';
 import { FaqAccordion } from './FaqAccordion';
 import { FAQS } from './faqs-data';
 import { PageHero } from '@/components/common/PageHero';
@@ -6,11 +7,11 @@ import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title: 'Preguntas frecuentes',
   description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/faq` },
+  alternates: { canonical: `${env.APP_URL}/faq` },
   openGraph: {
     title:       'Preguntas frecuentes',
     description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
-    url:         `${process.env.NEXT_PUBLIC_APP_URL}/faq`,
+    url:         `${env.APP_URL}/faq`,
     type:        'website',
   },
 };

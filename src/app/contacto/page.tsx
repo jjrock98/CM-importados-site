@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ContactForm } from '@/components/common/ContactForm';
 import { PageHero } from '@/components/common/PageHero';
@@ -17,11 +18,11 @@ function TikTokIcon({ size = 16 }: { size?: number }) {
 export const metadata: Metadata = {
   title:       'Contacto',
   description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',
-  alternates:  { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/contacto` },
+  alternates:  { canonical: `${env.APP_URL}/contacto` },
   openGraph: {
     title:       'Contacto',
     description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',
-    url:         `${process.env.NEXT_PUBLIC_APP_URL}/contacto`,
+    url:         `${env.APP_URL}/contacto`,
     type:        'website',
   },
 };

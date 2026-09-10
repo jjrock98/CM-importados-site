@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
+import { env } from '@/env';
 
 // Notifica a suscriptores de "Avísame cuando haya stock" cuando el admin repone
 async function notifyStockSubscribers(productId: string, productName: string) {
@@ -17,7 +18,7 @@ async function notifyStockSubscribers(productId: string, productName: string) {
 
     const resend = new Resend(process.env.RESEND_API_KEY);
     const from   = `${process.env.RESEND_FROM_NAME ?? 'Mi Tienda'} <${process.env.RESEND_FROM_EMAIL ?? 'noreply@mitienda.com'}>`;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    const appUrl = env.APP_URL;
 
     // Enviar a cada suscriptor (en paralelo)
     await Promise.allSettled(

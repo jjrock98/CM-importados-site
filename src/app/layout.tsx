@@ -15,13 +15,18 @@ import { PageProgress } from '@/components/common/PageProgress';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
 import { BackToTop } from '@/components/common/BackToTop';
 import { createClient } from '@/lib/supabase/server';
+import { env } from '@/env';
 import type { ContactInfo } from '@/types';
 import './globals.css';
 
 const inter    = Inter({ subsets: ['latin'], variable: '--font-body',    display: 'swap' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-display', display: 'swap' });
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL       || 'https://localhost:3000';
+// ✅ FIX: appUrl ahora sale de env.APP_URL (ya normalizado, sin barra
+// final) en vez de leer process.env.NEXT_PUBLIC_APP_URL directo acá —
+// ver el comentario en src/env.ts sobre el bug de doble barra que esto
+// evita.
+const appUrl = env.APP_URL || 'https://localhost:3000';
 const tienda = process.env.NEXT_PUBLIC_TIENDA_NOMBRE || 'Mi Tienda';
 const fbAppId = process.env.NEXT_PUBLIC_FB_APP_ID;
 

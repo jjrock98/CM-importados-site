@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { env } from '@/env';
 import { RelatedProducts } from '@/components/products/RelatedProducts';
 import { ProductPageClient } from '@/components/products/ProductPageClient';
 import { ProductVideos } from '@/components/products/ProductVideos';
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const description = product.descripcion_corta ?? product.descripcion ?? `Comprá ${product.nombre} en packs de media docena o docena.`;
   const image       = product.imagenes?.[0];
-  const appUrl      = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl      = env.APP_URL;
 
   // ✅ FIX: la imagen "con marca" (/api/og) se genera al vuelo y necesita
   // bajar la foto del producto desde Supabase para componerla — si esa
@@ -377,7 +378,7 @@ export default async function ProductoPage({ params }: Props) {
 
             <ProductWhatsAppButton
               productName={p.nombre}
-              productUrl={`${process.env.NEXT_PUBLIC_APP_URL ?? ''}/productos/${p.slug}`}
+              productUrl={`${env.APP_URL}/productos/${p.slug}`}
             />
 
             {/* Description */}

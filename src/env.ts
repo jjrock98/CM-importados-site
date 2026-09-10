@@ -64,7 +64,19 @@ export const env = {
   MAINTENANCE_MODE:          process.env.MAINTENANCE_MODE === 'true',
 
   // Public (seguro exponer al cliente)
-  APP_URL:         process.env.NEXT_PUBLIC_APP_URL ?? '',
+  // ✅ FIX: se usa .replace(/\/+$/, '') para sacar cualquier barra final.
+  // Si en Vercel esta variable quedó cargada con un "/" al final (algo
+  // fácil de tipear sin querer, ej. "https://midominio.com/"), CUALQUIER
+  // lugar del código que arma una URL concatenando `${appUrl}/algo`
+  // termina con doble barra ("midominio.com//algo") — eso rompió el
+  // og:image (Facebook no pudo descargar la imagen por la doble barra) y
+  // afectaba por igual al sitemap, los redirects de Mercado Pago, los
+  // emails de stock y cualquier otra URL absoluta armada en el sitio.
+  // Se normaliza acá, una sola vez, para que todos los que importan
+  // `env.APP_URL` (en vez de leer `process.env.NEXT_PUBLIC_APP_URL`
+  // directo) queden a salvo sin tener que acordarse de sacar la barra en
+  // cada lugar donde se arma una URL.
+  APP_URL:         (process.env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, ''),
   SUPABASE_URL:    process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '',
   MP_PUBLIC_KEY:   process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? '',

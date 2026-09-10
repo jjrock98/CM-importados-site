@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
+import { env } from '@/env';
 
 export interface BreadcrumbItem {
   name: string;
@@ -21,7 +22,7 @@ interface Props {
  * las use.
  */
 export function Breadcrumbs({ items, appUrl, className }: Props) {
-  const base = appUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const base = appUrl ?? env.APP_URL;
 
   const jsonLd = {
     '@context': 'https://schema.org',

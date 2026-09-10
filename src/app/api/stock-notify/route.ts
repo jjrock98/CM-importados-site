@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { rateLimiters } from '@/lib/rateLimit';
 import { sendStockNotifyAdminEmail } from '@/lib/email';
+import { env } from '@/env';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
     // nadie se enteraba salvo mirando la tabla en Supabase a mano. No se
     // espera esta llamada (.catch en vez de await) para no demorarle la
     // respuesta al cliente ni romperle el flujo si Resend falla.
-    const productUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/productos/${product.slug}`;
+    const productUrl = `${env.APP_URL}/productos/${product.slug}`;
     sendStockNotifyAdminEmail(product.nombre, email, productUrl).catch(console.error);
 
     return NextResponse.json({ ok: true });

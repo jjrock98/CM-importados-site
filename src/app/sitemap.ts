@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { env } from '@/env';
 
 export const revalidate = 3600; // Re-generate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://localhost:3000';
+  const appUrl = env.APP_URL || 'https://localhost:3000';
   const now    = new Date();
 
   // Static pages

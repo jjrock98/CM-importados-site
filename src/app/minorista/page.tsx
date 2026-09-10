@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { env } from '@/env';
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { MinoristaGrid } from '@/components/minorista/MinoristaGrid';
@@ -8,11 +9,11 @@ import type { Product } from '@/types';
 export const metadata: Metadata = {
   title: 'Venta Minorista — Comprá por unidad',
   description: 'Comprá nuestros productos por unidad individual. Ideal para compras personales sin necesidad de adquirir un pack completo.',
-  alternates: { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/minorista` },
+  alternates: { canonical: `${env.APP_URL}/minorista` },
   openGraph: {
     title:       'Venta Minorista — Comprá por unidad',
     description: 'Sin necesidad de pack — elegí exactamente lo que necesitás.',
-    url:         `${process.env.NEXT_PUBLIC_APP_URL}/minorista`,
+    url:         `${env.APP_URL}/minorista`,
     type:        'website',
   },
 };

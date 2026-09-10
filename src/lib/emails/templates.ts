@@ -1,9 +1,10 @@
 import type { Order } from '@/types';
 import { ORDER_STATUS_LABELS, getCashCouponExpiry } from '@/utils';
+import { env } from '@/env';
 
 const BRAND_COLOR = '#2c4270';
 const TIENDA      = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
-const APP_URL     = process.env.NEXT_PUBLIC_APP_URL       ?? '';
+const APP_URL     = env.APP_URL;
 
 function formatARS(n: number) {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
@@ -234,7 +235,6 @@ export function cashPaymentPendingHtml(order: Order): string {
 export function contactConfirmationHtml(nombre: string, asunto: string): string {
   const BRAND_COLOR = '#2c4270';
   const TIENDA = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
   const body = `
     <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#111827;">¡Recibimos tu mensaje!</h1>
@@ -269,7 +269,6 @@ export function contactConfirmationHtml(nombre: string, asunto: string): string 
 export function adminOrderNotificationHtml(order: Order, evento: string): string {
   const BRAND_COLOR = '#2c4270';
   const TIENDA = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
   function formatARS(n: number) {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
@@ -308,7 +307,6 @@ export function adminOrderNotificationHtml(order: Order, evento: string): string
 export function orderExpiredHtml(order: Order): string {
   const BRAND_COLOR = '#dc2626';
   const TIENDA = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
   function formatARS(n: number) {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
@@ -366,7 +364,6 @@ export function orderExpiredHtml(order: Order): string {
 export function orderRefundedHtml(order: Order, refundAmount?: number): string {
   const BRAND_COLOR = '#dc2626';
   const TIENDA = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
-  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
   function formatARS(n: number) {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);

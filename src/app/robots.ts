@@ -1,7 +1,8 @@
 import { MetadataRoute } from 'next';
+import { env } from '@/env';
 
 export default function robots(): MetadataRoute.Robots {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://localhost:3000';
+  const appUrl = env.APP_URL || 'https://localhost:3000';
 
   return {
     rules: [

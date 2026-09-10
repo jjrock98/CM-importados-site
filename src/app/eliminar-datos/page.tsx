@@ -1,13 +1,14 @@
 import type { Metadata } from 'next';
+import { env } from '@/env';
 import Link from 'next/link';
 import { PageHero } from '@/components/common/PageHero';
 
 export const metadata: Metadata = {
   title:       'Eliminación de datos de usuario',
-  alternates:  { canonical: `${process.env.NEXT_PUBLIC_APP_URL}/eliminar-datos` },
+  alternates:  { canonical: `${env.APP_URL}/eliminar-datos` },
   openGraph: {
     title: 'Eliminación de datos de usuario',
-    url:   `${process.env.NEXT_PUBLIC_APP_URL}/eliminar-datos`,
+    url:   `${env.APP_URL}/eliminar-datos`,
     type:  'website',
   },
 };
