@@ -25,6 +25,8 @@ export interface Product {
   stock_minorista_min: number;
   stock_minorista_max: number;
   colores: string[]; talles: string[];
+  /** Calzado / Pantalones / Bermudas / Remeras / Otro — ver src/lib/categorias.ts */
+  categoria: string;
   activo: boolean; destacado: boolean;
   created_at: string; updated_at: string;
   variants?: ProductVariant[];

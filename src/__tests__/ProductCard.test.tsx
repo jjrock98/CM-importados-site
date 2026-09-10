@@ -26,6 +26,7 @@ const MOCK_PRODUCT: Product = {
   descripcion_corta:   'Calidad premium',
   imagenes:            ['https://example.com/image.jpg'],
   videos:              [],
+  categoria:           'otro',
   stock_unidades:      48,
   precio_media_docena: 1200,
   precio_docena:       2200,

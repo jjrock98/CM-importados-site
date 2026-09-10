@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo, useTransition } from 'react';
 import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { cn, formatPrice } from '@/utils';
+import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product } from '@/types';
 
 interface Props { products: Product[] }
@@ -22,8 +23,17 @@ export function ProductFilters({ products }: Props) {
   const [sort,        setSort]        = useState<SortKey>('relevancia');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceMax,    setPriceMax]    = useState<number | ''>('');
+  const [categoria,   setCategoria]   = useState<string>('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [,            startTransition] = useTransition();
+
+  // ✅ Solo se muestran como chips las categorías que tienen al menos un
+  // producto cargado — si Javier no tiene remeras todavía, ese chip ni
+  // aparece; en cuanto cargue una remera desde el admin, aparece solo.
+  const categoriasDisponibles = useMemo(() => {
+    const presentes = new Set(products.map((p) => p.categoria));
+    return CATEGORIAS.filter((c) => presentes.has(c.value));
+  }, [products]);
 
   // Precio de referencia para filtrar/ordenar: media docena si el producto
   // la tiene habilitada, si no la docena completa (hay productos que solo
@@ -55,6 +65,9 @@ export function ProductFilters({ products }: Props) {
     // Stock filter
     if (onlyInStock) list = list.filter((p) => p.stock_unidades >= 6);
 
+    // Category filter
+    if (categoria) list = list.filter((p) => p.categoria === categoria);
+
     // Price filter (por precio de referencia: media docena u, si no tiene, docena)
     if (priceMax !== '') list = list.filter((p) => precioRef(p) <= Number(priceMax));
 
@@ -68,13 +81,40 @@ export function ProductFilters({ products }: Props) {
     }
 
     return list;
-  }, [products, query, sort, onlyInStock, priceMax]);
+  }, [products, query, sort, onlyInStock, priceMax, categoria]);
 
-  const hasFilters = query || onlyInStock || priceMax !== '';
-  const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setSort('relevancia'); };
+  const hasFilters = query || onlyInStock || priceMax !== '' || categoria !== '';
+  const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setCategoria(''); setSort('relevancia'); };
 
   return (
     <div>
+      {/* Category chips — solo aparecen las categorías que tienen productos */}
+      {categoriasDisponibles.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => setCategoria('')}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-xs font-medium border transition-colors',
+              categoria === '' ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
+            )}
+          >
+            Todos
+          </button>
+          {categoriasDisponibles.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => setCategoria(categoria === c.value ? '' : c.value)}
+              className={cn(
+                'rounded-full px-3 py-1.5 text-xs font-medium border transition-colors',
+                categoria === c.value ? 'bg-brand-500 border-brand-500 text-white' : 'border-border text-muted hover:text-foreground'
+              )}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Search + controls bar */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         {/* Search */}

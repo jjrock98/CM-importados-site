@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, X, Upload, Package, Search, Video, Copy, Trending
 import { ProductVariantsManager } from './ProductVariantsManager';
 import { createClient } from '@/lib/supabase/client';
 import { slugify, formatPrice } from '@/utils';
+import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product, PriceTier } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -16,7 +17,7 @@ const EMPTY: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
   precio_media_docena: null, precio_docena: 0,
   venta_minorista: false, venta_mayorista: true, precio_unitario: null as null | number,
   stock_minorista_min: 1, stock_minorista_max: 12,
-  colores: [], talles: [], activo: true, destacado: false,
+  colores: [], talles: [], categoria: 'otro', activo: true, destacado: false,
   precio_tiers: [],
 };
 
@@ -67,6 +68,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
           videos: p.videos,
           colores: p.colores,
           talles: p.talles,
+          categoria: p.categoria,
           stock_unidades: 0,
           precio_media_docena: p.precio_media_docena,
           precio_docena: p.precio_docena,
@@ -252,6 +254,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
         stock_minorista_max:   Number(editing.stock_minorista_max ?? 12),
         colores:             editing.colores        ?? [],
         talles:              editing.talles         ?? [],
+        categoria:           editing.categoria      || 'otro',
         activo:              editing.activo         ?? true,
         destacado:           editing.destacado      ?? false,
       };
@@ -372,7 +375,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-muted">{p.slug}</p>
+                        <p className="text-xs text-muted">{p.slug} · {categoriaLabel(p.categoria)}</p>
                       </div>
                     </div>
                   </td>
@@ -479,6 +482,13 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                   <label className="block text-xs font-medium mb-1">Slug</label>
                   <input value={editing.slug ?? ''} onChange={setField('slug')} className="input-base font-mono text-xs" />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1">Categoría</label>
+                <select value={editing.categoria ?? 'otro'} onChange={setField('categoria')} className="input-base">
+                  {CATEGORIAS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+                </select>
               </div>
 
               <div>
