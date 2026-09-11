@@ -15,7 +15,15 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.mercadopago.com https://embed.tawk.to https://va.vercel-scripts.com https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.tawk.to",
-      "font-src 'self' https://fonts.gstatic.com",
+      // ✅ FIX: se agregan los dominios de tawk.to — su script inyecta la
+      // fuente de íconos del widget (@font-face) directo en el <head> del
+      // documento principal, NO adentro del iframe embed.tawk.to. Al no
+      // estar permitido ese origen acá, el navegador bloqueaba la fuente
+      // en TODOS los dispositivos por igual (por eso el bug se repetía
+      // igual en el celular y en la PC, en redes distintas: lo bloqueaba
+      // el CSP del lado del navegador, no la red) y los íconos del chat
+      // se veían como cuadrados vacíos (glifo faltante).
+      "font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to",
       "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to",
       "frame-src 'self' https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com",
