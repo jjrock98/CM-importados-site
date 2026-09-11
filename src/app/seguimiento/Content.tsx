@@ -222,7 +222,7 @@ export function SeguimientoContent() {
           </div>
 
           <div className="text-center pt-2">
-            <Link href="/" className="btn-ghost text-sm gap-2">
+            <Link href="/productos" className="btn-ghost text-sm gap-2">
               <Package size={15} /> Ver más productos
             </Link>
           </div>

@@ -29,7 +29,7 @@ export default async function MisPedidosPage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
         <Package2 size={56} className="text-muted opacity-30" />
         <p className="text-muted font-medium">No tenés pedidos aún.</p>
-        <Link href="/" className="btn-primary">Ver productos</Link>
+        <Link href="/productos" className="btn-primary">Ver productos</Link>
       </div>
     );
   }

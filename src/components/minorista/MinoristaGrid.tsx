@@ -179,7 +179,7 @@ function MinoristaCard({ product: initial }: { product: Product }) {
               <span className="rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 font-bold">
                 {Math.round(((product.precio_unitario ?? 0) - precioPorUnidadEnPack) / (product.precio_unitario ?? 1) * 100)}% más barato en pack
               </span>
-              <Link href="/" className="text-muted underline underline-offset-2 hover:text-brand-600">
+              <Link href="/productos" className="text-muted underline underline-offset-2 hover:text-brand-600">
                 Ver packs
               </Link>
             </p>

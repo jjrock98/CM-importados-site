@@ -78,7 +78,7 @@ export default async function BuscarPage({ searchParams }: Props) {
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
           <Search size={48} className="text-muted opacity-20" />
           <p className="text-muted">Escribí al menos 2 caracteres para buscar.</p>
-          <Link href="/" className="btn-secondary text-sm">Ver todos los productos</Link>
+          <Link href="/productos" className="btn-secondary text-sm">Ver todos los productos</Link>
         </div>
       )}
 
@@ -109,7 +109,7 @@ export default async function BuscarPage({ searchParams }: Props) {
                 <p className="text-sm text-muted">Probá con otras palabras o</p>
               </div>
               <div className="flex gap-3">
-                <Link href="/" className="btn-primary text-sm">Ver todo el catálogo</Link>
+                <Link href="/productos" className="btn-primary text-sm">Ver todo el catálogo</Link>
                 <Link href="/contacto" className="btn-secondary text-sm">Consultar stock</Link>
               </div>
             </div>

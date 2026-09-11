@@ -13,6 +13,10 @@ interface Props {
   categoriaActual: string;
   /** Búsqueda activa (?q=...), para no perderla al cambiar de categoría. */
   busqueda?: string;
+  /** Ruta base para los links de categoría (chips). Por defecto '/' (home).
+   *  Pasar '/productos' cuando este componente se usa en esa página, para
+   *  que los chips no te saquen del catálogo dedicado. */
+  basePath?: string;
 }
 
 type SortKey = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre' | 'stock';
@@ -25,7 +29,7 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'stock',       label: 'Mayor stock primero' },
 ];
 
-export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda }: Props) {
+export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/' }: Props) {
   const [query,       setQuery]       = useState('');
   const [sort,        setSort]        = useState<SortKey>('relevancia');
   const [onlyInStock, setOnlyInStock] = useState(false);
@@ -42,7 +46,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     if (value) qs.set('categoria', value);
     if (busqueda) qs.set('q', busqueda);
     const s = qs.toString();
-    return s ? `/?${s}` : '/';
+    return s ? `${basePath}?${s}` : basePath;
   };
 
   // Precio de referencia para filtrar/ordenar: media docena si el producto

@@ -99,7 +99,7 @@ export default async function MinoristaPage({
         <div className="flex min-h-64 flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-border text-muted">
           <ShoppingBag size={48} className="opacity-20" />
           <p className="font-medium">No hay productos en venta minorista por el momento.</p>
-          <Link href="/" className="btn-primary mt-2">Ver catálogo completo</Link>
+          <Link href="/productos" className="btn-primary mt-2">Ver catálogo completo</Link>
         </div>
       ) : (
         <MinoristaGrid products={productList} initialSearch={buscar} />

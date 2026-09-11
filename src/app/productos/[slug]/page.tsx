@@ -389,7 +389,7 @@ export default async function ProductoPage({ params }: Props) {
               </div>
             )}
 
-            <Link href="/#catalogo" className="inline-flex items-center gap-2 text-sm text-muted hover:text-foreground transition-colors">
+            <Link href="/productos" className="inline-flex items-center gap-2 text-sm text-muted hover:text-foreground transition-colors">
               <ArrowLeft size={14} /> Ver todos los productos
             </Link>
           </div>

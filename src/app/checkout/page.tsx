@@ -339,7 +339,7 @@ export default function CheckoutPage() {
   };
 
   if (authLoading) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="animate-spin text-muted" size={32} /></div>;
-  if (items.length === 0) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3"><p className="text-muted">No hay productos en el carrito.</p><Link href="/" className="btn-primary">Ver productos</Link></div>;
+  if (items.length === 0) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3"><p className="text-muted">No hay productos en el carrito.</p><Link href="/productos" className="btn-primary">Ver productos</Link></div>;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">

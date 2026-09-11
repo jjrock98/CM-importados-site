@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       tienda,
     description: `${tienda} — Comprá por packs. Envíos y retiro en local.`,
-    images:      [`${appUrl}/og-default.png`],
+    images:      [`${appUrl}/og-default.png?v=2`],
   },
 
   // ── Robots ────────────────────────────────────────────────────────────────

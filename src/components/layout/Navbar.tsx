@@ -11,6 +11,7 @@ import { cn } from '@/utils';
 
 const LINKS = [
   { href: '/',              label: 'Inicio'       },
+  { href: '/productos',     label: 'Productos'    },
   { href: '/pedido-rapido', label: 'Pedido rápido' },
   // Canal minorista desactivado (venta solo mayorista) — se quita del menú
   // pero la página /minorista sigue en el código por si se reactiva.

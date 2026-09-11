@@ -127,7 +127,7 @@ export default function CarritoPage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4">
         <ShoppingBag size={56} className="text-muted opacity-30" />
         <p className="text-lg font-semibold text-muted">Tu carrito está vacío</p>
-        <Link href="/" className="btn-primary">Ver productos</Link>
+        <Link href="/productos" className="btn-primary">Ver productos</Link>
       </div>
     );
   }
