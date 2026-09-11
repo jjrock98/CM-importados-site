@@ -10,6 +10,7 @@ import { ProductModalTrigger } from '@/components/products/ProductModalTrigger';
 import { VariantSelector } from '@/components/products/VariantSelector';
 import { SimpleUnitBuyBox } from '@/components/products/SimpleUnitBuyBox';
 import { ProductWhatsAppButton } from '@/components/products/ProductWhatsAppButton';
+import { ProductShareButton } from '@/components/products/ProductShareButton';
 import { ProductReviews } from '@/components/products/ProductReviews';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { formatPrice, cn } from '@/utils';
@@ -377,6 +378,11 @@ export default async function ProductoPage({ params }: Props) {
             )}
 
             <ProductWhatsAppButton
+              productName={p.nombre}
+              productUrl={`${env.APP_URL}/productos/${p.slug}`}
+            />
+
+            <ProductShareButton
               productName={p.nombre}
               productUrl={`${env.APP_URL}/productos/${p.slug}`}
             />
