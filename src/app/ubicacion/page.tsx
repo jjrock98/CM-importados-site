@@ -16,6 +16,21 @@ export const metadata: Metadata = {
     description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
     url:         `${env.APP_URL}/ubicacion`,
     type:        'website',
+    // ✅ FIX: el openGraph de esta página reemplaza por completo (no
+    // fusiona) al del layout raíz, así que perdía el og:image de ahí.
+    // Se repite acá el mismo fallback estático que usa el layout.
+    images: [{
+      url:    `${env.APP_URL}/og-default.png?v=2`,
+      width:  1200,
+      height: 630,
+      alt:    'Ubicación',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       'Ubicación',
+    description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
+    images:      [`${env.APP_URL}/og-default.png`],
   },
 };
 export const revalidate = 300;
