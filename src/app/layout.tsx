@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     title:       tienda,
     description: `${tienda} — Comprá por packs. Envíos y retiro en local.`,
     images: [{
-      url:    `${appUrl}/og-default.png`,   // imagen estática de fallback
+      url:    `${appUrl}/og-default.png?v=2`,   // imagen estática de fallback
       width:  1200,
       height: 630,
       alt:    tienda,
