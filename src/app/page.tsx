@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductCard } from '@/components/products/ProductCard';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import { HeroVisual } from '@/components/home/HeroVisual';
+import { ScrollToAnchor } from '@/components/common/ScrollToAnchor';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
 import { ShoppingBag, Truck, Shield, Star, ArrowRight, MessageCircle } from 'lucide-react';
@@ -19,7 +20,7 @@ export const revalidate = 60;
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string }>;
+  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string; scroll?: string }>;
 }) {
   const params = await searchParams;
 
@@ -112,6 +113,11 @@ export default async function HomePage({
            searchbox) en los resultados de búsqueda. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteJsonLd).replace(/</g, '\\u003c') }} />
+
+      {/* Soporte para links compartidos como /?scroll=catalogo — ver
+          ScrollToAnchor.tsx para por qué hace falta esto además de
+          href="#catalogo". */}
+      <ScrollToAnchor targetId={params.scroll} />
 
       {/* Hero — navy de marca, con fondo animado atado al negocio real
           (sello de docena cerrada, chips de talles/colores) en vez de un

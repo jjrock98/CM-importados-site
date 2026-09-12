@@ -43,7 +43,8 @@ async function enforceIdleTimeout(
   supabaseResponse: NextResponse,
   cookieName: string,
   limitSeconds: number,
-  redirectTo: string
+  redirectTo: string,
+  routeRequiresAuth: boolean
 ): Promise<NextResponse | null> {
   const lastActivityRaw = request.cookies.get(cookieName)?.value;
   const now = Date.now();
@@ -53,6 +54,23 @@ async function enforceIdleTimeout(
 
   if (isIdle) {
     await supabase.auth.signOut();
+
+    // ✅ FIX: antes esto redirigía SIEMPRE a /auth/login, sin importar qué
+    // página había pedido la persona. Si alguien entraba a un link de
+    // producto o al catálogo (páginas públicas, no requieren estar
+    // logueado) con una sesión vieja/inactiva, terminaba viendo la
+    // pantalla de login en vez del producto que quería ver — la sesión
+    // vencida SÍ hay que cerrarla, pero eso no significa que haya que
+    // exigir un login nuevo para seguir de invitado en una página pública.
+    // Ahora: si la ruta pedida no requiere login, se cierra la sesión en
+    // silencio y se la deja seguir como visitante normal a esa misma
+    // página. El redirect a /auth/login con expired=1 queda solo para
+    // rutas que sí exigen estar logueado (AUTH_REQUIRED_ROUTES y /admin).
+    if (!routeRequiresAuth) {
+      supabaseResponse.cookies.delete(cookieName);
+      return null;
+    }
+
     const url = new URL('/auth/login', request.url);
     url.searchParams.set('redirect', redirectTo);
     url.searchParams.set('expired', '1');
@@ -188,7 +206,8 @@ export async function middleware(request: NextRequest) {
   if (user && !pathname.startsWith('/api/') && !ADMIN_ROUTES.some((r) => pathname.startsWith(r))) {
     const idleResponse = await enforceIdleTimeout(
       request, supabase, supabaseResponse,
-      'user_last_activity', USER_IDLE_LIMIT_SECONDS, pathname
+      'user_last_activity', USER_IDLE_LIMIT_SECONDS, pathname,
+      AUTH_REQUIRED_ROUTES.some((r) => pathname.startsWith(r))
     );
     if (idleResponse) return idleResponse;
   }
@@ -229,7 +248,8 @@ export async function middleware(request: NextRequest) {
     if (!pathname.startsWith('/api/')) {
       const idleResponse = await enforceIdleTimeout(
         request, supabase, supabaseResponse,
-        'admin_last_activity', ADMIN_IDLE_LIMIT_SECONDS, '/admin'
+        'admin_last_activity', ADMIN_IDLE_LIMIT_SECONDS, '/admin',
+        true // /admin siempre exige login, a diferencia del caso de arriba
       );
       if (idleResponse) return idleResponse;
     }
