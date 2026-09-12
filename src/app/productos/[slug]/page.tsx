@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { env } from '@/env';
@@ -19,6 +20,23 @@ import type { Product, ProductReview } from '@/types';
 
 interface Props { params: Promise<{ slug: string }> }
 
+// ✅ FIX (lentitud al entrar a un producto): generateMetadata() y el
+// componente de la página hacían CADA UNO su propia consulta a
+// `products` por el mismo slug — dos viajes a la base de datos por la
+// misma fila, uno atrás del otro, en toda carga de producto. React
+// `cache()` memoiza la función durante UN mismo request: la primera vez
+// que se llama (desde generateMetadata) hace la consulta real; la segunda
+// vez (desde la página) devuelve el resultado ya resuelto, sin pegarle
+// de nuevo a Supabase. No hace falta ningún otro cambio en las dos
+// funciones de abajo — siguen llamando a getProduct(slug) igual que antes,
+// solo que ahora comparten el resultado.
+const getProduct = cache(async (slug: string) => {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('products').select('*').eq('slug', slug).eq('activo', true).single();
+  return data as Product | null;
+});
+
 export async function generateStaticParams() {
   const admin = createAdminClient();
   const { data } = await admin.from('products').select('slug').eq('activo', true);
@@ -27,9 +45,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const admin      = createAdminClient();
-  const { data: product } = await admin
-    .from('products').select('*').eq('slug', slug).eq('activo', true).single();
+  const product = await getProduct(slug);
 
   if (!product) return { title: 'Producto no encontrado' };
 
@@ -82,25 +98,36 @@ export const revalidate = 60;
 
 export default async function ProductoPage({ params }: Props) {
   const { slug } = await params;
-  const admin = createAdminClient();
-  const { data: product } = await admin
-    .from('products').select('*').eq('slug', slug).eq('activo', true).single();
+  const product = await getProduct(slug); // ✅ ya resuelto por generateMetadata, no vuelve a pegarle a Supabase
 
   if (!product) notFound();
 
   const p = product as Product;
+  const admin = createAdminClient();
 
-  // ✅ Traer variantes (talla/color) con stock real, si el producto las tiene
-  let variants: import('@/types').ProductVariant[] = [];
-  if (p.venta_minorista) {
-    const { data: variantData } = await admin
-      .from('product_variants')
+  // ✅ FIX (lentitud al entrar a un producto): variantes y reseñas no
+  // dependen una de la otra, pero se pedían con dos `await` seguidos —
+  // el segundo recién arrancaba cuando terminaba el primero. Con
+  // Promise.all las dos consultas salen al mismo tiempo, así que lo que
+  // tarda es la más lenta de las dos, no la suma de ambas.
+  const [variantData, { data: reviewsData }] = await Promise.all([
+    p.venta_minorista
+      ? admin
+          .from('product_variants')
+          .select('*')
+          .eq('product_id', p.id)
+          .eq('activo', true)
+          .order('talla').order('color')
+          .then((r) => r.data)
+      : Promise.resolve(null),
+    admin
+      .from('product_reviews')
       .select('*')
       .eq('product_id', p.id)
-      .eq('activo', true)
-      .order('talla').order('color');
-    variants = variantData ?? [];
-  }
+      .eq('aprobado', true)
+      .order('created_at', { ascending: false }),
+  ]);
+  const variants: import('@/types').ProductVariant[] = variantData ?? [];
 
   const maxMediaDocena = Math.floor(p.stock_unidades / 6);
   const maxDocena      = Math.floor(p.stock_unidades / 12);
@@ -127,12 +154,6 @@ export default async function ProductoPage({ params }: Props) {
   // se arma aggregateRating/review más abajo — nunca con datos inventados
   // (Google penaliza structured data falseado quitando TODOS los rich
   // results del sitio, no solo el de estrellas).
-  const { data: reviewsData } = await admin
-    .from('product_reviews')
-    .select('*')
-    .eq('product_id', p.id)
-    .eq('aprobado', true)
-    .order('created_at', { ascending: false });
   const reviews = (reviewsData ?? []) as ProductReview[];
   const ratingPromedio = reviews.length
     ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
