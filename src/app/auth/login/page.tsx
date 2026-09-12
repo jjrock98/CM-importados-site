@@ -1,13 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Chrome } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const router   = useRouter();
   const params   = useSearchParams();
   const redirect = params.get('redirect') ?? '/';
   const supabase = createClient();
@@ -47,8 +46,29 @@ export default function LoginPage() {
       );
     } else {
       toast.success('¡Bienvenido!');
-      router.push(redirect);
-      router.refresh();
+      // ✅ FIX: acá antes había router.push(redirect) + router.refresh().
+      // El problema: el login ahora pasa por /api/auth/login (fetch al
+      // servidor) en vez de supabase.auth.signInWithPassword() llamado
+      // directo desde el navegador. Antes, esa llamada directa disparaba
+      // el evento onAuthStateChange del SDK de Supabase en el cliente,
+      // que es lo que useAuth() escucha para actualizar user/profile — así
+      // se enteraba React de que había sesión. Ahora que el login lo hace
+      // el servidor, el navegador nunca se entera: la cookie de sesión SÍ
+      // queda puesta bien, pero el cliente de Supabase en memoria (y por
+      // lo tanto useAuth(), el Navbar, "Mi Cuenta", etc.) sigue creyendo
+      // que no hay usuario, porque nada le avisó del cambio.
+      // router.refresh() no alcanza para arreglar esto: solo vuelve a
+      // pedir los Server Components de la ruta actual, no fuerza a los
+      // Client Components ya montados (como el Navbar, que vive en el
+      // layout raíz y nunca se desmonta al navegar) a re-ejecutar su
+      // useEffect y leer la sesión de nuevo.
+      // La solución confiable es forzar una recarga completa del
+      // navegador: tira abajo todo el estado de JS (incluido el cliente
+      // de Supabase en memoria) y arranca de cero, leyendo la cookie de
+      // sesión que el servidor ya dejó puesta. Por eso window.location en
+      // vez de router.push — acá SÍ conviene sacrificar la navegación
+      // suave de Next.js a cambio de que el login funcione de verdad.
+      window.location.href = redirect;
     }
     setLoading(false);
   };
