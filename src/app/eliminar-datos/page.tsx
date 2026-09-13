@@ -57,7 +57,7 @@ export default function EliminarDatosPage() {
         <p>
           Si preferís que lo hagamos nosotros, o no podés acceder a tu cuenta, escribinos desde{' '}
           <Link href="/contacto">Contacto</Link> o a{' '}
-          <a href="mailto:contacto@mitienda.com">contacto@mitienda.com</a> indicando el email con
+          <a href="mailto:clarosjavier1998@gmail.com">clarosjavier1998@gmail.com</a> indicando el email con
           el que te registraste. Vamos a confirmar tu identidad y eliminar tus datos dentro de los
           10 días hábiles siguientes a la solicitud.
         </p>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Chrome } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 
 export default function LoginPage() {
   const params   = useSearchParams();
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   // ✅ NUEVO: aviso cuando el middleware redirige acá por inactividad
   // (ver ADMIN_IDLE_LIMIT_SECONDS en middleware.ts)
@@ -27,15 +29,19 @@ export default function LoginPage() {
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      toast.error('Completá la verificación anti-bot antes de ingresar.');
+      return;
+    }
     setLoading(true);
     // ✅ FIX: antes llamaba a supabase.auth.signInWithPassword() directo
     // desde acá — imposible ponerle un límite de intentos propio. Ahora
-    // pasa por /api/auth/login, que aplica el freno antes de reenviar
-    // a Supabase (10 intentos / 15 min por IP).
+    // pasa por /api/auth/login, que aplica captcha + el freno de intentos
+    // antes de reenviar a Supabase (10 intentos / 15 min por IP).
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, turnstileToken: captchaToken }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -44,6 +50,7 @@ export default function LoginPage() {
           ? 'Demasiados intentos — esperá unos minutos antes de volver a intentar.'
           : json.error ?? 'Error al iniciar sesión. Intentá de nuevo.'
       );
+      setCaptchaToken(null);
     } else {
       toast.success('¡Bienvenido!');
       // ✅ FIX: acá antes había router.push(redirect) + router.refresh().
@@ -135,7 +142,9 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
+          <TurnstileWidget onVerify={setCaptchaToken} onExpire={() => setCaptchaToken(null)} className="flex justify-center" />
+
+          <button type="submit" disabled={loading || !captchaToken} className="btn-primary w-full">
             {loading ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
