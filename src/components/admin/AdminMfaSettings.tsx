@@ -129,9 +129,22 @@ export function AdminMfaSettings() {
       {step === 'enrolling' && qrCode && (
         <form onSubmit={handleVerify} className="space-y-4">
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface-2 p-4">
-            <div
-              className="h-40 w-40 [&_svg]:h-full [&_svg]:w-full"
-              dangerouslySetInnerHTML={{ __html: qrCode }}
+            {/* ✅ FIX: data.totp.qr_code de Supabase es un data URI COMPLETO
+                (ej: "data:image/svg+xml;utf-8,<svg>...</svg>"), no el
+                markup SVG crudo. Con dangerouslySetInnerHTML se insertaba
+                el string entero como HTML: el prefijo "data:image/svg+
+                xml;utf-8," no es una etiqueta válida, así que el navegador
+                lo mostraba como texto plano suelto arriba del QR, y solo
+                el <svg>...</svg> que venía después se renderizaba bien
+                (por eso se veía el texto roto seguido del QR correcto).
+                Al ser un data URI ya armado, sirve directo como src de
+                una <img> — sin parsear nada a mano y sin
+                dangerouslySetInnerHTML. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={qrCode}
+              alt="Código QR para verificación en dos pasos"
+              className="h-40 w-40"
             />
             <p className="text-xs text-muted text-center">
               Escaneá el código con tu app de autenticación. Si no podés escanear,
