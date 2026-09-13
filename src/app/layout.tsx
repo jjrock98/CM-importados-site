@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
@@ -159,6 +160,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PageProgress />
           <EmailVerificationBanner />
           <Navbar />
+          <CartDrawer />
           <main id="print-root">{children}</main>
           <Suspense fallback={<Footer contactInfo={null} />}>
             <FooterWithContact />

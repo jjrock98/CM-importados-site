@@ -6,6 +6,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ShoppingCart, Heart, Menu, X, User, Sun, Moon, Search } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useCartStore } from '@/hooks/useCart';
+import { useCartDrawerStore } from '@/hooks/useCartDrawer';
+import { isMobileOrTabletViewport } from '@/lib/viewport';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/utils';
 
@@ -38,6 +40,7 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const itemCount = useCartStore((s) => s.itemCount);
+  const openCartDrawer = useCartDrawerStore((s) => s.open);
   const { user, profile, isAdmin, signOut } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -114,8 +117,20 @@ export function Navbar() {
               </Link>
             )}
 
-            {/* Carrito — badge navy con cantidad de packs */}
-            <Link href="/carrito" className="relative flex items-center gap-1.5 rounded-lg px-2 py-2 text-muted hover:bg-surface-2 transition-colors" aria-label="Carrito">
+            {/* Carrito — badge navy con cantidad de packs.
+                En mobile/tablet (<768px) abre el panel en vez de navegar
+                directo a /carrito; en desktop se comporta como siempre. */}
+            <Link
+              href="/carrito"
+              onClick={(e) => {
+                if (isMobileOrTabletViewport()) {
+                  e.preventDefault();
+                  openCartDrawer();
+                }
+              }}
+              className="relative flex items-center gap-1.5 rounded-lg px-2 py-2 text-muted hover:bg-surface-2 transition-colors"
+              aria-label="Carrito"
+            >
               <ShoppingCart size={18} />
               <span className="hidden lg:inline text-xs font-medium">
                 {itemCount > 0 ? `${itemCount} ${itemCount === 1 ? 'Pack' : 'Packs'}` : 'Carrito'}

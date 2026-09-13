@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Package, ShoppingCart, Loader2, Search } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
+import { notifyAddedToCart } from '@/lib/cartFeedback';
 import { formatPrice, getPrecioEscalonado } from '@/utils';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
@@ -75,7 +76,7 @@ export function QuickOrderTable({ products }: Props) {
     setSubmitting(false);
 
     if (agregados > 0) {
-      toast.success(`${agregados} producto${agregados !== 1 ? 's' : ''} agregado${agregados !== 1 ? 's' : ''} al carrito`);
+      notifyAddedToCart(`${agregados} producto${agregados !== 1 ? 's' : ''} agregado${agregados !== 1 ? 's' : ''} al carrito`);
     }
     if (saltados.length > 0) {
       toast.error(`Sin stock suficiente: ${saltados.join(', ')}`, { duration: 5000 });

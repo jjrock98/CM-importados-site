@@ -4,8 +4,8 @@ import Image from 'next/image';
 import { X, ShoppingCart, Minus, Plus, Package } from 'lucide-react';
 import { cn, formatPrice, getPrecioEscalonado, getProximoEscalon } from '@/utils';
 import { useCartStore } from '@/hooks/useCart';
+import { notifyAddedToCart } from '@/lib/cartFeedback';
 import type { Product, TipoPack } from '@/types';
-import toast from 'react-hot-toast';
 import { ProductWhatsAppButton } from './ProductWhatsAppButton';
 import { ImageZoom } from './ImageZoom';
 
@@ -60,7 +60,7 @@ export function ProductModal({ product, onClose }: Props) {
       precioBaseDocena: tipoPack === 'docena' ? product.precio_docena : undefined,
     });
     const label = tipoPack === 'media_docena' ? 'Media Docena (6 uds)' : 'Docena (12 uds)';
-    toast.success(`${cantidad} ${label} agregado${cantidad > 1 ? 's' : ''} al carrito`);
+    notifyAddedToCart(`${cantidad} ${label} agregado${cantidad > 1 ? 's' : ''} al carrito`);
     onClose();
   };
 

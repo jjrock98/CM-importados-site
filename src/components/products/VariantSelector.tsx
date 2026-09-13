@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Minus, ShoppingCart, Check, AlertTriangle } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
+import { notifyAddedToCart } from '@/lib/cartFeedback';
 import { createClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/utils';
 import type { Product, ProductVariant } from '@/types';
@@ -98,7 +99,7 @@ export function VariantSelector({ product, initialVariants }: Props) {
     setAdding(false);
     if (result.ok) {
       setJustAdded(true);
-      toast.success(`${cantidad} ${cantidad === 1 ? 'unidad agregada' : 'unidades agregadas'} al carrito`);
+      notifyAddedToCart(`${cantidad} ${cantidad === 1 ? 'unidad agregada' : 'unidades agregadas'} al carrito`);
       setTimeout(() => setJustAdded(false), 2500);
     } else {
       toast.error(result.error ?? 'No se pudo agregar');
