@@ -124,8 +124,9 @@ export default async function HomePage({
           (sello de docena cerrada, chips de talles/colores) en vez de un
           bloque estático. Ver HeroVisual.tsx para el detalle.
 
-          HeroSmoke agrega el efecto de humo/niebla (100% CSS, sin video
-          ni imagen de por medio — ver HeroSmoke.tsx). */}
+          HeroSmoke agrega el efecto de humo animado (canvas + ruido,
+          sin ningún archivo de imagen/video de por medio — ver
+          HeroSmoke.tsx). */}
       <section className="relative overflow-hidden bg-brand-800 text-white">
         <HeroSmoke />
         <HeroVisual hideBackgroundEffects />
