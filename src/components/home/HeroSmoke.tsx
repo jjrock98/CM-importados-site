@@ -36,11 +36,11 @@ export function HeroSmoke() {
       {wisps.map((w, i) => (
         <motion.div
           key={i}
-          className={`absolute ${w.size} rounded-full opacity-[0.18] blur-3xl`}
+          className={`absolute ${w.size} rounded-full opacity-[0.55] blur-2xl`}
           style={{
             top: w.top,
             left: w.left,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.3) 45%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,255,255,0.6) 35%, rgba(255,255,255,0.15) 60%, transparent 75%)',
             mixBlendMode: 'screen',
           }}
           animate={
