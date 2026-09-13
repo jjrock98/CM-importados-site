@@ -4,9 +4,9 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS, getCashCouponExpiry } from '@/utils';
-import { PACK_CONFIG } from '@/types';
-import type { Order } from '@/types';
-import { ArrowLeft, Package, Printer, MapPin, Store, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
+import { PACK_CONFIG, MICRO_TERMINAL_LABELS } from '@/types';
+import type { Order, MicroTerminal } from '@/types';
+import { ArrowLeft, Package, Printer, MapPin, Store, Bus, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
 import { OrderCancelButton } from '@/components/orders/OrderCancelButton';
 import { VerComprobanteLink } from '@/components/orders/OrderCardActions';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -36,13 +36,14 @@ export default async function OrderDetailPage({ params }: Props) {
 
   const { data: order } = await supabase
     .from('orders')
-    .select('id,nombre,email,telefono,direccion,ciudad,codigo_postal,estado,metodo_pago,tipo_entrega,codigo_retiro,retiro_dni_titular,retiro_retira_tercero,retiro_tercero_nombre,retiro_tercero_dni,retirado_at,mp_payment_id,mp_status_detail,fecha_pago,comprobante_url,comprobante_revisado,rejection_reason,subtotal,costo_envio,total,notas,stock_descontado,created_at,updated_at, order_items(id,tipo_pack,cantidad_packs,unidades,precio_unit,subtotal,nombre_snap,imagen_snap,variant_id,variant_snap,curva_breakdown)')
+    .select('id,nombre,email,telefono,direccion,ciudad,codigo_postal,estado,metodo_pago,tipo_entrega,codigo_retiro,retiro_dni_titular,retiro_retira_tercero,retiro_tercero_nombre,retiro_tercero_dni,retirado_at,micro_terminal,micro_empresa_transporte,micro_nombre_recibe,mp_payment_id,mp_status_detail,fecha_pago,comprobante_url,comprobante_revisado,rejection_reason,subtotal,costo_envio,total,notas,stock_descontado,created_at,updated_at, order_items(id,tipo_pack,cantidad_packs,unidades,precio_unit,subtotal,nombre_snap,imagen_snap,variant_id,variant_snap,curva_breakdown)')
     .eq('id', id).eq('user_id', user.id).single();
 
   if (!order) notFound();
   const o = order as unknown as Order;
 
   const isRetiro    = o.tipo_entrega === 'retiro';
+  const isMicro     = o.tipo_entrega === 'micro';
   const isCancelled = o.estado === 'cancelado' || o.estado === 'rechazado';
   const canCancel   = o.estado === 'pendiente' && !o.stock_descontado;
   const steps       = isRetiro ? RETIRO_STEPS : ALL_STEPS;
@@ -59,10 +60,11 @@ export default async function OrderDetailPage({ params }: Props) {
 
   // ✅ Envío a coordinar por WhatsApp — mismo número que se usa en el resto
   // del sitio (carrito, checkout, footer). Solo tiene sentido si el pedido
-  // no es retiro en local, no está cancelado, y el envío aún no tiene un
-  // costo cargado (sigue "a coordinar").
+  // no es retiro en local ni entrega en micro (esos ya quedaron
+  // coordinados en el checkout), no está cancelado, y el envío aún no
+  // tiene un costo cargado (sigue "a coordinar").
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
-  const showEnvioWhatsApp = !isRetiro && !isCancelled && o.costo_envio === 0 && !!whatsappNumber;
+  const showEnvioWhatsApp = !isRetiro && !isMicro && !isCancelled && o.costo_envio === 0 && !!whatsappNumber;
   const envioWhatsAppUrl = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
         `Hola! Quiero coordinar el envío de mi pedido #${o.id.slice(0, 8).toUpperCase()}.`
@@ -87,6 +89,11 @@ export default async function OrderDetailPage({ params }: Props) {
           {isRetiro && (
             <span className="badge bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 gap-1.5">
               <Store size={11} /> Retiro en local
+            </span>
+          )}
+          {isMicro && (
+            <span className="badge bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 gap-1.5">
+              <Bus size={11} /> Entrega en micro
             </span>
           )}
           <span className={`badge text-sm px-3 py-1.5 ${ORDER_STATUS_COLORS[o.estado]}`}>
@@ -155,6 +162,20 @@ export default async function OrderDetailPage({ params }: Props) {
               el pedido se cancela automáticamente y el stock se libera.
             </span>
           </div>
+        </div>
+      )}
+
+      {/* ✅ Pago en efectivo al retirar/entregar — pendiente de cobro */}
+      {o.metodo_pago === 'efectivo' && o.estado === 'pendiente' && (
+        <div className="card border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/10 p-5 mb-5">
+          <h2 className="font-semibold text-amber-800 dark:text-amber-400 flex items-center gap-2 mb-3">
+            <Receipt size={18} /> Pagás en efectivo
+          </h2>
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            {isMicro
+              ? 'No necesitás hacer nada más por ahora — pagás en efectivo cuando despachemos tu pedido en el micro.'
+              : 'No necesitás subir ningún comprobante — pagás en efectivo cuando retires tu pedido en el local.'}
+          </p>
         </div>
       )}
 
@@ -297,7 +318,13 @@ export default async function OrderDetailPage({ params }: Props) {
               <div className="flex justify-between text-muted"><span>Subtotal</span><span>{formatPrice(o.subtotal)}</span></div>
               <div className="flex justify-between text-muted">
                 <span>Envío</span>
-                <span>{isRetiro ? <span className="text-green-600 font-medium">Retiro en local</span> : (o.costo_envio > 0 ? formatPrice(o.costo_envio) : <span className="text-xs">A coordinar</span>)}</span>
+                <span>
+                  {isRetiro
+                    ? <span className="text-green-600 font-medium">Retiro en local</span>
+                    : isMicro
+                      ? <span className="text-amber-600 font-medium">Entrega en micro (gratis)</span>
+                      : (o.costo_envio > 0 ? formatPrice(o.costo_envio) : <span className="text-xs">A coordinar</span>)}
+                </span>
               </div>
               <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                 <span>Total</span><span className="text-brand-600">{formatPrice(o.total)}</span>
@@ -309,11 +336,20 @@ export default async function OrderDetailPage({ params }: Props) {
         {/* Info + Actions */}
         <div className="md:col-span-2 space-y-4">
           <div className="card p-5 space-y-2.5 text-sm">
-            <h2 className="font-semibold">{isRetiro ? 'Datos de contacto' : 'Entrega'}</h2>
+            <h2 className="font-semibold">{isRetiro ? 'Datos de contacto' : isMicro ? 'Entrega en micro' : 'Entrega'}</h2>
             <p className="text-muted">{o.nombre}</p>
             <p className="text-muted">{o.email}</p>
             {o.telefono && <p className="text-muted">{o.telefono}</p>}
-            {!isRetiro && <><p className="text-muted">{o.direccion}</p><p className="text-muted">{o.ciudad} ({o.codigo_postal})</p></>}
+            {!isRetiro && !isMicro && <><p className="text-muted">{o.direccion}</p><p className="text-muted">{o.ciudad} ({o.codigo_postal})</p></>}
+            {isMicro && (
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-3 space-y-1">
+                <p className="flex items-center gap-1.5 text-amber-800 dark:text-amber-400 font-medium">
+                  <Bus size={14} /> Terminal: {MICRO_TERMINAL_LABELS[o.micro_terminal as MicroTerminal] || o.micro_terminal || '—'}
+                </p>
+                <p className="text-muted">Micro/empresa: {o.micro_empresa_transporte || '—'}</p>
+                <p className="text-muted">Recibe: {o.micro_nombre_recibe || '—'}</p>
+              </div>
+            )}
             {o.notas && <p className="text-muted italic text-xs border-t border-border pt-2">Nota: {o.notas}</p>}
             {showEnvioWhatsApp && (
               <a

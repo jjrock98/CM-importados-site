@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
       subtotal, costo_envio, total,
       direccion, ciudad, codigo_postal,
       codigo_retiro, retiro_dni_titular, retiro_retira_tercero, retiro_tercero_nombre, retiro_tercero_dni, retirado_at,
+      micro_terminal, micro_empresa_transporte, micro_nombre_recibe,
       rejection_reason, notas,
       order_items(nombre_snap, tipo_pack, cantidad_packs, unidades, precio_unit, subtotal)
     `)
@@ -58,6 +59,7 @@ export async function GET(req: NextRequest) {
     'Subtotal (ARS)', 'Costo envío (ARS)', 'Total (ARS)',
     'Dirección', 'Ciudad', 'CP',
     'Código retiro', 'DNI titular', 'Retira tercero', 'Nombre tercero', 'DNI tercero', 'Retirado el',
+    'Terminal micro', 'Empresa/micro', 'Recibe (micro)',
     'Notas', 'Motivo rechazo',
   ];
 
@@ -96,6 +98,9 @@ export async function GET(req: NextRequest) {
       (o as Record<string, unknown>).retirado_at
         ? new Date((o as Record<string, unknown>).retirado_at as string).toLocaleString('es-AR')
         : '',
+      (o as Record<string, unknown>).micro_terminal as string ?? '',
+      (o as Record<string, unknown>).micro_empresa_transporte as string ?? '',
+      (o as Record<string, unknown>).micro_nombre_recibe as string ?? '',
       o.notas ?? '',
       o.rejection_reason ?? '',
     ].map((cell) => {

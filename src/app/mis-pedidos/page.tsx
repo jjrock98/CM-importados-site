@@ -86,7 +86,7 @@ export default async function MisPedidosPage() {
 
             {/* Footer */}
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3 text-xs text-muted">
-              <span>Envío: {order.tipo_entrega === 'retiro' ? 'Gratis (retiro)' : 'A coordinar'}</span>
+              <span>Envío: {order.tipo_entrega === 'retiro' ? 'Gratis (retiro)' : order.tipo_entrega === 'micro' ? 'Gratis (entrega en micro)' : 'A coordinar'}</span>
               <span>·</span>
               <span className="capitalize">{order.metodo_pago}</span>
 

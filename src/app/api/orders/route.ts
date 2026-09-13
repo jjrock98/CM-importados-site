@@ -287,9 +287,15 @@ export async function POST(req: NextRequest) {
       email:         formData.email,
       nombre:        formData.nombre,
       telefono:      formData.telefono,
-      direccion:     formData.tipo_entrega === 'retiro' ? 'Retiro en local' : formData.direccion,
-      ciudad:        formData.tipo_entrega === 'retiro' ? 'Retiro en local' : formData.ciudad,
-      codigo_postal: formData.tipo_entrega === 'retiro' ? '0000'            : formData.codigo_postal,
+      direccion:     formData.tipo_entrega === 'retiro' ? 'Retiro en local'
+                     : formData.tipo_entrega === 'micro' ? `Entrega en micro — Terminal ${formData.micro_terminal ?? ''}`
+                     : formData.direccion,
+      ciudad:        formData.tipo_entrega === 'retiro' ? 'Retiro en local'
+                     : formData.tipo_entrega === 'micro' ? 'La Salada'
+                     : formData.ciudad,
+      codigo_postal: formData.tipo_entrega === 'retiro' ? '0000'
+                     : formData.tipo_entrega === 'micro' ? '0000'
+                     : formData.codigo_postal,
       notas:         formData.notas ?? null,
       metodo_pago:   formData.metodo_pago,
       tipo_entrega:  formData.tipo_entrega,
@@ -304,6 +310,10 @@ export async function POST(req: NextRequest) {
       retiro_retira_tercero: formData.tipo_entrega === 'retiro' ? !!formData.retiro_retira_tercero : false,
       retiro_tercero_nombre: formData.tipo_entrega === 'retiro' && formData.retiro_retira_tercero ? formData.retiro_tercero_nombre || null : null,
       retiro_tercero_dni:    formData.tipo_entrega === 'retiro' && formData.retiro_retira_tercero ? formData.retiro_tercero_dni || null : null,
+      // ── Entrega en micros (solo La Salada) ─────────────────────────────
+      micro_terminal:            formData.tipo_entrega === 'micro' ? formData.micro_terminal || null : null,
+      micro_empresa_transporte:  formData.tipo_entrega === 'micro' ? formData.micro_empresa_transporte || null : null,
+      micro_nombre_recibe:       formData.tipo_entrega === 'micro' ? formData.micro_nombre_recibe || null : null,
     }).select().single();
 
     if (orderErr) throw orderErr;

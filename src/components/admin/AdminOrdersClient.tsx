@@ -2,8 +2,8 @@
 import React from 'react';
 import { useState, useCallback } from 'react';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/utils';
-import { PACK_CONFIG } from '@/types';
-import type { Order, OrderEstado } from '@/types';
+import { PACK_CONFIG, MICRO_TERMINAL_LABELS } from '@/types';
+import type { Order, OrderEstado, MicroTerminal } from '@/types';
 import { useRealtimeOrders } from '@/hooks/useRealtimeOrders';
 import {
   ExternalLink, ChevronDown, Search, CheckCircle, XCircle,
@@ -439,9 +439,11 @@ export function AdminOrdersClient({ initialOrders }: Props) {
                     <div>
                       <p className="text-xs text-muted mb-1">Tipo de entrega</p>
                       <p className="flex items-center gap-1.5">
-                        {(order as Order & { tipo_entrega?: string }).tipo_entrega === 'retiro'
+                        {order.tipo_entrega === 'retiro'
                           ? <span className="badge bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400">🏪 Retiro en local</span>
-                          : <span className="badge bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">🚚 Envío a domicilio</span>}
+                          : order.tipo_entrega === 'micro'
+                            ? <span className="badge bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">🚌 Entrega en micro</span>
+                            : <span className="badge bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400">🚚 Envío a domicilio</span>}
                       </p>
                     </div>
                     {/* ✅ Código de retiro — visible al admin para validar en el local */}
@@ -471,6 +473,23 @@ export function AdminOrdersClient({ initialOrders }: Props) {
                         <p className="text-xs text-muted mb-1">Retirado</p>
                         <p>{formatDate(order.retirado_at)}</p>
                       </div>
+                    )}
+                    {/* ✅ Entrega en micros (feria La Salada) */}
+                    {order.tipo_entrega === 'micro' && (
+                      <>
+                        <div>
+                          <p className="text-xs text-muted mb-1">Terminal</p>
+                          <p className="font-medium">{MICRO_TERMINAL_LABELS[order.micro_terminal as MicroTerminal] || order.micro_terminal || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted mb-1">Micro / empresa de transporte</p>
+                          <p>{order.micro_empresa_transporte || '—'}</p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-muted mb-1">Recibe el pedido</p>
+                          <p className="font-medium">{order.micro_nombre_recibe || '—'}</p>
+                        </div>
+                      </>
                     )}
                     <div>
                       <p className="text-xs text-muted mb-1">Stock</p>
@@ -611,8 +630,8 @@ export function AdminOrdersClient({ initialOrders }: Props) {
                       </button>
                     )}
 
-                    {/* Mark paid (MP orders without webhook) */}
-                    {order.metodo_pago === 'mercadopago' && !order.stock_descontado && order.estado !== 'cancelado' && (
+                    {/* Mark paid (MP orders without webhook, or cash paid in-store/on the bus) */}
+                    {(order.metodo_pago === 'mercadopago' || order.metodo_pago === 'efectivo') && !order.stock_descontado && order.estado !== 'cancelado' && (
                       <button
                         onClick={() => markPaidWithStock(order.id)}
                         disabled={!!loading}
@@ -621,7 +640,7 @@ export function AdminOrdersClient({ initialOrders }: Props) {
                         {loading === order.id
                           ? <Loader2 size={13} className="animate-spin" />
                           : <CheckCircle size={13} />}
-                        Confirmar pago manual
+                        {order.metodo_pago === 'efectivo' ? 'Confirmar pago en efectivo' : 'Confirmar pago manual'}
                       </button>
                     )}
                   </div>

@@ -18,6 +18,7 @@ export function buildOrderWhatsAppLink(order: Order): string | null {
   const nombre = order.nombre?.split(' ')[0] || '';
   const codigoPedido = `#${order.id.slice(0, 8).toUpperCase()}`;
   const esRetiro = order.tipo_entrega === 'retiro';
+  const esMicro  = order.tipo_entrega === 'micro';
   const listoParaRetirar = esRetiro && order.codigo_retiro && ['pagado', 'procesando', 'enviado'].includes(order.estado);
 
   let mensaje = '';
@@ -36,7 +37,9 @@ export function buildOrderWhatsAppLink(order: Order): string | null {
     case 'enviado':
       mensaje = esRetiro
         ? `Hola ${nombre}! Tu pedido ${codigoPedido} ya está listo.`
-        : `Hola ${nombre}! Tu pedido ${codigoPedido} ya salió. En breve te contactamos para coordinar la entrega 🚚`;
+        : esMicro
+          ? `Hola ${nombre}! Tu pedido ${codigoPedido} ya salió en el micro${order.micro_empresa_transporte ? ` (${order.micro_empresa_transporte})` : ''} 🚌 Te avisamos apenas llegue a destino.`
+          : `Hola ${nombre}! Tu pedido ${codigoPedido} ya salió. En breve te contactamos para coordinar la entrega 🚚`;
       break;
     case 'entregado':
       mensaje = `Gracias por tu compra ${nombre}! Tu pedido ${codigoPedido} ya fue entregado. Cualquier cosa, estamos a disposición 🙌`;

@@ -59,37 +59,86 @@ export const checkoutFormSchema = z.object({
   ciudad:        z.string().max(100).trim().default(''),
   codigo_postal: z.string().max(10).trim().default(''),
   notas:         z.string().max(500).trim().optional(),
-  metodo_pago:   z.enum(['mercadopago', 'transferencia', 'cuenta_corriente']),
-  tipo_entrega:  z.enum(['envio', 'retiro']).default('envio'), // ✅ NEW
+  metodo_pago:   z.enum(['mercadopago', 'transferencia', 'cuenta_corriente', 'efectivo']),
+  tipo_entrega:  z.enum(['envio', 'retiro', 'micro']).default('envio'), // ✅ NEW: 'micro'
   // ── Retiro en local: identidad de quien retira ──────────────────────
   retiro_dni_titular:    z.string().max(20).trim().optional().default(''),
   retiro_retira_tercero: z.boolean().optional().default(false),
   retiro_tercero_nombre: z.string().max(100).trim().optional().default(''),
   retiro_tercero_dni:    z.string().max(20).trim().optional().default(''),
+  // ── Entrega en micros (solo La Salada) ──────────────────────────────
+  micro_terminal:            z.enum(['punta_mogote', 'urkupinia', 'ocean']).nullable().optional(),
+  micro_empresa_transporte:  z.string().max(150).trim().optional().default(''),
+  micro_nombre_recibe:       z.string().max(100).trim().optional().default(''),
 }).superRefine((data, ctx) => {
-  if (data.tipo_entrega !== 'retiro') return;
-
-  if (!data.retiro_dni_titular || data.retiro_dni_titular.length < 6) {
+  // ── Efectivo: solo válido para retiro en local o entrega en micro ────
+  // (defensa en profundidad — la UI ya no debería permitir esta
+  // combinación, pero se valida también acá por si llega una request
+  // directa a la API).
+  if (data.metodo_pago === 'efectivo' && data.tipo_entrega === 'envio') {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'DNI/documento requerido para retiro en local (mínimo 6 caracteres)',
-      path: ['retiro_dni_titular'],
+      message: 'El pago en efectivo no está disponible para envío a domicilio',
+      path: ['metodo_pago'],
     });
   }
 
-  if (data.retiro_retira_tercero) {
-    if (!data.retiro_tercero_nombre || data.retiro_tercero_nombre.length < 2) {
+  if (data.tipo_entrega === 'retiro') {
+    if (!data.retiro_dni_titular || data.retiro_dni_titular.length < 6) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Nombre de la persona que retira es requerido',
-        path: ['retiro_tercero_nombre'],
+        message: 'DNI/documento requerido para retiro en local (mínimo 6 caracteres)',
+        path: ['retiro_dni_titular'],
       });
     }
-    if (!data.retiro_tercero_dni || data.retiro_tercero_dni.length < 6) {
+
+    if (data.retiro_retira_tercero) {
+      if (!data.retiro_tercero_nombre || data.retiro_tercero_nombre.length < 2) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Nombre de la persona que retira es requerido',
+          path: ['retiro_tercero_nombre'],
+        });
+      }
+      if (!data.retiro_tercero_dni || data.retiro_tercero_dni.length < 6) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'DNI de la persona que retira es requerido (mínimo 6 caracteres)',
+          path: ['retiro_tercero_dni'],
+        });
+      }
+    }
+  }
+
+  if (data.tipo_entrega === 'micro') {
+    // Solo efectivo o transferencia — no tiene sentido Mercado Pago/cuenta
+    // corriente acá y el negocio decidió no ofrecerlos para este canal.
+    if (!['efectivo', 'transferencia'].includes(data.metodo_pago)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'DNI de la persona que retira es requerido (mínimo 6 caracteres)',
-        path: ['retiro_tercero_dni'],
+        message: 'Para entrega en micro solo se puede pagar por transferencia o efectivo',
+        path: ['metodo_pago'],
+      });
+    }
+    if (!data.micro_terminal) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Elegí la terminal de micros',
+        path: ['micro_terminal'],
+      });
+    }
+    if (!data.micro_empresa_transporte || data.micro_empresa_transporte.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Indicá el nombre del micro y/o la empresa de transporte',
+        path: ['micro_empresa_transporte'],
+      });
+    }
+    if (!data.micro_nombre_recibe || data.micro_nombre_recibe.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Indicá el nombre de quien recibe el pedido',
+        path: ['micro_nombre_recibe'],
       });
     }
   }

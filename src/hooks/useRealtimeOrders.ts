@@ -3,6 +3,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Order } from '@/types';
 
+const METODO_PAGO_LABELS: Record<string, string> = {
+  mercadopago:      'Mercado Pago',
+  transferencia:    'Transferencia',
+  cuenta_corriente: 'Cuenta corriente',
+  efectivo:         'Efectivo',
+};
+
 export interface RealtimeNotification {
   id:      string;
   type:    'new_order' | 'comprobante_uploaded' | 'order_updated';
@@ -80,9 +87,7 @@ export function useRealtimeOrders(onOrdersChange?: (orders: Order[]) => void) {
           addNotification({
             type:    'new_order',
             title:   '🛒 Nuevo pedido',
-            message: `${order.nombre} · ${
-              order.metodo_pago === 'mercadopago' ? 'Mercado Pago' : 'Transferencia'
-            }`,
+            message: `${order.nombre} · ${METODO_PAGO_LABELS[order.metodo_pago] ?? order.metodo_pago}`,
             orderId: order.id,
           });
           // Notify parent to refresh orders list

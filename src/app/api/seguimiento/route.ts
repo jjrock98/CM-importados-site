@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
     .select(`
       id, created_at, estado, metodo_pago, tipo_entrega,
       nombre, email, direccion, ciudad, codigo_postal,
+      micro_terminal, micro_empresa_transporte, micro_nombre_recibe,
       subtotal, costo_envio, total,
       rejection_reason, notas, tipo_venta,
       order_items(id, nombre_snap, tipo_pack, cantidad_packs, unidades, precio_unit, subtotal)

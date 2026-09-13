@@ -2,9 +2,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Package, CheckCircle2, Clock, Truck, Store, XCircle, ReceiptText } from 'lucide-react';
+import { Search, Package, CheckCircle2, Clock, Truck, Store, Bus, XCircle, ReceiptText } from 'lucide-react';
 import { formatPrice, formatDate, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/utils';
-import type { Order } from '@/types';
+import { MICRO_TERMINAL_LABELS } from '@/types';
+import type { Order, MicroTerminal } from '@/types';
 import { cn } from '@/utils';
 
 const ESTADO_ICON: Record<string, React.ReactNode> = {
@@ -211,13 +212,20 @@ export function SeguimientoContent() {
           {/* Entrega */}
           <div className="card p-5">
             <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              {order.tipo_entrega === 'retiro' ? <Store size={15} /> : <Truck size={15} />}
-              {order.tipo_entrega === 'retiro' ? 'Retiro en local' : 'Envío a domicilio'}
+              {order.tipo_entrega === 'retiro' ? <Store size={15} /> : order.tipo_entrega === 'micro' ? <Bus size={15} /> : <Truck size={15} />}
+              {order.tipo_entrega === 'retiro' ? 'Retiro en local' : order.tipo_entrega === 'micro' ? 'Entrega en micro' : 'Envío a domicilio'}
             </h3>
-            {order.tipo_entrega !== 'retiro' && (
+            {order.tipo_entrega === 'envio' && (
               <p className="text-sm text-muted">
                 {order.direccion}, {order.ciudad} (CP {order.codigo_postal})
               </p>
+            )}
+            {order.tipo_entrega === 'micro' && (
+              <div className="text-sm text-muted space-y-0.5">
+                <p>Terminal: <span className="font-medium text-foreground">{MICRO_TERMINAL_LABELS[order.micro_terminal as MicroTerminal] || order.micro_terminal || '—'}</span></p>
+                <p>Micro/empresa: {order.micro_empresa_transporte || '—'}</p>
+                <p>Recibe: {order.micro_nombre_recibe || '—'}</p>
+              </div>
             )}
           </div>
 

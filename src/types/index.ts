@@ -87,10 +87,18 @@ export type OrderEstado =
   | 'cancelado'
   | 'rechazado';
 
-export type MetodoPago  = 'mercadopago' | 'transferencia' | 'cuenta_corriente';
+export type MetodoPago  = 'mercadopago' | 'transferencia' | 'cuenta_corriente' | 'efectivo';
 export type TipoPack    = 'media_docena' | 'docena' | 'unidad';
 export type TipoVenta   = 'mayorista' | 'minorista';
-export type TipoEntrega = 'envio' | 'retiro';
+export type TipoEntrega = 'envio' | 'retiro' | 'micro';
+
+/** Terminales de micros habilitadas — solo aplica a tipo_entrega='micro' (feria La Salada). */
+export type MicroTerminal = 'punta_mogote' | 'urkupinia' | 'ocean';
+export const MICRO_TERMINAL_LABELS: Record<MicroTerminal, string> = {
+  punta_mogote: 'Punta Mogote',
+  urkupinia:    'Urkupiña',
+  ocean:        'Ocean',
+};
 
 export interface Order {
   id: string;
@@ -112,6 +120,10 @@ export interface Order {
   retiro_tercero_dni: string | null;
   retirado_at: string | null;
   retirado_por: string | null;
+  // Entrega en micros (solo tipo_entrega='micro' — feria La Salada)
+  micro_terminal: MicroTerminal | null;
+  micro_empresa_transporte: string | null;
+  micro_nombre_recibe: string | null;
   // MP
   mp_preference_id: string | null;
   mp_payment_id: string | null;
@@ -219,6 +231,9 @@ export interface CheckoutFormData {
   nombre: string; email: string; telefono: string;
   direccion: string; ciudad: string; codigo_postal: string;
   notas?: string; metodo_pago: MetodoPago; tipo_entrega: TipoEntrega;
+  micro_terminal?: MicroTerminal | null;
+  micro_empresa_transporte?: string;
+  micro_nombre_recibe?: string;
 }
 
 export interface CreateOrderPayload {

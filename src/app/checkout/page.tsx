@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useCartStore } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { formatPrice } from '@/utils';
-import { PACK_CONFIG } from '@/types';
-import type { MetodoPago } from '@/types';
+import { PACK_CONFIG, MICRO_TERMINAL_LABELS } from '@/types';
+import type { MetodoPago, MicroTerminal } from '@/types';
 import { pixelInitiateCheckout, pixelPurchase } from '@/lib/fbpixel';
-import { Wallet, Building2, AlertCircle, Loader2, ExternalLink, MapPin, Store, Truck, CheckCircle2, MessageCircle, CreditCard } from 'lucide-react';
+import { Wallet, Building2, AlertCircle, Loader2, ExternalLink, MapPin, Store, Truck, Bus, Banknote, CheckCircle2, MessageCircle, CreditCard } from 'lucide-react';
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 
-type TipoEntrega = 'envio' | 'retiro';
+type TipoEntrega = 'envio' | 'retiro' | 'micro';
 
 const PAYMENT_METHODS: { id: MetodoPago; label: string; desc: string; icon: React.ReactNode }[] = [
   // ✅ Transferencia primero — es el método principal del negocio hoy
@@ -23,18 +23,30 @@ const PAYMENT_METHODS: { id: MetodoPago; label: string; desc: string; icon: Reac
   { id: 'mercadopago',   label: 'Mercado Pago',        desc: 'Débito, dinero en cuenta y más — sin tarjeta de crédito', icon: <Wallet size={20} className="text-muted" /> },
 ];
 
+// ✅ Efectivo — solo se ofrece para 'retiro' en local o 'micro' (nunca
+// para envío a domicilio, no hay nadie ahí para cobrar). El stock recién
+// se reserva cuando el admin confirma que cobró (ver mark-paid).
+const EFECTIVO_METHOD: { id: MetodoPago; label: string; desc: string; icon: React.ReactNode } =
+  { id: 'efectivo', label: 'Pago en efectivo', desc: 'Pagás al recibir/retirar el pedido', icon: <Banknote size={20} className="text-amber-600" /> };
+
+const MICRO_TERMINALS: { id: MicroTerminal; label: string }[] = (
+  Object.keys(MICRO_TERMINAL_LABELS) as MicroTerminal[]
+).map((id) => ({ id, label: MICRO_TERMINAL_LABELS[id] }));
+
 
 // ── WhatsApp checkout helper ──────────────────────────────────────────────────
 function buildWhatsAppMessage({
   items,
   form,
   tipoEntrega,
+  microTerminal,
   subtotal,
   total,
 }: {
   items: import('@/types').CartItem[];
-  form: { nombre: string; email: string; telefono: string; direccion: string; ciudad: string; codigo_postal: string; notas: string };
-  tipoEntrega: 'envio' | 'retiro';
+  form: { nombre: string; email: string; telefono: string; direccion: string; ciudad: string; codigo_postal: string; notas: string; micro_empresa_transporte: string; micro_nombre_recibe: string };
+  tipoEntrega: TipoEntrega;
+  microTerminal: MicroTerminal | null;
   subtotal: number;
   total: number;
 }): string {
@@ -58,7 +70,12 @@ function buildWhatsAppMessage({
 
   const entregaInfo = tipoEntrega === 'retiro'
     ? '🏪 *Retiro en local*'
-    : `🚚 *Envío a domicilio*
+    : tipoEntrega === 'micro'
+      ? `🚌 *Entrega en micro — La Salada*
+   Terminal: ${microTerminal ? MICRO_TERMINAL_LABELS[microTerminal] : '—'}
+   Micro/empresa: ${form.micro_empresa_transporte || '—'}
+   Recibe: ${form.micro_nombre_recibe || '—'}`
+      : `🚚 *Envío a domicilio*
    ${form.direccion}, ${form.ciudad} (CP ${form.codigo_postal})`;
 
   const notasLine = form.notas ? `\n📝 *Notas:* ${form.notas}` : '';
@@ -81,7 +98,7 @@ function buildWhatsAppMessage({
     '',
     `💰 *Totales*`,
     `   Subtotal: ${fmt(subtotal)}`,
-    tipoEntrega === 'envio' ? '   Envío: a coordinar' : '   Envío: Retiro en local',
+    tipoEntrega === 'envio' ? '   Envío: a coordinar' : tipoEntrega === 'micro' ? '   Envío: Entrega en micro (gratis)' : '   Envío: Retiro en local',
     `   *TOTAL: ${fmt(total)}*`,
     '',
     `📦 *Entrega*`,
@@ -112,10 +129,31 @@ export default function CheckoutPage() {
     nombre: '', email: '', telefono: '',
     direccion: '', ciudad: '', codigo_postal: '', notas: '',
     retiro_dni_titular: '', retiro_tercero_nombre: '', retiro_tercero_dni: '',
+    micro_empresa_transporte: '', micro_nombre_recibe: '',
   });
   const [retiraTercero, setRetiraTercero] = useState(false);
   const [metodo,      setMetodo]      = useState<MetodoPago>('transferencia');
   const [tipoEntrega, setTipoEntrega] = useState<TipoEntrega>('envio');
+  const [microTerminal, setMicroTerminal] = useState<MicroTerminal | null>(null);
+
+  // ── Métodos de pago disponibles: dependen del tipo de entrega ────────
+  // - Envío a domicilio: transferencia / Mercado Pago (+ cta. cte. si aplica) — sin efectivo.
+  // - Retiro en local:   los mismos + efectivo (se agrega abajo).
+  // - Entrega en micro:  SOLO transferencia y efectivo (decisión del negocio).
+  const isMicro = tipoEntrega === 'micro';
+
+  // Si cambia el tipo de entrega y el método elegido deja de ser válido,
+  // se resetea a uno que sí lo sea (evita que quede seleccionado un radio
+  // que después el servidor rechaza).
+  useEffect(() => {
+    if (isMicro && metodo !== 'efectivo' && metodo !== 'transferencia') {
+      setMetodo('transferencia');
+    }
+    if (tipoEntrega !== 'retiro' && !isMicro && metodo === 'efectivo') {
+      setMetodo('transferencia');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoEntrega]);
   const [submitting,  setSub]         = useState(false);
   const [mpStatus,    setMpStatus]    = useState<MPStatus>('idle');
   const [mpUrl,       setMpUrl]       = useState('');
@@ -195,7 +233,7 @@ export default function CheckoutPage() {
       },
       body: JSON.stringify({
         items: items.map((i) => ({ product_id: i.productId, tipo_pack: i.tipoPack, cantidad_packs: i.cantidadPacks, variant_id: i.variantId ?? null })),
-        formData: { ...form, metodo_pago: metodo, tipo_entrega: tipoEntrega, retiro_retira_tercero: retiraTercero },
+        formData: { ...form, metodo_pago: metodo, tipo_entrega: tipoEntrega, retiro_retira_tercero: retiraTercero, micro_terminal: microTerminal },
         subtotal: subtotalConDescuento,
         costo_envio: 0,
         total: calcTotal,
@@ -236,6 +274,11 @@ export default function CheckoutPage() {
         return;
       }
     }
+    if (tipoEntrega === 'micro') {
+      if (!microTerminal) { toast.error('Elegí la terminal de micros'); return; }
+      if (form.micro_empresa_transporte.trim().length < 2) { toast.error('Indicá el nombre del micro y/o la empresa de transporte'); return; }
+      if (form.micro_nombre_recibe.trim().length < 2) { toast.error('Indicá el nombre de quien recibe el pedido'); return; }
+    }
     setSub(true);
     try {
       const orderId = await createOrder();
@@ -272,6 +315,20 @@ export default function CheckoutPage() {
         // Invitados también suben comprobante — la página ya soporta
         // identificarlos por orderId + email (mismo patrón que /seguimiento).
         router.push(`/subir-comprobante?orderId=${orderId}${!user ? `&email=${encodeURIComponent(form.email)}` : ''}`);
+      } else if (metodo === 'efectivo') {
+        // Efectivo: no hay comprobante que subir ni pago online — el
+        // pedido queda 'pendiente' y el stock recién se reserva cuando el
+        // admin confirma que cobró (al retirar en local o al despachar
+        // el micro). Va directo a confirmación.
+        pixelPurchase({
+          orderId:    orderId,
+          value:      calcTotal,
+          contentIds: items.map((i) => i.productId),
+          numItems:   items.reduce((a, i) => a + i.cantidadPacks, 0),
+        });
+        clearCart();
+        toast.success('Pedido confirmado — pagás en efectivo al recibirlo');
+        router.push(`/pedido-confirmado?orderId=${orderId}&email=${encodeURIComponent(form.email)}`);
       } else {
         // Cuenta corriente: el pedido ya quedó 'pagado' en el servidor
         // (se descontó del cupo del cliente) — va directo a confirmación,
@@ -329,10 +386,14 @@ export default function CheckoutPage() {
       toast.error('Completá tu dirección de envío');
       return;
     }
+    if (tipoEntrega === 'micro' && (!microTerminal || !form.micro_empresa_transporte.trim() || !form.micro_nombre_recibe.trim())) {
+      toast.error('Completá los datos de entrega en micro (terminal, micro/empresa y quién retira)');
+      return;
+    }
     if (items.length === 0) { toast.error('El carrito está vacío'); return; }
 
     const message = buildWhatsAppMessage({
-      items, form, tipoEntrega, subtotal,
+      items, form, tipoEntrega, microTerminal, subtotal,
       total: calcTotal,
     });
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
@@ -378,10 +439,11 @@ export default function CheckoutPage() {
             {/* ── Tipo de entrega ── */}
             <div className="card p-6">
               <h2 className="font-semibold mb-4">Tipo de entrega</h2>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {([
                   { id: 'envio',  label: 'Envío a domicilio', desc: 'Lo recibís en tu dirección',  icon: <Truck  size={20} className="text-brand-500" /> },
                   { id: 'retiro', label: 'Retirar en local',  desc: 'Sin costo de envío',           icon: <Store  size={20} className="text-green-600" /> },
+                  { id: 'micro',  label: 'Entrega en micro',  desc: 'Solo Feria La Salada',          icon: <Bus    size={20} className="text-amber-600" /> },
                 ] as { id: TipoEntrega; label: string; desc: string; icon: React.ReactNode }[]).map((opt) => (
                   <label key={opt.id}
                     className={cn(
@@ -472,6 +534,54 @@ export default function CheckoutPage() {
                   )}
                 </div>
               )}
+
+              {/* ── Entrega en micros (solo Feria La Salada) ── */}
+              {tipoEntrega === 'micro' && (
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 p-4">
+                    <p className="text-sm text-amber-800 dark:text-amber-400 flex items-center gap-2 font-semibold mb-1">
+                      <Bus size={15} /> Entrega en micro — Feria La Salada
+                    </p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      Despachamos tu pedido en el micro que elijas. Es gratis — te contactamos para coordinar el detalle final.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-2">Terminal *</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {MICRO_TERMINALS.map((t) => (
+                        <label key={t.id} className={cn(
+                          'flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 p-3 text-sm text-center transition-all',
+                          microTerminal === t.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-border hover:border-brand-300'
+                        )}>
+                          <input type="radio" name="microTerminal" className="sr-only"
+                            checked={microTerminal === t.id} onChange={() => setMicroTerminal(t.id)} />
+                          {t.label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Nombre del micro y/o empresa de transporte *</label>
+                      <input required value={form.micro_empresa_transporte}
+                        onChange={set('micro_empresa_transporte')} className="input-base"
+                        placeholder="Ej: Transporte Andesmar" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Nombre de quien recibe el pedido *</label>
+                      <input required value={form.micro_nombre_recibe}
+                        onChange={set('micro_nombre_recibe')} className="input-base"
+                        placeholder="Puede ser vos u otra persona" />
+                      <p className="text-xs text-muted mt-1">
+                        Si el comprador es anónimo o retira un tercero, indicá el nombre de esa persona acá.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── Datos personales ── */}
@@ -505,21 +615,35 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* ── Notas para entrega en micro ── */}
+            {isMicro && (
+              <div className="card p-6">
+                <h2 className="font-semibold mb-4">Notas para la entrega en micro (opcional)</h2>
+                <textarea value={form.notas} onChange={set('notas')} rows={2} className="input-base resize-none" placeholder="Horario del micro, aclaraciones…" />
+              </div>
+            )}
+
             {/* ── Método de pago ── */}
             <div className="card p-6">
               <h2 className="font-semibold mb-1">Método de pago</h2>
               {tipoEntrega === 'retiro' && (
                 <p className="text-xs text-muted mb-4">También podés pagar en efectivo directamente al retirar tu pedido en el local.</p>
               )}
+              {isMicro && (
+                <p className="text-xs text-muted mb-4">Para entrega en micro solo se puede pagar por transferencia o efectivo.</p>
+              )}
               <div className={cn('space-y-3', tipoEntrega !== 'retiro' && 'mt-4')}>
                 {[
-                  ...PAYMENT_METHODS,
-                  ...(tieneCuentaCorriente ? [{
+                  // Micro: solo transferencia + efectivo (sin Mercado Pago ni cta. cte.)
+                  ...(isMicro ? PAYMENT_METHODS.filter((m) => m.id === 'transferencia') : PAYMENT_METHODS),
+                  ...(tieneCuentaCorriente && !isMicro ? [{
                     id: 'cuenta_corriente' as MetodoPago,
                     label: 'Cuenta corriente',
                     desc: `Disponible: ${formatPrice(condiciones.disponible_cuenta_corriente)}`,
                     icon: <CreditCard size={20} className="text-purple-600" />,
                   }] : []),
+                  // Efectivo: solo para retiro en local o entrega en micro
+                  ...(tipoEntrega === 'retiro' || isMicro ? [EFECTIVO_METHOD] : []),
                 ].map((m) => (
                   <label key={m.id}
                     className={cn(
@@ -540,6 +664,12 @@ export default function CheckoutPage() {
                 <div className="mt-4 rounded-xl bg-sky-50 dark:bg-sky-950/20 p-4 text-sm text-sky-800 dark:text-sky-300 flex gap-3">
                   <ExternalLink size={15} className="shrink-0 mt-0.5" />
                   <p>Se abrirá una <strong>ventana nueva</strong> con Mercado Pago para completar tu pago de forma segura.</p>
+                </div>
+              )}
+              {metodo === 'efectivo' && (
+                <div className="mt-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-800 dark:text-amber-300 flex gap-3">
+                  <Banknote size={15} className="shrink-0 mt-0.5" />
+                  <p>Pagás en efectivo {isMicro ? 'al despachar el pedido en el micro' : 'al retirar tu pedido en el local'}. No necesitás subir ningún comprobante.</p>
                 </div>
               )}
             </div>
@@ -567,7 +697,13 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex justify-between text-muted">
                   <span>Envío</span>
-                  <span>{tipoEntrega === 'retiro' ? <span className="text-green-600 font-medium">Retiro en local</span> : <span className="text-xs">A coordinar</span>}</span>
+                  <span>
+                    {tipoEntrega === 'retiro'
+                      ? <span className="text-green-600 font-medium">Retiro en local</span>
+                      : isMicro
+                        ? <span className="text-amber-600 font-medium">Entrega en micro (gratis)</span>
+                        : <span className="text-xs">A coordinar</span>}
+                  </span>
                 </div>
                 <div className="flex justify-between font-bold text-base border-t border-border pt-2">
                   <span>Total</span>
@@ -577,6 +713,11 @@ export default function CheckoutPage() {
               {tipoEntrega === 'envio' && (
                 <p className="text-[11px] text-muted -mt-1">
                   El total no incluye el envío — te contactamos para coordinarlo (WhatsApp, chat en vivo o como prefieras).
+                </p>
+              )}
+              {isMicro && (
+                <p className="text-[11px] text-muted -mt-1">
+                  Te contactamos para coordinar el despacho en el micro elegido.
                 </p>
               )}
 
