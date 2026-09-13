@@ -20,31 +20,35 @@ const TAGS = [
 
 const DOTS = ['#c9974b', '#8ba1c9', '#e5e7eb', '#3d5588'];
 
-export function HeroVisual() {
+export function HeroVisual({ hideBackgroundEffects = false }: { hideBackgroundEffects?: boolean }) {
   const reduce = useReducedMotion();
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-      {/* Blobs de gradiente — profundidad de fondo, en vez del punteado estático fijo */}
-      <motion.div
-        className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl"
-        animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(4%,6%) scale(1.08)', 'translate(-3%,-4%) scale(0.96)', 'translate(0,0) scale(1)'] }}
-        transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute -bottom-32 -right-10 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl"
-        animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(-4%,-5%) scale(1.06)', 'translate(3%,4%) scale(0.94)', 'translate(0,0) scale(1)'] }}
-        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-      />
+      {!hideBackgroundEffects && (
+        <>
+          {/* Blobs de gradiente — profundidad de fondo, en vez del punteado estático fijo */}
+          <motion.div
+            className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl"
+            animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(4%,6%) scale(1.08)', 'translate(-3%,-4%) scale(0.96)', 'translate(0,0) scale(1)'] }}
+            transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute -bottom-32 -right-10 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl"
+            animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(-4%,-5%) scale(1.06)', 'translate(3%,4%) scale(0.94)', 'translate(0,0) scale(1)'] }}
+            transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+          />
 
-      {/* Grilla de puntos sutil, sobre los blobs */}
-      <div
-        className="absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
-        }}
-      />
+          {/* Grilla de puntos sutil, sobre los blobs */}
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 1px)',
+              backgroundSize: '28px 28px',
+            }}
+          />
+        </>
+      )}
 
       {/* Chips flotantes: talles y colores reales del catálogo, no íconos random */}
       {TAGS.map((tag, i) => (

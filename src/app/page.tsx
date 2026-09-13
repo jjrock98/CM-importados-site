@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductCard } from '@/components/products/ProductCard';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import { HeroVisual } from '@/components/home/HeroVisual';
+import { HeroSmoke } from '@/components/home/HeroSmoke';
 import { ScrollToAnchor } from '@/components/common/ScrollToAnchor';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
@@ -121,9 +122,13 @@ export default async function HomePage({
 
       {/* Hero — navy de marca, con fondo animado atado al negocio real
           (sello de docena cerrada, chips de talles/colores) en vez de un
-          bloque estático. Ver HeroVisual.tsx para el detalle. */}
+          bloque estático. Ver HeroVisual.tsx para el detalle.
+
+          HeroSmoke agrega el efecto de humo/niebla (100% CSS, sin video
+          ni imagen de por medio — ver HeroSmoke.tsx). */}
       <section className="relative overflow-hidden bg-brand-800 text-white">
-        <HeroVisual />
+        <HeroSmoke />
+        <HeroVisual hideBackgroundEffects />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 text-center sm:py-24">
           <AnimateIn>
