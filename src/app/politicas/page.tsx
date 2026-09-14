@@ -22,7 +22,7 @@ export default function PoliticasPage() {
       <h2>Seguridad de pagos</h2>
       <p>Los pagos son procesados íntegramente por Mercado Pago S.A., que cumple con los estándares de seguridad PCI-DSS. Nosotros nunca almacenamos datos de tarjetas de crédito o débito.</p>
       <h2>Cookies</h2>
-      <p>Usamos cookies esenciales para el funcionamiento del carrito de compras y la sesión de usuario. También usamos cookies de análisis anónimas (Vercel Analytics) para mejorar la experiencia. No usamos cookies de seguimiento publicitario de terceros.</p>
+      <p>Usamos cookies esenciales para el funcionamiento del carrito de compras y la sesión de usuario. También usamos cookies de análisis anónimas (Vercel Analytics) para mejorar la experiencia. Si aceptás el banner de cookies, además activamos el píxel de Meta (Facebook/Instagram) para medir la efectividad de nuestros anuncios — podés rechazarlo eligiendo &quot;Solo esenciales&quot; en ese banner, o borrando la cookie desde tu navegador para que vuelva a aparecer.</p>
       <h2>Retención de datos</h2>
       <p>Conservamos tus datos de pedidos por el tiempo necesario para cumplir obligaciones legales y fiscales. Podés solicitar la eliminación de tu cuenta y datos personales en cualquier momento contactándonos.</p>
       <h2>Tus derechos</h2>

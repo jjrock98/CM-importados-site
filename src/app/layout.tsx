@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Suspense } from 'react';
 import { Inter, Playfair_Display } from 'next/font/google';
-import Script from 'next/script';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from 'react-hot-toast';
 import { Analytics } from '@vercel/analytics/react';
@@ -12,6 +11,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
+import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
 import { PageProgress } from '@/components/common/PageProgress';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
 import { BackToTop } from '@/components/common/BackToTop';
@@ -173,17 +173,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Analytics />
           <SpeedInsights />
 
-          {/* Facebook Pixel — opcional, se activa solo si se configura
-              NEXT_PUBLIC_FB_PIXEL_ID. next/script con strategy
-              "afterInteractive" carga el script después de que la página
-              ya es interactiva, sin bloquear el render inicial ni
-              interferir con la hidratación (a diferencia de un <script>
-              manual dentro de <head>). */}
-          {process.env.NEXT_PUBLIC_FB_PIXEL_ID && (
-            <Script id="fb-pixel" strategy="afterInteractive">
-              {`!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${process.env.NEXT_PUBLIC_FB_PIXEL_ID}');fbq('track','PageView');`}
-            </Script>
-          )}
+          {/* ✅ FIX: antes este <Script> se cargaba siempre que hubiera
+              NEXT_PUBLIC_FB_PIXEL_ID, sin mirar la elección del banner de
+              cookies. Ahora vive en FacebookPixelLoader.tsx, que solo lo
+              renderiza si el visitante aceptó cookies de marketing. */}
+          <FacebookPixelLoader />
         </ThemeProvider>
       </body>
     </html>

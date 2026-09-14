@@ -1,29 +1,28 @@
 'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Cookie, X } from 'lucide-react';
+import Link from 'next/link';
+import { useCookieConsentStore } from '@/hooks/useCookieConsent';
 
-const STORAGE_KEY = 'cookie-consent';
-
+/**
+ * Banner de consentimiento de cookies.
+ *
+ * ✅ FIX: antes guardaba la elección en localStorage pero NUNCA la
+ * usaba para nada — el Pixel de Meta (src/lib/fbpixel.ts) se cargaba
+ * igual para todos desde layout.tsx, sin importar si el visitante
+ * tocaba "Aceptar" o "Solo esenciales". El texto de acá y el de
+ * /politicas decían "no usamos cookies de seguimiento de terceros",
+ * lo cual era falso mientras el Pixel esté configurado.
+ *
+ * Ahora la elección vive en useCookieConsentStore (persistida) y
+ * FacebookPixelLoader.tsx la lee de ahí: el Pixel solo se carga si el
+ * visitante eligió "Aceptar todo".
+ */
 export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
+  const status  = useCookieConsentStore((s) => s.status);
+  const accept  = useCookieConsentStore((s) => s.accept);
+  const reject  = useCookieConsentStore((s) => s.rejectMarketing);
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) setVisible(true);
-  }, []);
-
-  const accept = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ accepted: true, date: new Date().toISOString() }));
-    setVisible(false);
-  };
-
-  const reject = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ accepted: false, date: new Date().toISOString() }));
-    setVisible(false);
-  };
-
-  if (!visible) return null;
+  if (status !== 'unknown') return null;
 
   return (
     <div
@@ -44,22 +43,17 @@ export function CookieConsent() {
         </div>
 
         <p className="text-xs text-muted leading-relaxed mb-4">
-          Usamos cookies esenciales para el funcionamiento del carrito y la sesión.
-          No usamos cookies de seguimiento de terceros.{' '}
+          Usamos cookies esenciales para el carrito y la sesión. Si aceptás,
+          también activamos el píxel de Meta (Facebook/Instagram) para medir
+          la efectividad de nuestros anuncios.{' '}
           <Link href="/politicas" className="text-brand-600 hover:underline">Ver política de privacidad</Link>.
         </p>
 
         <div className="flex gap-2">
-          <button
-            onClick={accept}
-            className="btn-primary flex-1 py-2 text-xs"
-          >
-            Aceptar
+          <button onClick={accept} className="btn-primary flex-1 py-2 text-xs">
+            Aceptar todo
           </button>
-          <button
-            onClick={reject}
-            className="btn-secondary flex-1 py-2 text-xs"
-          >
+          <button onClick={reject} className="btn-secondary flex-1 py-2 text-xs">
             Solo esenciales
           </button>
         </div>
