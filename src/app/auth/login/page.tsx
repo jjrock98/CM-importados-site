@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, Eye, EyeOff, Chrome } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Chrome, Facebook } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 
@@ -17,6 +17,34 @@ export default function LoginPage() {
   const [showPw,   setShowPw]   = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // ✅ NUEVO: hasta ahora esta página nunca chequeaba si ya había una
+  // sesión activa al cargar. Es la causa más probable del bug reportado
+  // ("me dice bienvenido pero sigo en el login, recién en el segundo
+  // refresh entra"): si por conexión lenta o un refresh justo en medio
+  // del login la sesión termina puesta en el navegador ANTES de que esta
+  // página llegue a redirigir, no había nada que lo detectara al volver
+  // a cargar /auth/login — se mostraba el formulario igual, sin importar
+  // que ya hubiera sesión, hasta que en algún momento posterior (el
+  // segundo refresh) todo terminaba de sincronizar por las suyas.
+  // Ahora, apenas monta la página, se fija con supabase.auth.getUser()
+  // (mismo chequeo que ya usa useAuth() — valida contra el servidor de
+  // Supabase, no confía en un estado local que podría estar desactualizado)
+  // si ya hay sesión, y si la hay, redirige de una — sin mostrar el
+  // formulario ni esperar a que la persona intente loguearse de nuevo.
+  const [checkingSession, setCheckingSession] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled) return;
+      if (user) {
+        window.location.href = redirect;
+      } else {
+        setCheckingSession(false);
+      }
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ✅ NUEVO: aviso cuando el middleware redirige acá por inactividad
   // (ver ADMIN_IDLE_LIMIT_SECONDS en middleware.ts)
@@ -87,16 +115,35 @@ export default function LoginPage() {
     });
   };
 
+  // ✅ NUEVO: mismo patrón que Google — Supabase se encarga de todo el
+  // intercambio OAuth, el callback (/auth/callback) ya es genérico y no
+  // necesita ningún cambio para soportar un provider más.
+  const handleFacebook = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+    });
+  };
+
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      {checkingSession ? (
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" aria-label="Verificando sesión…" />
+      ) : (
       <div className="card w-full max-w-md p-8 animate-scale-in">
         <h1 className="font-display text-2xl font-bold text-center mb-1">Ingresar</h1>
         <p className="text-center text-sm text-muted mb-8">Accedé a tu cuenta para continuar</p>
 
         {/* Google */}
-        <button onClick={handleGoogle} className="btn-secondary w-full mb-4 gap-3">
+        <button onClick={handleGoogle} className="btn-secondary w-full mb-3 gap-3">
           <Chrome size={18} className="text-red-500" />
           Continuar con Google
+        </button>
+
+        {/* Facebook */}
+        <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
+          <Facebook size={18} className="text-blue-600" />
+          Continuar con Facebook
         </button>
 
         <div className="relative my-5">
@@ -156,6 +203,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+      )}
     </div>
   );
 }
