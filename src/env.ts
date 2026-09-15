@@ -11,6 +11,14 @@ const serverSchema = z.object({
   MERCADOPAGO_ACCESS_TOKEN:           z.string().min(1, 'MERCADOPAGO_ACCESS_TOKEN es requerida'),
   NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: z.string().min(1, 'NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY es requerida'),
 
+  // Facebook Login — opcional. Sin esto configurado, el botón "Continuar
+  // con Facebook" sigue funcionando igual (Supabase maneja el OAuth con
+  // su propia copia del secret) — este solo hace falta para poder
+  // verificar la firma del webhook de deauthorize (ver
+  // api/webhooks/facebook-deauthorize). Es el mismo App Secret que ya
+  // cargaste en Supabase → Authentication → Providers → Facebook.
+  FACEBOOK_APP_SECRET: z.string().optional(),
+
   // Email
   RESEND_API_KEY:    z.string().startsWith('re_', 'RESEND_API_KEY debe empezar con re_'),
   RESEND_FROM_EMAIL: z.string().email('RESEND_FROM_EMAIL debe ser un email válido'),
