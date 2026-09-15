@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, User, Chrome, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, Chrome, Facebook, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
@@ -72,6 +72,24 @@ export default function RegistroPage() {
   const [showPw,  setShowPw]  = useState(false);
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  // ✅ NUEVO: mismo fix que se aplicó en /auth/login — si alguien llega
+  // acá ya logueado (sesión activa), se lo redirige de una en vez de
+  // mostrarle el formulario de registro. Ver el comentario largo en
+  // auth/login/page.tsx para el detalle completo del bug que esto evita.
+  const [checkingSession, setCheckingSession] = useState(true);
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (cancelled) return;
+      if (user) {
+        window.location.href = redirect;
+      } else {
+        setCheckingSession(false);
+      }
+    });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const {
     register,
@@ -120,6 +138,14 @@ export default function RegistroPage() {
     });
   };
 
+  // ✅ NUEVO: mismo patrón que Google.
+  const handleFacebook = async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+    });
+  };
+
   const FieldError = ({ name }: { name: keyof FormData }) =>
     errors[name] ? (
       <p className="mt-1 flex items-center gap-1 text-xs text-red-500">
@@ -134,13 +160,21 @@ export default function RegistroPage() {
 
   return (
     <div className="flex min-h-[80vh] items-center justify-center px-4 py-12">
+      {checkingSession ? (
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" aria-label="Verificando sesión…" />
+      ) : (
       <div className="card w-full max-w-md p-8 animate-scale-in">
         <h1 className="font-display text-2xl font-bold text-center mb-1">Crear cuenta</h1>
         <p className="text-center text-sm text-muted mb-8">Registrate para comprar fácilmente</p>
 
-        <button onClick={handleGoogle} className="btn-secondary w-full mb-4 gap-3">
+        <button onClick={handleGoogle} className="btn-secondary w-full mb-3 gap-3">
           <Chrome size={18} className="text-red-500" />
           Registrarse con Google
+        </button>
+
+        <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
+          <Facebook size={18} className="text-blue-600" />
+          Registrarse con Facebook
         </button>
 
         <div className="relative my-5">
@@ -278,6 +312,7 @@ export default function RegistroPage() {
           </Link>
         </p>
       </div>
+      )}
     </div>
   );
 }
