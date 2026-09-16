@@ -32,11 +32,11 @@ export function AdminMobileNav({ notifications }: Props) {
   return (
     <div className="md:hidden">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b border-border bg-surface px-4 py-3">
-        <p className="font-display font-bold text-brand-600 text-sm">Admin Panel</p>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-surface px-4 py-3">
+        <p className="min-w-0 truncate font-display font-bold text-brand-600 text-sm">Admin Panel</p>
+        <div className="flex shrink-0 items-center gap-1">
           {notifications}
-          <button onClick={() => setOpen(!open)} className="btn-ghost p-2" aria-label="Menú admin">
+          <button onClick={() => setOpen(!open)} className="btn-ghost shrink-0 p-2" aria-label="Menú admin">
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
