@@ -62,7 +62,12 @@ export function ProfileClient({ profile: initial, ordersCount }: Props) {
     if (pwForm.nuevo.length < 6) { toast.error('Mínimo 6 caracteres'); return; }
     setSavingPw(true);
     const { error } = await supabase.auth.updateUser({ password: pwForm.nuevo });
-    if (error) toast.error('No se pudo cambiar la contraseña');
+    // ✅ FIX: antes se mostraba siempre el mismo mensaje genérico
+    // ("No se pudo cambiar la contraseña") sin importar la causa real —
+    // imposible saber si era un problema de longitud/política de
+    // contraseña del lado de Supabase, la sesión vencida, o cualquier
+    // otra cosa. Ahora se muestra el motivo real que devuelve Supabase.
+    if (error) toast.error(`No se pudo cambiar la contraseña: ${error.message}`, { duration: 6000 });
     else { toast.success('Contraseña actualizada'); setPwForm({ nuevo: '', confirmar: '' }); }
     setSavingPw(false);
   };
