@@ -25,6 +25,9 @@ const MAX_IMAGENES = 4;
 // automáticamente al Flash vigente, en vez de fijar un nombre de modelo
 // concreto que puede quedar discontinuado.
 const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// Modelo de respaldo si el principal devuelve 503 (sobrecarga transitoria,
+// común en el tier gratis en horarios pico) después de los reintentos.
+const MODEL_FALLBACK = process.env.GEMINI_MODEL_FALLBACK || 'gemini-2.0-flash';
 
 interface GenerarIABody {
   imagenes?: string[];
@@ -45,6 +48,37 @@ async function imagenABase64(url: string): Promise<{ mimeType: string; data: str
   } catch {
     return null;
   }
+}
+
+async function llamarGemini(model: string, apiKey: string, requestBody: object): Promise<Response> {
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody),
+  });
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Llama a Gemini con reintentos: el tier gratis devuelve 503 seguido en
+ * horarios pico por sobrecarga transitoria del modelo, no por un error
+ * real de la request. Reintenta 2 veces con backoff corto sobre el mismo
+ * modelo y, si sigue devolviendo 503, prueba una vez con MODEL_FALLBACK
+ * antes de rendirse.
+ */
+async function llamarGeminiConReintentos(apiKey: string, requestBody: object): Promise<Response> {
+  let ultimaRes: Response | null = null;
+  for (const intento of [0, 1, 2]) {
+    if (intento > 0) await sleep(intento * 1200);
+    ultimaRes = await llamarGemini(MODEL, apiKey, requestBody);
+    if (ultimaRes.ok || ultimaRes.status !== 503) return ultimaRes;
+  }
+  if (MODEL_FALLBACK && MODEL_FALLBACK !== MODEL) {
+    const resFallback = await llamarGemini(MODEL_FALLBACK, apiKey, requestBody);
+    if (resFallback.ok) return resFallback;
+  }
+  return ultimaRes!;
 }
 
 export async function POST(req: NextRequest) {
@@ -99,28 +133,27 @@ Reglas:
 - Todo en español rioplatense, tono comercial pero natural (no genérico de IA).`;
 
   try {
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: prompt },
-                ...imagenesData.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.data } })),
-              ],
-            },
+    const geminiRes = await llamarGeminiConReintentos(apiKey, {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            ...imagenesData.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.data } })),
           ],
-          generationConfig: { responseMimeType: 'application/json' },
-        }),
-      }
-    );
+        },
+      ],
+      generationConfig: { responseMimeType: 'application/json' },
+    });
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text().catch(() => '');
       console.error('Gemini API error:', geminiRes.status, errText);
+      if (geminiRes.status === 503) {
+        return NextResponse.json(
+          { error: 'Google está saturado ahora mismo (ya reintenté varias veces). Probá de nuevo en un minuto.' },
+          { status: 503 }
+        );
+      }
       // Devolvemos el motivo real (acortado) para poder diagnosticar desde
       // el toast del admin sin tener que ir a mirar los logs de Vercel.
       let detalle = errText.slice(0, 200);
