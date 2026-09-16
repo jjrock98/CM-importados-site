@@ -11,6 +11,12 @@ import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 
+// 🔴 Facebook Login pausado a propósito — ver el comentario largo en
+// auth/login/page.tsx (mismo motivo: Meta pide verificación de negocio
+// para servir a clientes reales). Reactivar acá también cambiando a
+// `true` cuando se resuelva.
+const FACEBOOK_LOGIN_ENABLED = false;
+
 // ── Validation schema with smart rules ──────────────────────
 const schema = z.object({
   nombre: z
@@ -167,15 +173,18 @@ export default function RegistroPage() {
         <h1 className="font-display text-2xl font-bold text-center mb-1">Crear cuenta</h1>
         <p className="text-center text-sm text-muted mb-8">Registrate para comprar fácilmente</p>
 
-        <button onClick={handleGoogle} className="btn-secondary w-full mb-3 gap-3">
+        <button onClick={handleGoogle} className={`btn-secondary w-full gap-3 ${FACEBOOK_LOGIN_ENABLED ? 'mb-3' : 'mb-4'}`}>
           <Chrome size={18} className="text-red-500" />
           Registrarse con Google
         </button>
 
-        <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
-          <Facebook size={18} className="text-blue-600" />
-          Registrarse con Facebook
-        </button>
+        {/* Facebook — pausado, ver FACEBOOK_LOGIN_ENABLED arriba */}
+        {FACEBOOK_LOGIN_ENABLED && (
+          <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
+            <Facebook size={18} className="text-blue-600" />
+            Registrarse con Facebook
+          </button>
+        )}
 
         <div className="relative my-5">
           <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border" /></div>

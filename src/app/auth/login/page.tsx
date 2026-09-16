@@ -7,6 +7,17 @@ import { Mail, Lock, Eye, EyeOff, Chrome, Facebook } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 
+// 🔴 Facebook Login pausado a propósito: Meta pide verificación de
+// negocio para que la app pase a modo "Activo" y sirva a clientes
+// reales (no solo a testers agregados a mano en el panel de Meta) — sin
+// esa verificación, ningún cliente puede loguearse con Facebook aunque
+// el código esté perfecto. Mientras no se resuelva la verificación, el
+// botón queda oculto para no ofrecer algo que hoy no funciona para
+// nadie externo. Para reactivarlo el día que se resuelva: cambiar esto
+// a `true` — no hace falta tocar nada más, el resto del código
+// (handleFacebook, el endpoint de deauthorize, etc.) sigue intacto.
+const FACEBOOK_LOGIN_ENABLED = false;
+
 export default function LoginPage() {
   const params   = useSearchParams();
   const redirect = params.get('redirect') ?? '/';
@@ -151,16 +162,18 @@ export default function LoginPage() {
         <p className="text-center text-sm text-muted mb-8">Accedé a tu cuenta para continuar</p>
 
         {/* Google */}
-        <button onClick={handleGoogle} className="btn-secondary w-full mb-3 gap-3">
+        <button onClick={handleGoogle} className={`btn-secondary w-full gap-3 ${FACEBOOK_LOGIN_ENABLED ? 'mb-3' : 'mb-4'}`}>
           <Chrome size={18} className="text-red-500" />
           Continuar con Google
         </button>
 
-        {/* Facebook */}
-        <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
-          <Facebook size={18} className="text-blue-600" />
-          Continuar con Facebook
-        </button>
+        {/* Facebook — pausado, ver FACEBOOK_LOGIN_ENABLED arriba */}
+        {FACEBOOK_LOGIN_ENABLED && (
+          <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
+            <Facebook size={18} className="text-blue-600" />
+            Continuar con Facebook
+          </button>
+        )}
 
         <div className="relative my-5">
           <div className="absolute inset-0 flex items-center">
