@@ -61,7 +61,7 @@ export function AdminMensajesClient({ initialMessages }: { initialMessages: Cont
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-muted">{formatDate(msg.created_at)}</span>
+                <span className="text-xs text-muted hidden sm:block">{formatDate(msg.created_at)}</span>
                 <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => markRead(msg.id, !msg.leido)}

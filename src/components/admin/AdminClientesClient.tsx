@@ -394,7 +394,7 @@ export function AdminClientesClient({ clients, metrics }: Props) {
       {/* ── Modal de condiciones mayoristas ── */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setEditing(null)}>
-          <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div className="card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="font-semibold flex items-center gap-2"><Wallet size={16} /> Condiciones mayoristas</h2>

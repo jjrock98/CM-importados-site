@@ -182,7 +182,7 @@ export default async function AdminDashboard() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted">
-                <th className="pb-2 pr-4">ID</th>
+                <th className="pb-2 pr-4 hidden sm:table-cell">ID</th>
                 <th className="pb-2 pr-4">Cliente</th>
                 <th className="pb-2 pr-4">Total</th>
                 <th className="pb-2">Estado</th>
@@ -191,9 +191,9 @@ export default async function AdminDashboard() {
             <tbody className="divide-y divide-border">
               {(recentOrders ?? []).map((o: { id: string; nombre: string; total: number; estado: string; created_at: string }) => (
                 <tr key={o.id} className="hover:bg-surface-2 transition-colors">
-                  <td className="py-2.5 pr-4 font-mono text-xs text-muted">#{o.id.slice(0,8).toUpperCase()}</td>
-                  <td className="py-2.5 pr-4 font-medium">{o.nombre}</td>
-                  <td className="py-2.5 pr-4 text-brand-600 font-semibold">{formatPrice(o.total)}</td>
+                  <td className="py-2.5 pr-4 font-mono text-xs text-muted hidden sm:table-cell">#{o.id.slice(0,8).toUpperCase()}</td>
+                  <td className="py-2.5 pr-4 font-medium max-w-[120px] sm:max-w-none truncate">{o.nombre}</td>
+                  <td className="py-2.5 pr-4 text-brand-600 font-semibold whitespace-nowrap">{formatPrice(o.total)}</td>
                   <td className="py-2.5">
                     <span className={`badge ${
                       o.estado === 'pagado'    ? 'bg-green-100 text-green-700' :

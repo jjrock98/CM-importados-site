@@ -104,10 +104,10 @@ export function AdminConfigClient({ initialBank, initialContact, initialLocation
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border mb-6">
+      <div className="flex gap-1 border-b border-border mb-6 overflow-x-auto">
         {TABS.map(({ id, label, icon }) => (
           <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px
+            className={`shrink-0 flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-all -mb-px
               ${tab === id ? 'border-brand-500 text-brand-600' : 'border-transparent text-muted hover:text-foreground'}`}>
             {icon}{label}
           </button>
