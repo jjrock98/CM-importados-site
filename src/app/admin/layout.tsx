@@ -36,7 +36,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AdminNotifications />
         </div>
 
-        <main className="flex-1 overflow-auto bg-surface-2 p-4 md:p-8">
+        {/*
+          pb-20 en mobile: deja una franja vacía al final del contenido
+          para que el botón fixed "volver arriba" (BackToTop, esquina
+          inferior derecha) nunca quede flotando sobre la última fila de
+          una tabla (ej. Productos) ni tape sus íconos de editar/borrar.
+          En desktop no hace falta (BackToTop usa un tamaño/posición
+          distintos ahí y el sidebar ya separa el contenido del borde).
+        */}
+        <main className="flex-1 overflow-auto bg-surface-2 p-4 pb-20 md:p-8">
           {children}
         </main>
       </div>

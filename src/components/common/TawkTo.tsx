@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useNearPageBottom } from '@/hooks/useNearPageBottom';
 
 declare global {
@@ -15,9 +16,18 @@ declare global {
 export function TawkTo() {
   const propertyId = process.env.NEXT_PUBLIC_TAWKTO_PROPERTY_ID;
   const widgetId   = process.env.NEXT_PUBLIC_TAWKTO_WIDGET_ID ?? 'default';
-
+  const pathname = usePathname();
+  // El panel de admin (/admin/*) tiene tablas con acciones (editar/borrar)
+  // pegadas al borde derecho, y este widget se inyecta con un z-index muy
+  // alto en esa misma esquina — tapaba filas enteras en mobile.
+  const isAdmin = pathname?.startsWith('/admin') ?? false;
+  // Si se entra directo a /admin (recarga, bookmark), ni siquiera se
+  // inyecta el script — así se evita cualquier parpadeo del widget antes
+  // de que el hideWidget() de abajo llegue a aplicarse. Si la navegación
+  // a /admin es interna (SPA, viniendo de otra página), el script ya
+  // estaba cargado de antes y el efecto de más abajo lo oculta igual.
   useEffect(() => {
-    if (!propertyId) return;
+    if (!propertyId || isAdmin) return;
     const s1 = document.createElement('script');
     s1.async = true;
     s1.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
@@ -25,6 +35,7 @@ export function TawkTo() {
     s1.setAttribute('crossorigin', '*');
     document.head.appendChild(s1);
     return () => { document.head.removeChild(s1); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId, widgetId]);
 
   // Igual que el botón de WhatsApp: se oculta cerca del footer para no
@@ -37,13 +48,12 @@ export function TawkTo() {
   useEffect(() => {
     if (!propertyId) return;
     const api = window.Tawk_API;
-    if (nearBottom) {
+    if (nearBottom || isAdmin) {
       api?.hideWidget?.();
     } else {
       api?.showWidget?.();
     }
-  }, [nearBottom, propertyId]);
+  }, [nearBottom, isAdmin, propertyId]);
 
   return null;
 }
-

@@ -434,26 +434,26 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-surface-2">
               <tr className="text-left text-xs text-muted">
-                <th className="p-3">Producto</th>
-                <th className="p-3">Stock</th>
-                <th className="p-3">½ Docena</th>
-                <th className="p-3">Docena</th>
-                <th className="p-3">Estado</th>
-                <th className="p-3 text-right">Acciones</th>
+                <th className="p-2 sm:p-3">Producto</th>
+                <th className="p-2 sm:p-3">Stock</th>
+                <th className="p-2 sm:p-3 hidden sm:table-cell">½ Docena</th>
+                <th className="p-2 sm:p-3">Docena</th>
+                <th className="p-2 sm:p-3 hidden md:table-cell">Estado</th>
+                <th className="p-2 sm:p-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((p) => (
                 <tr key={p.id} className="hover:bg-surface-2 transition-colors">
-                  <td className="p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="relative h-10 w-10 overflow-hidden rounded-lg bg-surface-2 shrink-0">
+                  <td className="p-2 sm:p-3 max-w-[140px] sm:max-w-none">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <div className="relative h-9 w-9 sm:h-10 sm:w-10 overflow-hidden rounded-lg bg-surface-2 shrink-0">
                         {p.imagenes[0]
                           ? <Image src={p.imagenes[0]} alt={p.nombre} fill className="object-cover" sizes="40px" />
                           : <Package size={16} className="m-auto text-muted absolute inset-0" />}
                       </div>
-                      <div>
-                        <p className="font-medium line-clamp-1 flex items-center gap-1.5">
+                      <div className="min-w-0">
+                        <p className="font-medium line-clamp-1 flex flex-wrap items-center gap-1.5">
                           {p.nombre}
                           {!p.venta_mayorista && (
                             <span className="badge bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[10px] shrink-0">
@@ -461,25 +461,33 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                             </span>
                           )}
                         </p>
-                        <p className="text-xs text-muted">{p.slug} · {categoriaLabel(p.categoria)}</p>
+                        <p className="text-xs text-muted line-clamp-1">{p.slug} · {categoriaLabel(p.categoria)}</p>
+                        {/* En mobile la columna Estado se oculta (poco ancho disponible):
+                            se muestra acá, debajo del nombre, para no perder la info. */}
+                        <div className="flex items-center gap-1 mt-1 md:hidden">
+                          <span className={`badge ${p.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {p.activo ? 'Activo' : 'Inactivo'}
+                          </span>
+                          {p.destacado && <span className="badge bg-brand-100 text-brand-700">Destacado</span>}
+                        </div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-3">
+                  <td className="p-2 sm:p-3">
                     <span className={`font-semibold ${p.stock_unidades < 12 ? 'text-red-500' : p.stock_unidades < 30 ? 'text-yellow-500' : 'text-green-600'}`}>
                       {p.stock_unidades}
                     </span>
                   </td>
-                  <td className="p-3 text-brand-600 font-medium">{p.precio_media_docena != null ? formatPrice(p.precio_media_docena) : <span className="text-muted text-xs">— (no ofrece)</span>}</td>
-                  <td className="p-3 text-brand-600 font-medium">{formatPrice(p.precio_docena)}</td>
-                  <td className="p-3">
+                  <td className="p-2 sm:p-3 text-brand-600 font-medium hidden sm:table-cell">{p.precio_media_docena != null ? formatPrice(p.precio_media_docena) : <span className="text-muted text-xs">— (no ofrece)</span>}</td>
+                  <td className="p-2 sm:p-3 text-brand-600 font-medium whitespace-nowrap">{formatPrice(p.precio_docena)}</td>
+                  <td className="p-2 sm:p-3 hidden md:table-cell">
                     <span className={`badge ${p.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                       {p.activo ? 'Activo' : 'Inactivo'}
                     </span>
                     {p.destacado && <span className="badge bg-brand-100 text-brand-700 ml-1">Destacado</span>}
                   </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-1">
+                  <td className="p-2 sm:p-3 text-right">
+                    <div className="flex justify-end gap-0.5 sm:gap-1">
                       <button onClick={() => openEdit(p)} className="btn-ghost p-1.5 text-muted hover:text-brand-600">
                         <Pencil size={14} />
                       </button>

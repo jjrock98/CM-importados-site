@@ -1,5 +1,6 @@
 'use client';
 import { MessageCircle } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import { useNearPageBottom } from '@/hooks/useNearPageBottom';
 
@@ -9,6 +10,11 @@ export function WhatsAppButton() {
   // Se oculta con un fade al acercarse al footer para no tapar sus enlaces
   // en mobile (poco espacio horizontal), y reaparece al alejarse.
   const nearBottom = useNearPageBottom();
+  const pathname = usePathname();
+  // El panel de admin (/admin/*) es un cliente para uso interno, no de
+  // compra — este botón no tiene sentido ahí y, en mobile, tapaba filas
+  // de la tabla de productos (imagen + nombre a la izquierda).
+  if (pathname?.startsWith('/admin')) return null;
   if (!number) return null;
 
   return (
