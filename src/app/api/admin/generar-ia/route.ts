@@ -19,8 +19,12 @@ const MAX_IMAGENES = 4;
 
 // Se puede pisar con GEMINI_MODEL en Vercel si Google cambia los nombres
 // de modelo o si Javier quiere probar uno distinto (ej. gemini-2.5-pro
-// para mejores descripciones a costa de cuota más chica).
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// para mejores descripciones a costa de cuota más chica). Google renombra
+// y da de baja modelos Gemini seguido (varias veces en 2026), así que por
+// defecto usamos el alias "gemini-flash-latest": Google lo actualiza
+// automáticamente al Flash vigente, en vez de fijar un nombre de modelo
+// concreto que puede quedar discontinuado.
+const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
 interface GenerarIABody {
   imagenes?: string[];
@@ -109,7 +113,7 @@ Reglas:
               ],
             },
           ],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0.6 },
+          generationConfig: { responseMimeType: 'application/json' },
         }),
       }
     );
@@ -117,7 +121,17 @@ Reglas:
     if (!geminiRes.ok) {
       const errText = await geminiRes.text().catch(() => '');
       console.error('Gemini API error:', geminiRes.status, errText);
-      return NextResponse.json({ error: 'La IA no pudo generar el contenido (revisá la cuota/API key)' }, { status: 502 });
+      // Devolvemos el motivo real (acortado) para poder diagnosticar desde
+      // el toast del admin sin tener que ir a mirar los logs de Vercel.
+      let detalle = errText.slice(0, 200);
+      try {
+        const parsedErr = JSON.parse(errText);
+        detalle = parsedErr?.error?.message?.slice(0, 200) || detalle;
+      } catch { /* errText no era JSON, se usa el texto crudo */ }
+      return NextResponse.json(
+        { error: `Gemini devolvió un error (${geminiRes.status}): ${detalle || 'sin detalle'}` },
+        { status: 502 }
+      );
     }
 
     const geminiJson = await geminiRes.json();
