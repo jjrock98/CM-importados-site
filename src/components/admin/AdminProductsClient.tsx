@@ -28,6 +28,10 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   const [saving, setSaving]     = useState(false);
   const [search, setSearch]     = useState('');
   const [uploading, setUploading] = useState(false);
+  // Índice de la imagen que se está arrastrando en el modal de edición
+  // (drag & drop nativo del navegador, sin librerías externas).
+  const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
+  const [dragOverImgIndex, setDragOverImgIndex] = useState<number | null>(null);
   const supabase = createClient();
 
   // ✅ FIX: el widget "Stock bajo" del dashboard linkea acá con
@@ -213,6 +217,41 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
 
   const removeImage = (url: string) => {
     setEditing((prev) => ({ ...prev!, imagenes: prev!.imagenes!.filter((i) => i !== url) }));
+  };
+
+  // Reordena el array de imágenes moviendo la de `from` a la posición `to`.
+  // La primera imagen del array (posición 0) es la que se usa como foto
+  // principal/miniatura en las listas y grillas de producto.
+  const reorderImages = (from: number, to: number) => {
+    if (from === to) return;
+    setEditing((prev) => {
+      const imgs = [...(prev?.imagenes ?? [])];
+      const [moved] = imgs.splice(from, 1);
+      imgs.splice(to, 0, moved);
+      return { ...prev!, imagenes: imgs };
+    });
+  };
+
+  const handleImgDragStart = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    setDraggedImgIndex(index);
+    // Necesario en Firefox para que el drag se dispare correctamente.
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+  const handleImgDragOver = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedImgIndex !== null && draggedImgIndex !== index) setDragOverImgIndex(index);
+  };
+  const handleImgDrop = (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (draggedImgIndex !== null) reorderImages(draggedImgIndex, index);
+    setDraggedImgIndex(null);
+    setDragOverImgIndex(null);
+  };
+  const handleImgDragEnd = () => {
+    setDraggedImgIndex(null);
+    setDragOverImgIndex(null);
   };
 
   const [videoInput, setVideoInput] = useState('');
@@ -428,11 +467,28 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
             <div className="p-6 space-y-5">
               {/* Images */}
               <div>
-                <p className="text-xs font-medium mb-2">Imágenes</p>
+                <p className="text-xs font-medium mb-2">
+                  Imágenes <span className="text-muted font-normal">(arrastrá para reordenar — la primera es la principal)</span>
+                </p>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {(editing.imagenes ?? []).map((url) => (
-                    <div key={url} className="relative h-16 w-16">
-                      <Image src={url} alt="" fill className="rounded-lg object-cover" sizes="64px" />
+                  {(editing.imagenes ?? []).map((url, index) => (
+                    <div
+                      key={url}
+                      draggable
+                      onDragStart={handleImgDragStart(index)}
+                      onDragOver={handleImgDragOver(index)}
+                      onDrop={handleImgDrop(index)}
+                      onDragEnd={handleImgDragEnd}
+                      className={`relative h-16 w-16 cursor-grab active:cursor-grabbing rounded-lg transition-opacity ring-offset-2 ${
+                        draggedImgIndex === index ? 'opacity-40' : ''
+                      } ${dragOverImgIndex === index && draggedImgIndex !== index ? 'ring-2 ring-brand-400' : ''}`}
+                    >
+                      <Image src={url} alt="" fill className="rounded-lg object-cover pointer-events-none" sizes="64px" />
+                      {index === 0 && (
+                        <span className="absolute bottom-0 left-0 right-0 rounded-b-lg bg-black/60 py-0.5 text-center text-[9px] leading-none text-white">
+                          Principal
+                        </span>
+                      )}
                       <button onClick={() => removeImage(url)}
                         className="absolute -right-1 -top-1 rounded-full bg-red-500 p-0.5 text-white">
                         <X size={10} />
