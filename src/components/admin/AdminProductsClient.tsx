@@ -28,6 +28,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   const [saving, setSaving]     = useState(false);
   const [search, setSearch]     = useState('');
   const [uploading, setUploading] = useState(false);
+  const [generandoIA, setGenerandoIA] = useState(false);
   // Índice de la imagen que se está arrastrando en el modal de edición
   // (drag & drop nativo del navegador, sin librerías externas).
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
@@ -169,6 +170,52 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     setEditing((prev) => ({ ...prev, descripcion_corta: texto }));
     toast.success('Descripción generada desde el stock real');
   };
+
+  /**
+   * Manda las fotos ya subidas del producto + los datos cargados (categoría,
+   * colores, talles) a Gemini (Google AI, tier gratis) para que complete
+   * nombre, descripción corta y descripción completa. El slug se recalcula
+   * localmente a partir del nombre generado, igual que en carga manual.
+   */
+  const generarConIA = async () => {
+    if (!editing?.imagenes?.length) {
+      toast.error('Subí al menos una imagen antes de generar con IA');
+      return;
+    }
+    setGenerandoIA(true);
+    try {
+      const res = await fetch('/api/admin/generar-ia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imagenes: editing.imagenes,
+          categoria: editing.categoria,
+          colores: editing.colores,
+          talles: editing.talles,
+          ventaMinorista: editing.venta_minorista,
+          ventaMayorista: editing.venta_mayorista,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json?.error || 'No se pudo generar el contenido con IA');
+        return;
+      }
+      setEditing((prev) => ({
+        ...prev,
+        nombre: json.nombre || prev?.nombre,
+        slug: json.nombre ? slugify(json.nombre) : prev?.slug,
+        descripcion_corta: json.descripcion_corta || prev?.descripcion_corta,
+        descripcion: json.descripcion || prev?.descripcion,
+      }));
+      toast.success('Nombre y descripciones generados — revisalos antes de guardar');
+    } catch {
+      toast.error('Error de conexión al generar con IA');
+    } finally {
+      setGenerandoIA(false);
+    }
+  };
+
   const close = () => { setEditing(null); setIsNew(false); };
 
   const setField = (k: keyof Product) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -501,6 +548,17 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                     {uploading ? <span className="text-xs text-muted">...</span> : <Upload size={16} className="text-muted" />}
                   </label>
                 </div>
+                {(editing.imagenes?.length ?? 0) > 0 && (
+                  <button
+                    onClick={generarConIA}
+                    type="button"
+                    disabled={generandoIA}
+                    className="text-[11px] text-brand-600 hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
+                    title="Analiza las fotos + categoría/colores/talles cargados y completa nombre, descripción corta y descripción completa"
+                  >
+                    {generandoIA ? '✨ Generando con IA…' : '✨ Generar nombre y descripciones con IA'}
+                  </button>
+                )}
               </div>
 
               {/* Videos */}
