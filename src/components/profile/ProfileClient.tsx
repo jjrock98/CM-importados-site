@@ -62,13 +62,26 @@ export function ProfileClient({ profile: initial, ordersCount }: Props) {
     if (pwForm.nuevo.length < 6) { toast.error('Mínimo 6 caracteres'); return; }
     setSavingPw(true);
     const { error } = await supabase.auth.updateUser({ password: pwForm.nuevo });
-    // ✅ FIX: antes se mostraba siempre el mismo mensaje genérico
-    // ("No se pudo cambiar la contraseña") sin importar la causa real —
-    // imposible saber si era un problema de longitud/política de
-    // contraseña del lado de Supabase, la sesión vencida, o cualquier
-    // otra cosa. Ahora se muestra el motivo real que devuelve Supabase.
-    if (error) toast.error(`No se pudo cambiar la contraseña: ${error.message}`, { duration: 6000 });
-    else { toast.success('Contraseña actualizada'); setPwForm({ nuevo: '', confirmar: '' }); }
+    if (error) {
+      // ✅ FIX: la cuenta tiene 2FA activado (es admin) y Supabase exige
+      // una sesión "aal2" (segundo factor ya verificado EN esta sesión)
+      // para poder cambiar contraseña/email — es una medida de seguridad
+      // real de Supabase, no un bug. Antes esto se mostraba como el
+      // mismo error genérico de siempre, dejando a la persona sin
+      // entender qué pasaba ni cómo resolverlo. Ahora, en vez de solo
+      // mostrar el mensaje, la manda directo a completar el segundo
+      // factor (la misma pantalla que ya usa el panel de admin) y la
+      // trae de vuelta acá para que pueda reintentar.
+      if (error.message.includes('AAL2')) {
+        toast('Por seguridad, verificá tu código de autenticación de dos pasos para cambiar la contraseña.', { icon: '🔐', duration: 5000 });
+        router.push('/auth/mfa?redirect=/perfil');
+      } else {
+        toast.error(`No se pudo cambiar la contraseña: ${error.message}`, { duration: 6000 });
+      }
+    } else {
+      toast.success('Contraseña actualizada');
+      setPwForm({ nuevo: '', confirmar: '' });
+    }
     setSavingPw(false);
   };
 
