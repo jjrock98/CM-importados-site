@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
 import { cn } from '@/utils';
 
 export function BackToTop() {
   const [visible, setVisible] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 400);
@@ -13,6 +15,16 @@ export function BackToTop() {
   }, []);
 
   const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // El panel de admin (/admin/*) tiene su propio layout con tablas de
+  // acciones (editar/borrar) pegadas al borde derecho. Este botón fixed
+  // en bottom-right quedaba flotando justo encima de esos íconos y
+  // tapaba los clicks al lápiz de "Editar producto" en filas que caían
+  // en esa posición de la pantalla — no se abría el modal aunque se
+  // clickeara justo ahí. El admin no necesita "volver arriba" de todos
+  // modos (paneles cortos, con su propio scroll interno en varias
+  // vistas), así que directamente no se renderiza en esas rutas.
+  if (pathname?.startsWith('/admin')) return null;
 
   return (
     <button
