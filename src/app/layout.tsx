@@ -13,6 +13,7 @@ import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
 import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
 import { PageProgress } from '@/components/common/PageProgress';
+import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
 import { BackToTop } from '@/components/common/BackToTop';
 import { createClient } from '@/lib/supabase/server';
@@ -158,6 +159,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {fbAppId && <meta property="fb:app_id" content={fbAppId} />}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <PageProgress />
+          <FacebookHashCleanup />
           <EmailVerificationBanner />
           <Navbar />
           <CartDrawer />
