@@ -46,6 +46,16 @@ export default function LoginPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ✅ NUEVO: aviso cuando el callback de OAuth (Google/Facebook) redirige
+  // acá con un error — ver el fix en auth/callback/route.ts. Antes esto
+  // pasaba en silencio: la persona terminaba en la home sin sesión y sin
+  // ninguna explicación de qué había fallado.
+  useEffect(() => {
+    const oauthError = params.get('error');
+    if (oauthError) toast.error(oauthError, { duration: 6000 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ✅ NUEVO: aviso cuando el middleware redirige acá por inactividad
   // (ver ADMIN_IDLE_LIMIT_SECONDS en middleware.ts)
   useEffect(() => {
@@ -109,20 +119,26 @@ export default function LoginPage() {
   };
 
   const handleGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
     });
+    // ✅ FIX: antes no se chequeaba este error — si el proveedor no está
+    // bien configurado del lado de Supabase, esto falla ANTES de
+    // siquiera redirigir a Google, y el botón no hacía absolutamente
+    // nada visible al tocarlo.
+    if (error) toast.error('No se pudo iniciar sesión con Google. Intentá de nuevo en unos minutos.');
   };
 
   // ✅ NUEVO: mismo patrón que Google — Supabase se encarga de todo el
   // intercambio OAuth, el callback (/auth/callback) ya es genérico y no
   // necesita ningún cambio para soportar un provider más.
   const handleFacebook = async () => {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
     });
+    if (error) toast.error('No se pudo iniciar sesión con Facebook. Intentá de nuevo en unos minutos.');
   };
 
   return (
