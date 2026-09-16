@@ -45,6 +45,19 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
   },
 
+  async redirects() {
+    return [
+      // ✅ Redirects de productos renombrados: el slug (URL) de estos
+      // productos cambió al editar el nombre, dejando la URL vieja
+      // indexada por Google apuntando a nada (Soft 404). Un 301 acá
+      // conserva el link/SEO viejo mandando al producto actual, sin
+      // tocar el nombre ni el slug actuales del producto.
+      { source: '/productos/ojotas-adidas',          destination: '/productos/ojotas-slide-adidas-hombre-faja-deportivas', permanent: true },
+      { source: '/productos/ojotas-jordan',           destination: '/productos/ojotas-slides-jordan-deportivas-faja-ancha', permanent: true },
+      { source: '/productos/ojotas-nike-air-de-mujer', destination: '/productos/ojotas-slide-nike-air-con-relieve',          permanent: true },
+    ];
+  },
+
   async headers() {
     return [
       { source: '/(.*)',               headers: securityHeaders },

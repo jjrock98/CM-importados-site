@@ -72,6 +72,20 @@ export async function PUT(
   const body  = await req.json();
   const admin = createAdminClient();
 
+  // ✅ Si el slug cambia, guardamos el viejo para poder redirigir después
+  // (ver product_slug_redirects y src/app/productos/[slug]/page.tsx). Se
+  // hace ANTES del update para tener a mano el slug tal como estaba.
+  const newSlug = (body as { slug?: string }).slug;
+  if (newSlug) {
+    const { data: current } = await admin
+      .from('products').select('slug').eq('id', id).single();
+    if (current && current.slug && current.slug !== newSlug) {
+      await admin
+        .from('product_slug_redirects')
+        .upsert({ old_slug: current.slug, product_id: id }, { onConflict: 'old_slug' });
+    }
+  }
+
   const { data, error } = await admin
     .from('products')
     .update({ ...body, updated_at: new Date().toISOString() })

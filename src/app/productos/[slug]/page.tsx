@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { cache } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -100,7 +100,23 @@ export default async function ProductoPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProduct(slug); // ✅ ya resuelto por generateMetadata, no vuelve a pegarle a Supabase
 
-  if (!product) notFound();
+  if (!product) {
+    // ✅ El slug pedido no existe hoy — puede ser que el producto se haya
+    // renombrado. Antes de dar un 404 real, nos fijamos si hay un producto
+    // que ANTES tuvo este slug (product_slug_redirects) y, si lo hay,
+    // mandamos un 301 permanente a su slug actual. Esto es lo que evita
+    // que una URL vieja indexada por Google (o compartida por WhatsApp,
+    // etc.) termine en Soft 404 cada vez que se cambia un nombre.
+    const admin = createAdminClient();
+    const { data: redirectRow } = await admin
+      .from('product_slug_redirects')
+      .select('products(slug)')
+      .eq('old_slug', slug)
+      .maybeSingle();
+    const currentSlug = (redirectRow as { products?: { slug?: string } } | null)?.products?.slug;
+    if (currentSlug) permanentRedirect(`/productos/${currentSlug}`);
+    notFound();
+  }
 
   const p = product as Product;
   const admin = createAdminClient();
