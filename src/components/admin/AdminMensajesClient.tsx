@@ -80,7 +80,7 @@ export function AdminMensajesClient({ initialMessages }: { initialMessages: Cont
             {/* Body */}
             {expanded === msg.id && (
               <div className="border-t border-border px-4 pb-4 pt-3 animate-fade-in">
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.mensaje}</p>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.mensaje}</p>
                 <a
                   href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.asunto ?? 'Tu consulta')}`}
                   className="mt-4 inline-flex items-center gap-2 text-xs text-brand-600 hover:underline"

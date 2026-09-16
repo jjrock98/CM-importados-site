@@ -308,10 +308,10 @@ export function AdminClientesClient({ clients, metrics }: Props) {
               ) : filtered.map((client) => (
                 <tr key={client.id}
                   className="border-b border-border last:border-0 hover:bg-surface-2 transition-colors">
-                  <td className="p-3">
-                    <div>
-                      <p className="font-medium">{client.nombre ?? '—'}</p>
-                      <p className="text-xs text-muted">{client.email}</p>
+                  <td className="p-3 max-w-[160px] sm:max-w-none">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{client.nombre ?? '—'}</p>
+                      <p className="text-xs text-muted truncate">{client.email}</p>
                     </div>
                   </td>
                   <td className="p-3 hidden md:table-cell">
