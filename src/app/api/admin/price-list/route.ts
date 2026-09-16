@@ -126,7 +126,12 @@ export async function GET(req: NextRequest) {
         .sort((a, b) => a.min_docenas - b.min_docenas)
         .map((t) => `${t.min_docenas}+ doc: ${formatPrice(t.precio_docena)} c/u`)
         .join('   •   ');
-      page.drawText(`   ↳ ${tiersTxt}`, { x: margin, y, size: 7.5, font, color: brand });
+      // Nota: WinAnsi (la codificación de las fuentes estándar de pdf-lib)
+      // no puede codificar "↳" (U+21B3) — eso hacía fallar SIEMPRE la
+      // generación del PDF en cuanto había al menos un producto con
+      // escalones de precio (precio_tiers). Se usa "»" en su lugar, que sí
+      // está en WinAnsi.
+      page.drawText(`   » ${tiersTxt}`, { x: margin, y, size: 7.5, font, color: brand });
       y -= 14;
     }
     y -= 4;

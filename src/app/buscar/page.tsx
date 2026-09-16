@@ -6,11 +6,15 @@ import { Search } from 'lucide-react';
 import Link from 'next/link';
 
 interface Props {
-  searchParams: { q?: string }
+  // ✅ FIX: en Next.js 15+/16, searchParams es una Promise — leerla como
+  // objeto plano hacía que `q` fuera siempre undefined y la búsqueda no
+  // devolviera resultados nunca.
+  searchParams: Promise<{ q?: string }>
 }
 
-export function generateMetadata({ searchParams }: Props): Metadata {
-  const q = searchParams.q?.trim();
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const { q: qRaw } = await searchParams;
+  const q = qRaw?.trim();
   return {
     title:       q ? `Resultados para "${q}"` : 'Buscar productos',
     description: q ? `Encontrá "${q}" en nuestra tienda. Comprá por packs de media docena o docena.` : 'Buscá productos en nuestra tienda.',
@@ -26,7 +30,8 @@ export function generateMetadata({ searchParams }: Props): Metadata {
 export const dynamic = 'force-dynamic';
 
 export default async function BuscarPage({ searchParams }: Props) {
-  const q = searchParams.q?.trim() ?? '';
+  const { q: qRaw } = await searchParams;
+  const q = qRaw?.trim() ?? '';
 
   let products: Product[] = [];
 

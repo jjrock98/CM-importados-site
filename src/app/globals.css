@@ -20,7 +20,19 @@
   }
 
   * { @apply border-border; }
-  body { @apply bg-surface text-foreground; }
+
+  /* ✅ FIX: desborde horizontal en mobile (Configuración, Mensajes,
+     Clientes, Reseñas, etc). Con varios paneles anidados en flex/grid,
+     cualquier hijo que no se pueda achicar (texto largo sin cortar,
+     tabla sin wrapper propio, etc.) hacía que <body> terminara más ancho
+     que el viewport, y el navegador dejaba scrollear/"correr" toda la
+     página hacia los costados — el logo y parte del header quedaban
+     fuera de pantalla. overflow-x: hidden en html/body no depende de
+     encontrar cada elemento culpable uno por uno: directamente impide
+     que el documento pueda desplazarse en horizontal, sin afectar el
+     scroll vertical normal. */
+  html { @apply overflow-x-hidden; max-width: 100vw; }
+  body { @apply bg-surface text-foreground overflow-x-hidden; max-width: 100vw; }
 
   ::selection {
     background-color: theme('colors.brand.200');

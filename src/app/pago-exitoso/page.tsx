@@ -9,11 +9,14 @@ export const metadata = { title: 'Pedido recibido' };
 export const dynamic  = 'force-dynamic';
 
 interface Props {
-  searchParams: { orderId?: string }
+  // ✅ FIX: searchParams es una Promise en Next.js 15+/16 — leerla como
+  // objeto plano hacía que orderId fuera siempre undefined y esta página
+  // nunca mostrara el detalle del pedido recién pagado.
+  searchParams: Promise<{ orderId?: string }>
 }
 
 export default async function PagoExitosoPage({ searchParams }: Props) {
-  const { orderId } = searchParams;
+  const { orderId } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
