@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductCard } from '@/components/products/ProductCard';
@@ -17,26 +17,7 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string; scroll?: string }>;
-}) {
-  const params = await searchParams;
-
-  // ✅ El catálogo completo (búsqueda, filtros, paginación) ahora vive en
-  // /productos — la home solo muestra una vidriera de destacados. Un link
-  // viejo compartido o ya indexado en Google con estos parámetros (p.ej.
-  // "/?categoria=calzado") no debe perderse: lo mandamos a /productos con
-  // los mismos filtros en vez de que la home simplemente los ignore.
-  if (params.q || params.categoria || (params.pagina && params.pagina !== '1')) {
-    const qs = new URLSearchParams();
-    if (params.q)         qs.set('q', params.q);
-    if (params.categoria) qs.set('categoria', params.categoria);
-    if (params.pagina)    qs.set('pagina', params.pagina);
-    redirect(`/productos?${qs.toString()}`);
-  }
-
+export default async function HomePage() {
   const admin = createAdminClient();
 
   const [{ data: destacados }, { data: rawContact }] = await Promise.all([
@@ -116,8 +97,12 @@ export default async function HomePage({
 
       {/* Soporte para links compartidos como /?scroll=catalogo — ver
           ScrollToAnchor.tsx para por qué hace falta esto además de
-          href="#catalogo". */}
-      <ScrollToAnchor targetId={params.scroll} />
+          href="#catalogo". Envuelto en <Suspense> porque ahora lee el
+          query param del lado del cliente (useSearchParams) — así no
+          fuerza a esta página a renderizarse dinámica en el servidor. */}
+      <Suspense fallback={null}>
+        <ScrollToAnchor />
+      </Suspense>
 
       {/* Hero — navy de marca, con fondo animado atado al negocio real
           (sello de docena cerrada, chips de talles/colores) en vez de un

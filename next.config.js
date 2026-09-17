@@ -36,6 +36,16 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // ✅ FIX: Next detectó un package-lock.json en C:\Users\Caro (fuera del
+  // repo de este proyecto, en C:\Users\Caro\Documents\proyectoNuevoclaude\
+  // Ecommerce) y no sabía cuál raíz usar para resolver el workspace. Fijarla
+  // explícita saca el warning y evita que Turbopack adivine mal si en algún
+  // momento hay OTRO package-lock.json/yarn.lock más arriba en el árbol de
+  // carpetas de esa PC.
+  turbopack: {
+    root: __dirname,
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },

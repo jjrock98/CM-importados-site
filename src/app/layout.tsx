@@ -11,6 +11,7 @@ import { CartDrawer } from '@/components/cart/CartDrawer';
 import { WhatsAppButton } from '@/components/common/WhatsAppButton';
 import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
+import { WhatsAppGroupPopup } from '@/components/common/WhatsAppGroupPopup';
 import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
 import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
@@ -174,6 +175,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WhatsAppButton />
           <TawkTo />
           <CookieConsent />
+          <WhatsAppGroupPopup />
           <BackToTop />
           <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
           <Analytics />

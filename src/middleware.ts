@@ -109,6 +109,31 @@ export async function middleware(request: NextRequest) {
   const floodCheck = rateLimit(request, { limit: 300, windowSecs: 60, prefix: 'global' });
   if (floodCheck) return floodCheck;
 
+  // ── Redirect de query params legacy de la home a /productos ──────────────
+  // ✅ FIX perf: esta lógica vivía antes en src/app/page.tsx, leyendo
+  // `searchParams` ahí. En el App Router, que un Server Component lea
+  // `searchParams` fuerza a esa página a renderizarse 100% dinámica en
+  // cada visita — pisando por completo el `export const revalidate = 60`
+  // que ya tenía la home. Resultado real: CADA visita a "/" (con o sin
+  // querystring) disparaba las consultas a Supabase en vivo, sin cachear
+  // nada. Se mueve el redirect acá, al middleware, que corre ANTES de que
+  // Next decida cómo renderizar la página — así la home vuelve a poder
+  // servirse cacheada (ISR, 60s) para la inmensa mayoría de las visitas,
+  // que no traen ninguno de estos params.
+  if (pathname === '/') {
+    const sp = request.nextUrl.searchParams;
+    const q         = sp.get('q');
+    const categoria = sp.get('categoria');
+    const pagina    = sp.get('pagina');
+    if (q || categoria || (pagina && pagina !== '1')) {
+      const url = new URL('/productos', request.url);
+      if (q)         url.searchParams.set('q', q);
+      if (categoria) url.searchParams.set('categoria', categoria);
+      if (pagina)    url.searchParams.set('pagina', pagina);
+      return NextResponse.redirect(url);
+    }
+  }
+
   // ── CSRF: verificación de Origin en requests que modifican datos ──────────
   // ✅ NUEVO: las cookies de sesión de Supabase ya usan SameSite=Lax por
   // defecto (bloquea que un formulario/fetch de OTRO sitio ande enviando

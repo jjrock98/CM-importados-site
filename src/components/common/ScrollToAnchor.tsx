@@ -1,5 +1,6 @@
 'use client';
 import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 /**
  * Hace scroll hasta el elemento con ese id, una vez montado el componente.
@@ -20,8 +21,18 @@ import { useEffect } from 'react';
  * problema — así que no depende de que el navegador que abre el link se
  * porte bien; el scroll lo hacemos nosotros acá, en JS, una vez que la
  * página ya cargó.
+ *
+ * ✅ Lee `scroll` con useSearchParams() (cliente) en vez de recibirlo como
+ * prop desde un Server Component: así la página que lo usa (home) no
+ * necesita leer `searchParams` del lado del servidor, y puede seguir
+ * sirviéndose cacheada (ISR) para la inmensa mayoría de las visitas, que
+ * no traen este query param. Por eso quien lo use debe envolverlo en
+ * <Suspense> (lo exige next/navigation para useSearchParams).
  */
-export function ScrollToAnchor({ targetId }: { targetId?: string }) {
+export function ScrollToAnchor() {
+  const searchParams = useSearchParams();
+  const targetId = searchParams.get('scroll') ?? undefined;
+
   useEffect(() => {
     if (!targetId) return;
     // Pequeño delay: da tiempo a que las animaciones de entrada (AnimateIn)

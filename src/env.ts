@@ -28,6 +28,7 @@ const serverSchema = z.object({
   NEXT_PUBLIC_APP_URL:         z.string().url('NEXT_PUBLIC_APP_URL debe ser una URL válida'),
   NEXT_PUBLIC_TIENDA_NOMBRE:   z.string().optional(),
   NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
+  NEXT_PUBLIC_WHATSAPP_GROUP_LINK: z.string().optional(),
   REVALIDATE_SECRET_TOKEN:     z.string().optional(),
   MAINTENANCE_MODE:            z.string().optional(),
   NODE_ENV:                    z.enum(['development', 'test', 'production']).default('development'),
@@ -90,5 +91,6 @@ export const env = {
   MP_PUBLIC_KEY:   process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ?? '',
   TIENDA_NOMBRE:   process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda',
   WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+  WHATSAPP_GROUP_LINK: process.env.NEXT_PUBLIC_WHATSAPP_GROUP_LINK,
   TAWKTO_ID:       process.env.NEXT_PUBLIC_TAWKTO_PROPERTY_ID,
 } as const;

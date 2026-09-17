@@ -1,0 +1,135 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { MessageCircle, X } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+
+// ── Config ────────────────────────────────────────────────────────────────
+const SHOW_DELAY_MS   = 5000;              // aparece a los 5s, no interrumpe el LCP
+const COOLDOWN_DAYS   = 14;                // si lo cierra, no lo vuelve a ver por 14 días
+const STORAGE_KEY      = 'whatsapp-group-popup-dismissed-at';
+const CONVERTED_KEY   = 'whatsapp-group-popup-converted';
+
+// Rutas donde no tiene sentido mostrarlo: panel admin (uso interno) y el
+// flujo de compra (checkout/carrito) — no se interrumpe a alguien que ya
+// está pagando con un cartel de marketing.
+function isExcludedRoute(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/carrito')
+  );
+}
+
+/**
+ * Popup de captura de leads (lead magnet): invita a sumarse al grupo/canal
+ * de WhatsApp. Pensado para revendedores — quieren enterarse rápido de lo
+ * que entra al local.
+ *
+ * Nada de framer-motion acá a propósito: es el mismo espíritu que ya usa
+ * CartDrawer.tsx (transiciones CSS simples con Tailwind) — un popup de
+ * marketing no debería sumar peso de JS a costa del rendimiento que se
+ * vino optimizando en el resto del sitio.
+ *
+ * No usa next/dynamic tampoco: el componente entero no renderiza nada
+ * visible hasta pasado SHOW_DELAY_MS, así que no compite con el LCP ni con
+ * la hidratación inicial aunque esté montado desde el layout raíz.
+ */
+export function WhatsAppGroupPopup() {
+  const pathname = usePathname();
+  const groupLink = process.env.NEXT_PUBLIC_WHATSAPP_GROUP_LINK;
+
+  const [dismissedAt, setDismissedAt] = useLocalStorage<number | null>(STORAGE_KEY, null);
+  const [converted, setConverted]     = useLocalStorage<boolean>(CONVERTED_KEY, false);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => setHasMounted(true), []);
+
+  useEffect(() => {
+    if (!groupLink || !hasMounted) return;
+    if (isExcludedRoute(pathname)) return;
+    if (converted) return; // ya se unió una vez — no lo molestamos más
+
+    if (dismissedAt) {
+      const daysSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
+      if (daysSinceDismiss < COOLDOWN_DAYS) return;
+    }
+
+    const timer = setTimeout(() => setIsOpen(true), SHOW_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [groupLink, hasMounted, pathname, converted, dismissedAt]);
+
+  // Cerrar con Escape + bloquear scroll de fondo mientras está abierto
+  // (mismo patrón que CartDrawer.tsx)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
+    document.addEventListener('keydown', onKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = '';
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  function handleClose() {
+    setIsOpen(false);
+    setDismissedAt(Date.now());
+  }
+
+  function handleJoin() {
+    setConverted(true);
+    setIsOpen(false);
+  }
+
+  if (!groupLink || !isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Unite a nuestro grupo de WhatsApp">
+      {/* Backdrop */}
+      <div onClick={handleClose} className="absolute inset-0 bg-black/60 animate-fade-in" />
+
+      {/* Card */}
+      <div className="relative w-full max-w-sm rounded-2xl bg-surface p-6 text-center shadow-2xl animate-slide-up-fade">
+        <button
+          onClick={handleClose}
+          aria-label="Cerrar"
+          className="absolute right-3 top-3 text-muted hover:text-foreground transition-colors"
+        >
+          <X size={18} />
+        </button>
+
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500 text-white">
+          <MessageCircle size={26} strokeWidth={2.2} />
+        </div>
+
+        <h2 className="font-display text-lg font-bold">
+          Unite a nuestro canal exclusivo de WhatsApp
+        </h2>
+        <p className="mt-2 text-sm text-muted leading-relaxed">
+          Para ver las novedades antes que nadie — ideal si comprás para revender.
+        </p>
+
+        <div className="mt-5 flex flex-col gap-2">
+          <a
+            href={groupLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleJoin}
+            className="btn-primary w-full py-2.5 text-sm"
+          >
+            Unirme al grupo
+          </a>
+          <button onClick={handleClose} className="text-xs text-muted hover:text-foreground transition-colors py-1">
+            Ahora no
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
