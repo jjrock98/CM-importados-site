@@ -19,6 +19,14 @@ const serverSchema = z.object({
   // cargaste en Supabase → Authentication → Providers → Facebook.
   FACEBOOK_APP_SECRET: z.string().optional(),
 
+  // Meta Commerce Catalog (sync de productos → catálogo de WhatsApp
+  // Business) — opcional, es una integración nueva. Sin estas cargadas
+  // en Vercel, el webhook de Supabase → Meta simplemente devuelve 500
+  // en vez de tumbar el resto del sitio.
+  META_ACCESS_TOKEN:            z.string().optional(),
+  META_CATALOG_ID:              z.string().optional(),
+  SUPABASE_META_WEBHOOK_SECRET: z.string().optional(),
+
   // Email
   RESEND_API_KEY:    z.string().startsWith('re_', 'RESEND_API_KEY debe empezar con re_'),
   RESEND_FROM_EMAIL: z.string().email('RESEND_FROM_EMAIL debe ser un email válido'),
@@ -93,4 +101,9 @@ export const env = {
   WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
   WHATSAPP_GROUP_LINK: process.env.NEXT_PUBLIC_WHATSAPP_GROUP_LINK,
   TAWKTO_ID:       process.env.NEXT_PUBLIC_TAWKTO_PROPERTY_ID,
+
+  // Meta Commerce Catalog
+  META_ACCESS_TOKEN:  process.env.META_ACCESS_TOKEN ?? '',
+  META_CATALOG_ID:    process.env.META_CATALOG_ID ?? '',
+  META_WEBHOOK_SECRET: process.env.SUPABASE_META_WEBHOOK_SECRET ?? '',
 } as const;
