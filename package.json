@@ -63,5 +63,10 @@
   },
   "engines": {
     "node": ">=18.17.0"
-  }
+  },
+  "browserslist": [
+    ">0.3%",
+    "not dead",
+    "not op_mini all"
+  ]
 }

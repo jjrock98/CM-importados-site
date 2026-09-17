@@ -4,8 +4,7 @@ import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductCard } from '@/components/products/ProductCard';
 import { AnimateIn, StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
-import { HeroVisual } from '@/components/home/HeroVisual';
-import { HeroSmoke } from '@/components/home/HeroSmoke';
+import { HeroDecor } from '@/components/home/HeroDecor';
 import { ScrollToAnchor } from '@/components/common/ScrollToAnchor';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
@@ -128,8 +127,7 @@ export default async function HomePage({
           sin ningún archivo de imagen/video de por medio — ver
           HeroSmoke.tsx). */}
       <section className="relative overflow-hidden bg-brand-800 text-white">
-        <HeroSmoke />
-        <HeroVisual hideBackgroundEffects />
+        <HeroDecor hideBackgroundEffects />
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 text-center sm:py-24">
           <AnimateIn>
@@ -138,11 +136,17 @@ export default async function HomePage({
             </span>
           </AnimateIn>
 
-          <AnimateIn delay={0.08}>
-            <h1 className="mt-5 font-display text-3xl font-bold tracking-tight md:text-5xl">
-              {tienda}: Eficiencia y Volumen en Indumentaria/Sandalias y Zuecos
-            </h1>
-          </AnimateIn>
+          {/* ✅ FIX LCP: este H1 es el elemento LCP de la home (confirmado
+              en PageSpeed Insights). Antes vivía dentro de <AnimateIn>,
+              un motion.div de framer-motion que arranca en opacity:0 y
+              recién se hace visible cuando React hidrata y corre el
+              whileInView — eso agregaba ~2.9s de "retraso de renderizado
+              de elementos" al LCP porque el texto quedaba invisible
+              hasta que corría JS. Se renderiza estático (sin animación
+              de entrada) para que se pinte apenas llega el HTML. */}
+          <h1 className="mt-5 font-display text-3xl font-bold tracking-tight md:text-5xl">
+            {tienda}: Eficiencia y Volumen en Indumentaria/Sandalias y Zuecos
+          </h1>
 
           <AnimateIn delay={0.16}>
             <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
