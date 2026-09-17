@@ -65,7 +65,12 @@
     "node": ">=18.17.0"
   },
   "browserslist": [
-    ">0.3%",
+    "chrome >= 91",
+    "edge >= 91",
+    "firefox >= 90",
+    "safari >= 15",
+    "ios >= 15",
+    "and_chr >= 91",
     "not dead",
     "not op_mini all"
   ]

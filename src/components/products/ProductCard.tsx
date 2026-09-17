@@ -1,5 +1,4 @@
 'use client';
-import { motion } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
@@ -102,14 +101,17 @@ export function ProductCard({ product: p }: Props) {
 
   return (
     <>
-      <motion.article
-        className="card-hover group relative flex h-full flex-col overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.1 }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-        whileHover={{ y: -2 }}
-      >
+      {/* ✅ FIX perf (JS "no usado" — PageSpeed): esto era un motion.article
+          con su propio whileInView + whileHover. Era una animación de
+          entrada DUPLICADA — el padre <StaggerItem> (ver page.tsx y
+          AnimateIn.tsx) ya envuelve cada tarjeta en su propio motion.div
+          con fade+slide al entrar en viewport, así que esto sumaba un
+          segundo IntersectionObserver y una segunda animación por cada
+          tarjeta del catálogo sin ningún cambio visual. `card-hover` (en
+          globals.css) ya trae el levantamiento al hacer hover en CSS
+          puro, así que el whileHover tampoco hacía falta. Sacar
+          framer-motion de acá no le resta nada a la tarjeta. */}
+      <article className="card-hover group relative flex h-full flex-col overflow-hidden">
         {/* Wishlist */}
         <button
           onClick={handleWishlist}
@@ -313,7 +315,7 @@ export function ProductCard({ product: p }: Props) {
             </div>
           )}
         </div>
-      </motion.article>
+      </article>
 
       {modalOpen && (
         <ProductModal product={{ ...p, stock_unidades: liveStock }} onClose={() => setModalOpen(false)} />

@@ -82,6 +82,33 @@ const nextConfig = {
   // declara más; serverComponentsExternalPackages se renombró a
   // serverExternalPackages y se movió fuera de "experimental".
   serverExternalPackages: ['@supabase/supabase-js'],
+
+  // ✅ FIX PageSpeed — "Solicitudes que bloquean el renderizado" (150ms)
+  // y parte del retraso del LCP: el CSS global se estaba sirviendo como
+  // <link rel="stylesheet"> externo, lo que agrega un round-trip antes
+  // de poder pintar cualquier cosa. `inlineCss` (Next 15+, App Router)
+  // reemplaza esos <link> por <style> inline en el <head> — nada que
+  // descargar antes del primer pintado. Sigue siendo "experimental" en
+  // Next 16, pero es la única opción soportada en App Router: la vieja
+  // `experimental.optimizeCss` (basada en critters) NUNCA funcionó acá
+  // porque critters necesita el HTML ya renderizado completo, algo
+  // incompatible con el streaming que usa el App Router.
+  // No hace falta instalar ningún paquete nuevo (a diferencia de
+  // `optimizeCss`, esto no depende de critters).
+  // CSP: no hace falta tocar `style-src` en securityHeaders de arriba,
+  // ya tiene 'unsafe-inline' agregado por next/font.
+  //
+  // Sumado a esto: `optimizePackageImports` reduce el JS "no usado" que
+  // marcaba PageSpeed (92 KiB) evitando que Webpack/Turbopack empaqueten
+  // el archivo barrel completo de estas librerías — Next.js ya lo hace
+  // automático para 'lucide-react' desde la v13.5, pero se lo deja
+  // explícito acá por las dudas (no tiene costo si ya estaba on) y se
+  // suma 'recharts', que solo se usa en /admin (SalesChart.tsx) y antes
+  // se resolvía completo por el mismo motivo.
+  experimental: {
+    inlineCss: true,
+    optimizePackageImports: ['lucide-react', 'recharts'],
+  },
 };
 
 module.exports = nextConfig;
