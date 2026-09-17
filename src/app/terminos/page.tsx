@@ -21,9 +21,7 @@ export default function TerminosPage() {
       <h2>Modalidad de venta</h2>
       <p>Vendemos exclusivamente en packs de media docena (6 unidades) o docena (12 unidades). No realizamos ventas unitarias.</p>
       <h2>Métodos de pago</h2>
-      <p>Aceptamos pagos mediante Mercado Pago (débito, dinero en cuenta y efectivo en puntos de pago — no aceptamos tarjeta de crédito), transferencia bancaria y efectivo al retirar en el local. En caso de transferencia, el pedido se confirma una vez validado el comprobante por nuestro equipo.</p>
-      <h2>Proceso de pago con Mercado Pago</h2>
-      <p>Al seleccionar Mercado Pago se abrirá una ventana segura gestionada íntegramente por Mercado Pago S.A. Nosotros no almacenamos datos de tarjetas. Los pagos aprobados se confirman automáticamente.</p>
+      <p>Aceptamos transferencia bancaria, pago en efectivo al retirar en el local o al despachar en micro, y cuenta corriente para clientes recurrentes y de confianza. En caso de transferencia, el pedido se confirma una vez validado el comprobante por nuestro equipo.</p>
       <h2>Envíos y entregas</h2>
       <p>Los plazos de entrega son aproximados y pueden variar por factores externos. No nos responsabilizamos por demoras del servicio de correo una vez despachado el paquete.</p>
       <h2>Cancelaciones</h2>

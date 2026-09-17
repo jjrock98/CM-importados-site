@@ -16,11 +16,13 @@ type TipoEntrega = 'envio' | 'retiro' | 'micro';
 
 const PAYMENT_METHODS: { id: MetodoPago; label: string; desc: string; icon: React.ReactNode }[] = [
   // ✅ Transferencia primero — es el método principal del negocio hoy
-  // (sin comisión, sin depender de Mercado Pago). Mercado Pago sigue
-  // disponible pero se lo deja después y con menos color, sin perder
-  // visibilidad ni funcionalidad.
+  // (sin comisión, sin depender de Mercado Pago).
   { id: 'transferencia', label: 'Transferencia bancaria', desc: 'Subí el comprobante para confirmar',    icon: <Building2 size={20} className="text-green-600" /> },
-  { id: 'mercadopago',   label: 'Mercado Pago',        desc: 'Débito, dinero en cuenta y más — sin tarjeta de crédito', icon: <Wallet size={20} className="text-muted" /> },
+  // 🔕 Mercado Pago: deshabilitado a pedido — todavía no está listo para
+  // ofrecerse a clientes. Se deja comentado (no borrado) para reactivarlo
+  // más adelante en una sola línea, sin tener que rehacer nada del resto
+  // del checkout (webhooks, reembolsos, emails, etc. ya soportan MP).
+  // { id: 'mercadopago', label: 'Mercado Pago', desc: 'Débito, dinero en cuenta y más — sin tarjeta de crédito', icon: <Wallet size={20} className="text-muted" /> },
 ];
 
 // ✅ Efectivo — solo se ofrece para 'retiro' en local o 'micro' (nunca
