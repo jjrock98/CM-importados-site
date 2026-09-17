@@ -9,7 +9,7 @@ import type { Product } from '@/types';
 export const metadata: Metadata = {
   title: 'Venta Minorista — Comprá por unidad',
   description: 'Comprá nuestros productos por unidad individual. Ideal para compras personales sin necesidad de adquirir un pack completo.',
-  alternates: { canonical: `${env.APP_URL}/minorista` },
+  alternates: { canonical: `${env.APP_URL}/minorista`, languages: { 'es-AR': `${env.APP_URL}/minorista`, 'x-default': `${env.APP_URL}/minorista` } },
   openGraph: {
     title:       'Venta Minorista — Comprá por unidad',
     description: 'Sin necesidad de pack — elegí exactamente lo que necesitás.',

@@ -5,7 +5,7 @@ import { PageHero } from '@/components/common/PageHero';
 
 export const metadata: Metadata = {
   title:       'Eliminación de datos de usuario',
-  alternates:  { canonical: `${env.APP_URL}/eliminar-datos` },
+  alternates:  { canonical: `${env.APP_URL}/eliminar-datos`, languages: { 'es-AR': `${env.APP_URL}/eliminar-datos`, 'x-default': `${env.APP_URL}/eliminar-datos` } },
   openGraph: {
     title: 'Eliminación de datos de usuario',
     url:   `${env.APP_URL}/eliminar-datos`,

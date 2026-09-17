@@ -3,7 +3,7 @@ import { env } from '@/env';
 import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title:       'Políticas de privacidad',
-  alternates:  { canonical: `${env.APP_URL}/politicas` },
+  alternates:  { canonical: `${env.APP_URL}/politicas`, languages: { 'es-AR': `${env.APP_URL}/politicas`, 'x-default': `${env.APP_URL}/politicas` } },
   openGraph: {
     title: 'Políticas de privacidad',
     url:   `${env.APP_URL}/politicas`,

@@ -7,7 +7,7 @@ import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title: 'Preguntas frecuentes',
   description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
-  alternates: { canonical: `${env.APP_URL}/faq` },
+  alternates: { canonical: `${env.APP_URL}/faq`, languages: { 'es-AR': `${env.APP_URL}/faq`, 'x-default': `${env.APP_URL}/faq` } },
   openGraph: {
     title:       'Preguntas frecuentes',
     description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',

@@ -10,7 +10,7 @@ import { env } from '@/env';
 export const metadata: Metadata = {
   title:       'Ubicación',
   description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
-  alternates:  { canonical: `${env.APP_URL}/ubicacion` },
+  alternates:  { canonical: `${env.APP_URL}/ubicacion`, languages: { 'es-AR': `${env.APP_URL}/ubicacion`, 'x-default': `${env.APP_URL}/ubicacion` } },
   openGraph: {
     title:       'Ubicación',
     description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',

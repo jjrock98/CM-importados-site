@@ -12,7 +12,7 @@ import { ShoppingBag } from 'lucide-react';
 export const metadata: Metadata = {
   title:       'Productos',
   description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',
-  alternates:  { canonical: `${env.APP_URL}/productos` },
+  alternates:  { canonical: `${env.APP_URL}/productos`, languages: { 'es-AR': `${env.APP_URL}/productos`, 'x-default': `${env.APP_URL}/productos` } },
   openGraph: {
     title:       'Productos',
     description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',

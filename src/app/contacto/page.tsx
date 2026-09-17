@@ -18,7 +18,7 @@ function TikTokIcon({ size = 16 }: { size?: number }) {
 export const metadata: Metadata = {
   title:       'Contacto',
   description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',
-  alternates:  { canonical: `${env.APP_URL}/contacto` },
+  alternates:  { canonical: `${env.APP_URL}/contacto`, languages: { 'es-AR': `${env.APP_URL}/contacto`, 'x-default': `${env.APP_URL}/contacto` } },
   openGraph: {
     title:       'Contacto',
     description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',

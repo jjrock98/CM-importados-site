@@ -3,7 +3,7 @@ import { env } from '@/env';
 import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title:       'Términos y condiciones',
-  alternates:  { canonical: `${env.APP_URL}/terminos` },
+  alternates:  { canonical: `${env.APP_URL}/terminos`, languages: { 'es-AR': `${env.APP_URL}/terminos`, 'x-default': `${env.APP_URL}/terminos` } },
   openGraph: {
     title: 'Términos y condiciones',
     url:   `${env.APP_URL}/terminos`,

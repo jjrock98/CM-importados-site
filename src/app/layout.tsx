@@ -45,7 +45,11 @@ export const metadata: Metadata = {
   keywords: ['tienda online', 'comprar por pack', 'media docena', 'docena', 'envío a domicilio', tienda],
 
   // ── Canonical y alternates ────────────────────────────────────────────────
-  alternates: { canonical: appUrl },
+  // ✅ hreflang: refuerza para Google que el sitio es para audiencia
+  // argentina (mismo idioma/región que openGraph.locale='es_AR' abajo).
+  // Es puramente una señal de segmentación — no toca robots.ts, sitemaps
+  // ni ninguna etiqueta de indexación/noindex existente.
+  alternates: { canonical: appUrl, languages: { 'es-AR': appUrl, 'x-default': appUrl } },
 
   // ── Open Graph (Facebook + LinkedIn + WhatsApp preview) ──────────────────
   openGraph: {
