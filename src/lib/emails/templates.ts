@@ -39,27 +39,56 @@ function base(title: string, body: string): string {
 // ─── Confirmación de orden ────────────────────────────────────────────────────
 
 export function orderConfirmationHtml(order: Order): string {
-  const itemRows = (order.order_items ?? []).map((item) => `
+  const itemRows = (order.order_items ?? []).map((item) => {
+    const packLabel =
+      item.tipo_pack === 'media_docena' ? 'Media docena (6 uds)' :
+      item.tipo_pack === 'docena'       ? 'Docena (12 uds)'      : 'Unidad';
+
+    // ✅ imagen_snap es la foto del producto al momento de la compra (se
+    // guarda en order_items al crear el pedido) — no depende de que el
+    // producto siga existiendo o teniendo esa misma foto más adelante.
+    // Si por algún motivo no hay foto guardada (pedidos viejos, antes de
+    // este campo), se usa un placeholder con tabla (no flexbox: Outlook
+    // no lo soporta) para que el layout no se rompa.
+    const thumb = item.imagen_snap
+      ? `<img src="${esc(item.imagen_snap)}" alt="${esc(item.nombre_snap)}" width="72" height="72" style="display:block;width:72px;height:72px;border-radius:12px;object-fit:cover;border:1px solid #e5e7eb;">`
+      : `<table role="presentation" width="72" height="72" cellpadding="0" cellspacing="0" style="width:72px;height:72px;background:#f3f4f6;border-radius:12px;border:1px solid #e5e7eb;"><tr><td align="center" valign="middle" style="font-size:26px;">📦</td></tr></table>`;
+
+    return `
     <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151;">
-        ${item.nombre_snap}<span style="color:#9ca3af;font-size:12px;display:block;">${item.tipo_pack === 'media_docena' ? 'Media docena (6 uds)' : 'Docena (12 uds)'} × ${item.cantidad_packs}</span>
+      <td style="padding:16px 0;border-bottom:1px solid #f3f4f6;width:72px;">${thumb}</td>
+      <td style="padding:16px 0 16px 16px;border-bottom:1px solid #f3f4f6;font-size:14px;color:#374151;vertical-align:middle;">
+        <p style="margin:0;font-weight:700;color:#111827;font-size:15px;">${esc(item.nombre_snap)}</p>
+        <p style="margin:3px 0 0;color:#9ca3af;font-size:13px;">${packLabel} × ${item.cantidad_packs}</p>
+        ${item.variant_snap ? `<p style="margin:3px 0 0;color:#9ca3af;font-size:12px;">${esc(item.variant_snap)}</p>` : ''}
       </td>
-      <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;font-size:14px;text-align:right;font-weight:600;">${formatARS(item.subtotal)}</td>
-    </tr>`).join('');
+      <td style="padding:16px 0 16px 12px;border-bottom:1px solid #f3f4f6;font-size:15px;text-align:right;font-weight:700;color:#111827;vertical-align:middle;white-space:nowrap;">${formatARS(item.subtotal)}</td>
+    </tr>`;
+  }).join('');
 
   const body = `
+    <span style="display:inline-block;background:#f0fdf4;color:#15803d;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;padding:5px 12px;border-radius:999px;margin-bottom:14px;">
+      ✓ Pedido confirmado
+    </span>
     <h1 style="margin:0 0 6px;font-size:24px;font-weight:800;color:#111827;">¡Gracias por tu compra!</h1>
     <p style="margin:0 0 24px;color:#6b7280;font-size:15px;">Hola <strong style="color:#374151;">${esc(order.nombre)}</strong>, tu pedido fue confirmado.</p>
     <div style="background:#fdf8f0;border:1px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:24px;">
       <p style="margin:0;font-size:12px;color:#9ca3af;text-transform:uppercase;">Número de pedido</p>
       <p style="margin:4px 0 0;font-size:20px;font-weight:800;color:${BRAND_COLOR};font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</p>
     </div>
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;"><tbody>${itemRows}</tbody></table>
+    <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Detalle del pedido</p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;border-collapse:collapse;"><tbody>${itemRows}</tbody></table>
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
       <tr><td style="padding:5px 0;font-size:14px;color:#6b7280;">Subtotal</td><td style="text-align:right;font-size:14px;">${formatARS(order.subtotal)}</td></tr>
       <tr><td style="padding:5px 0;font-size:14px;color:#6b7280;">Envío</td><td style="text-align:right;font-size:14px;">${formatARS(order.costo_envio)}</td></tr>
       <tr><td style="padding:10px 0 0;font-size:16px;font-weight:700;border-top:2px solid #f3f4f6;">Total</td><td style="padding:10px 0 0;font-size:18px;font-weight:800;color:${BRAND_COLOR};text-align:right;border-top:2px solid #f3f4f6;">${formatARS(order.total)}</td></tr>
     </table>
+    <div style="background:#f9fafb;border-radius:10px;padding:16px 18px;margin-bottom:24px;">
+      <p style="margin:0 0 8px;font-size:12px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px;">Envío</p>
+      <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">
+        ${order.tipo_entrega === 'retiro' ? 'Retiro en local' : `${esc(order.direccion)}, ${esc(order.ciudad)} (CP ${esc(order.codigo_postal)})`}
+      </p>
+    </div>
     ${order.tipo_entrega === 'retiro' && order.codigo_retiro && ['pagado','procesando','enviado','entregado'].includes(order.estado) ? `
     <!-- Código de retiro — aparece solo en pedidos con retiro en local -->
     <div style="background:#f0fdf4;border:2px solid #86efac;border-radius:14px;padding:20px;margin-bottom:24px;text-align:center;">
