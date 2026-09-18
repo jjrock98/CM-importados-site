@@ -57,6 +57,9 @@ export default async function HomePage() {
     ...(contactInfo?.direccion && { address: {
       '@type': 'PostalAddress',
       streetAddress: contactInfo.direccion,
+      addressLocality: 'Ingeniero Budge',
+      addressRegion: 'Provincia de Buenos Aires',
+      postalCode: 'B1827CMJ',
       addressCountry: 'AR',
     }}),
     ...(contactInfo?.horario && { openingHours: contactInfo.horario }),
