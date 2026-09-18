@@ -41,7 +41,7 @@ export function Navbar() {
   useEffect(() => setMounted(true), []);
   const itemCount = useCartStore((s) => s.itemCount);
   const openCartDrawer = useCartDrawerStore((s) => s.open);
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth({ revalidateOnNavigate: true });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
