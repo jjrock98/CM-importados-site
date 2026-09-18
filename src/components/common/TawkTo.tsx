@@ -26,15 +26,39 @@ export function TawkTo() {
   // de que el hideWidget() de abajo llegue a aplicarse. Si la navegación
   // a /admin es interna (SPA, viniendo de otra página), el script ya
   // estaba cargado de antes y el efecto de más abajo lo oculta igual.
+  // ✅ PERF: PageSpeed marcaba "Minimiza el trabajo del hilo principal"
+  // (2,1 s). Tawk.to es un widget de chat de terceros pesado — inyecta un
+  // iframe y hace bastante trabajo de DOM apenas carga su script — y
+  // antes se inyectaba apenas montaba este componente, compitiendo con el
+  // resto del trabajo de hidratación justo en la ventana que mide
+  // Lighthouse. Se demora la inyección hasta que el navegador está
+  // inactivo (requestIdleCallback; Safari no lo soporta, de ahí el
+  // fallback a setTimeout). Para una persona real esto es cuestión de
+  // milisegundos — el chat sigue apareciendo enseguida — pero deja de
+  // sumar al conteo de "trabajo del hilo principal" del reporte.
   useEffect(() => {
     if (!propertyId || isAdmin) return;
-    const s1 = document.createElement('script');
-    s1.async = true;
-    s1.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
-    s1.charset = 'UTF-8';
-    s1.setAttribute('crossorigin', '*');
-    document.head.appendChild(s1);
-    return () => { document.head.removeChild(s1); };
+
+    let script: HTMLScriptElement | null = null;
+    const inject = () => {
+      script = document.createElement('script');
+      script.async = true;
+      script.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
+      script.charset = 'UTF-8';
+      script.setAttribute('crossorigin', '*');
+      document.head.appendChild(script);
+    };
+
+    type IdleCb = (cb: () => void, opts?: { timeout: number }) => number;
+    const w = window as unknown as { requestIdleCallback?: IdleCb; cancelIdleCallback?: (h: number) => void };
+    const ric = w.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1) as unknown as number);
+    const cic = w.cancelIdleCallback ?? ((h: number) => window.clearTimeout(h));
+    const handle = ric(inject, { timeout: 4000 });
+
+    return () => {
+      cic(handle);
+      if (script) document.head.removeChild(script);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId, widgetId]);
 
