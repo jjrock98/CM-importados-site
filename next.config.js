@@ -109,6 +109,33 @@ const nextConfig = {
     inlineCss: true,
     optimizePackageImports: ['lucide-react', 'recharts'],
   },
+
+  // ✅ FIX PageSpeed — "JavaScript antiguo" (14 KiB), el que quedaba
+  // exactamente igual pasara lo que pasara con `browserslist`. La causa
+  // no era nuestra config: Next.js empaqueta un chunk propio,
+  // `next/dist/build/polyfills/polyfill-module`, con un puñado de
+  // polyfills (Array.prototype.at/flat/flatMap, Object.fromEntries,
+  // Object.hasOwn, String.prototype.trimStart/trimEnd) SIEMPRE, en
+  // TODOS los proyectos Next.js, sin mirar el `browserslist` del
+  // proyecto — es un mínimo que Next decide él solo (confirmado en
+  // github.com/vercel/next.js/discussions/64330: "Next.js
+  // unconditionally loads next-polyfill-module for all browsers
+  // regardless of your browserslist config"). Como el sitio ya apunta
+  // a navegadores modernos (ver el browserslist en package.json) y
+  // React 19 tampoco corre en nada tan viejo como para necesitar estos
+  // polyfills, se lo saca del bundle apuntando ese módulo a `false` —
+  // solución confirmada por varios devs en ese mismo hilo de GitHub.
+  // Esto solo corre cuando el build usa Webpack (ver "build" en
+  // package.json); Turbopack simplemente ignora esta función durante
+  // `next dev`, así que no hace falta nada especial para que el dev
+  // server (que sigue en Turbopack) siga andando igual.
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'next/dist/build/polyfills/polyfill-module': false,
+    };
+    return config;
+  },
 };
 
 module.exports = nextConfig;

@@ -34,15 +34,26 @@ function ProgressBar() {
 
   if (!visible) return null;
 
+  // ✅ FIX PageSpeed — "Evita las animaciones no compuestas": esto antes
+  // animaba `width` directo (15% → 40% → 65% → 85% → 100%), una
+  // propiedad que dispara layout en cada frame porque el navegador tiene
+  // que recalcular cuánto espacio ocupan los elementos de al lado. Con
+  // un elemento que siempre mide 100% de ancho y se anima con
+  // `transform: scaleX()` en vez de `width`, el navegador puede
+  // compositar la animación enteramente en la GPU (como hace con
+  // opacity/transform) sin tocar el layout — mismo efecto visual, sin
+  // el warning. `transformOrigin: left` es necesario para que el
+  // escalado crezca desde la izquierda (por defecto escala desde el
+  // centro, lo que se vería mal acá).
   return (
     <div
-      className="fixed top-0 left-0 z-[9999] h-0.5 bg-brand-500 transition-all duration-300 ease-out shadow-sm shadow-brand-400"
+      className="fixed top-0 left-0 z-[9999] h-0.5 w-full origin-left bg-brand-500 shadow-sm shadow-brand-400"
       style={{
-        width: `${progress}%`,
+        transform: `scaleX(${progress / 100})`,
         opacity: progress === 100 ? 0 : 1,
         transition: progress === 100
-          ? 'width 200ms ease, opacity 300ms ease 200ms'
-          : 'width 400ms ease',
+          ? 'transform 200ms ease, opacity 300ms ease 200ms'
+          : 'transform 400ms ease',
       }}
     />
   );
