@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Plus, Minus, ShoppingCart, Package, AlertTriangle, Check, Search } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { useCartStore } from '@/hooks/useCart';
 import { notifyAddedToCart } from '@/lib/cartFeedback';
 import { formatPrice } from '@/utils';
@@ -121,7 +121,7 @@ function MinoristaCard({ product: initial }: { product: Product }) {
   const displayImage = selectedVariant?.imagen_url || product.imagenes[0];
 
   return (
-    <motion.div
+    <m.div
       className="card overflow-hidden group"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -295,7 +295,7 @@ function MinoristaCard({ product: initial }: { product: Product }) {
           </div>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 

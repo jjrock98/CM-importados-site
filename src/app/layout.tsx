@@ -13,6 +13,7 @@ import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
 import { WhatsAppGroupPopup } from '@/components/common/WhatsAppGroupPopup';
 import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
+import { MotionProvider } from '@/components/common/MotionProvider';
 import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
@@ -163,29 +164,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             problema de hidratación que se documentó arriba. */}
         {fbAppId && <meta property="fb:app_id" content={fbAppId} />}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <PageProgress />
-          <FacebookHashCleanup />
-          <EmailVerificationBanner />
-          <Navbar />
-          <CartDrawer />
-          <main id="print-root">{children}</main>
-          <Suspense fallback={<Footer contactInfo={null} />}>
-            <FooterWithContact />
-          </Suspense>
-          <WhatsAppButton />
-          <TawkTo />
-          <CookieConsent />
-          <WhatsAppGroupPopup />
-          <BackToTop />
-          <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
-          <Analytics />
-          <SpeedInsights />
+          <MotionProvider>
+            <PageProgress />
+            <FacebookHashCleanup />
+            <EmailVerificationBanner />
+            <Navbar />
+            <CartDrawer />
+            <main id="print-root">{children}</main>
+            <Suspense fallback={<Footer contactInfo={null} />}>
+              <FooterWithContact />
+            </Suspense>
+            <WhatsAppButton />
+            <TawkTo />
+            <CookieConsent />
+            <WhatsAppGroupPopup />
+            <BackToTop />
+            <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
+            <Analytics />
+            <SpeedInsights />
 
-          {/* ✅ FIX: antes este <Script> se cargaba siempre que hubiera
-              NEXT_PUBLIC_FB_PIXEL_ID, sin mirar la elección del banner de
-              cookies. Ahora vive en FacebookPixelLoader.tsx, que solo lo
-              renderiza si el visitante aceptó cookies de marketing. */}
-          <FacebookPixelLoader />
+            {/* ✅ FIX: antes este <Script> se cargaba siempre que hubiera
+                NEXT_PUBLIC_FB_PIXEL_ID, sin mirar la elección del banner de
+                cookies. Ahora vive en FacebookPixelLoader.tsx, que solo lo
+                renderiza si el visitante aceptó cookies de marketing. */}
+            <FacebookPixelLoader />
+          </MotionProvider>
         </ThemeProvider>
       </body>
     </html>

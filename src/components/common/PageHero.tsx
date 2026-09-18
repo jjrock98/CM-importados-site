@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 interface PageHeroProps {
@@ -33,7 +33,7 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
           backgroundSize: '24px 24px',
         }}
       />
-      <motion.div
+      <m.div
         className="pointer-events-none absolute -top-20 -right-16 h-64 w-64 rounded-full bg-accent-500/15 blur-3xl"
         aria-hidden="true"
         animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(-4%,5%) scale(1.08)', 'translate(0,0) scale(1)'] }}
@@ -42,17 +42,17 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
 
       <div className="relative mx-auto max-w-5xl px-4 py-14 text-center sm:py-16">
         {eyebrow && (
-          <motion.span
+          <m.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
             className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium tracking-wide text-white/70"
           >
             {eyebrow}
-          </motion.span>
+          </m.span>
         )}
 
-        <motion.h1
+        <m.h1
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08 }}
@@ -60,17 +60,17 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
         >
           {icon && <span className="text-accent-300 [&>svg]:h-7 [&>svg]:w-7">{icon}</span>}
           {title}
-        </motion.h1>
+        </m.h1>
 
         {description && (
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.16 }}
             className="mx-auto mt-3 max-w-xl text-white/75"
           >
             {description}
-          </motion.p>
+          </m.p>
         )}
       </div>
 

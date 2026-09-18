@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { Check } from 'lucide-react';
 
 /**
@@ -28,12 +28,12 @@ export function HeroVisual({ hideBackgroundEffects = false }: { hideBackgroundEf
       {!hideBackgroundEffects && (
         <>
           {/* Blobs de gradiente — profundidad de fondo, en vez del punteado estático fijo */}
-          <motion.div
+          <m.div
             className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-brand-500/30 blur-3xl"
             animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(4%,6%) scale(1.08)', 'translate(-3%,-4%) scale(0.96)', 'translate(0,0) scale(1)'] }}
             transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
           />
-          <motion.div
+          <m.div
             className="absolute -bottom-32 -right-10 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl"
             animate={reduce ? undefined : { transform: ['translate(0,0) scale(1)', 'translate(-4%,-5%) scale(1.06)', 'translate(3%,4%) scale(0.94)', 'translate(0,0) scale(1)'] }}
             transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
@@ -52,7 +52,7 @@ export function HeroVisual({ hideBackgroundEffects = false }: { hideBackgroundEf
 
       {/* Chips flotantes: talles y colores reales del catálogo, no íconos random */}
       {TAGS.map((tag, i) => (
-        <motion.div
+        <m.div
           key={tag.label}
           className="absolute hidden select-none items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3 py-1.5 text-xs font-medium text-white/70 backdrop-blur-sm md:flex"
           style={{ top: tag.top, left: tag.left, ['--tilt' as string]: `${tag.tilt}deg` }}
@@ -70,13 +70,13 @@ export function HeroVisual({ hideBackgroundEffects = false }: { hideBackgroundEf
         >
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: DOTS[i % DOTS.length] }} />
           {tag.label}
-        </motion.div>
+        </m.div>
       ))}
 
       {/* Sello "Docena cerrada" — el elemento firma: reproduce un sello de
           embalaje/control de calidad, con animación de "estampado" al
           cargar la página. */}
-      <motion.div
+      <m.div
         className="absolute right-6 top-6 hidden md:block lg:right-10 lg:top-10"
         initial={{ opacity: 0, scale: 1.6, rotate: -18 }}
         animate={{ opacity: 1, scale: 1, rotate: -12 }}
@@ -90,7 +90,7 @@ export function HeroVisual({ hideBackgroundEffects = false }: { hideBackgroundEf
             cerrada
           </span>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

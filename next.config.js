@@ -99,15 +99,27 @@ const nextConfig = {
   // ya tiene 'unsafe-inline' agregado por next/font.
   //
   // Sumado a esto: `optimizePackageImports` reduce el JS "no usado" que
-  // marcaba PageSpeed (92 KiB) evitando que Webpack/Turbopack empaqueten
-  // el archivo barrel completo de estas librerías — Next.js ya lo hace
+  // marcaba PageSpeed evitando que Webpack/Turbopack empaqueten el
+  // archivo barrel completo de estas librerías — Next.js ya lo hace
   // automático para 'lucide-react' desde la v13.5, pero se lo deja
-  // explícito acá por las dudas (no tiene costo si ya estaba on) y se
-  // suma 'recharts', que solo se usa en /admin (SalesChart.tsx) y antes
-  // se resolvía completo por el mismo motivo.
+  // explícito acá por las dudas (no tiene costo si ya estaba on), y se
+  // suma 'recharts', que solo se usa en /admin (SalesChart.tsx).
+  //
+  // ✅ FIX PageSpeed (segunda vuelta) — lo de arriba (92 KiB en su
+  // momento) no era la causa completa: PageSpeed seguía marcando ~94 KiB
+  // de JS sin usar en los mismos 3 chunks. La causa real: varios
+  // componentes (AnimateIn, PageHero, HeroVisual, MinoristaGrid)
+  // importaban el objeto `motion` de framer-motion — eso empaqueta el
+  // motor ENTERO de la librería (gestos, drag, layout animations), aunque
+  // acá solo se usan fades/slides/scale simples. Se migró todo ese código
+  // a `LazyMotion` + `m.*` (ver src/components/common/MotionProvider.tsx),
+  // que carga solo el subconjunto chico (`domAnimation`) que el sitio
+  // realmente necesita. Sumar 'framer-motion' acá es un extra menor sobre
+  // ese fix — no reemplaza la migración a `m.*`, que es la que hace la
+  // diferencia real.
   experimental: {
     inlineCss: true,
-    optimizePackageImports: ['lucide-react', 'recharts'],
+    optimizePackageImports: ['lucide-react', 'recharts', 'framer-motion'],
   },
 
   // ✅ FIX PageSpeed — "JavaScript antiguo" (14 KiB), el que quedaba

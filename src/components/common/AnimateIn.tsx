@@ -1,5 +1,5 @@
 'use client';
-import { motion, type Variants } from 'framer-motion';
+import { m, type Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 // ── Variantes de animación reutilizables ──────────────────────────────────────
@@ -49,7 +49,7 @@ export function AnimateIn({
   once     = true,
 }: AnimateInProps) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -58,7 +58,7 @@ export function AnimateIn({
       transition={{ delay }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -68,7 +68,7 @@ export function StaggerGrid({
   className,
 }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial="hidden"
       whileInView="visible"
@@ -76,37 +76,37 @@ export function StaggerGrid({
       variants={staggerContainer}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 /** Item individual para usar dentro de StaggerGrid */
 export function StaggerItem({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div className={className} variants={fadeUp}>
+    <m.div className={className} variants={fadeUp}>
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 /** Animación de página completa (fade al entrar) */
 export function PageTransition({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 /** Para modales y drawers — escala desde el centro */
 export function ModalTransition({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, scale: 0.95, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -114,20 +114,20 @@ export function ModalTransition({ children, className }: { children: ReactNode; 
       transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
 
 /** Para listas de items — fade + slide al entrar */
 export function ListItem({ children, className, index = 0 }: { children: ReactNode; className?: string; index?: number }) {
   return (
-    <motion.div
+    <m.div
       className={className}
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
-    </motion.div>
+    </m.div>
   );
 }
