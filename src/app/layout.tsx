@@ -18,7 +18,7 @@ import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
 import { BackToTop } from '@/components/common/BackToTop';
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { env } from '@/env';
 import type { ContactInfo } from '@/types';
 import './globals.css';
@@ -136,7 +136,7 @@ export const viewport: Viewport = {
 async function FooterWithContact() {
   let contactInfo: ContactInfo | null = null;
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     const { data } = await supabase.from('contact_info').select('*').limit(1).single();
     contactInfo = data;
   } catch { /* Footer usa fallbacks de env vars */ }

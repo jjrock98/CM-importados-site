@@ -93,7 +93,7 @@ async function enforceIdleTimeout(
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ── Freno global anti-flood ────────────────────────────────────────────

@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og';
 import { env } from '@/env';
 import { NextRequest } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // ✅ 'size' y 'contentType' NO son exports válidos para un route.tsx
 // con un handler GET (solo lo son para opengraph-image.tsx / icon.tsx).
