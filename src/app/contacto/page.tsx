@@ -20,10 +20,24 @@ export const metadata: Metadata = {
   description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',
   alternates:  { canonical: `${env.APP_URL}/contacto`, languages: { 'es-AR': `${env.APP_URL}/contacto`, 'x-default': `${env.APP_URL}/contacto` } },
   openGraph: {
-    title:       'Contacto',
-    description: 'Escribinos por WhatsApp, email o el formulario de contacto. Te respondemos a la brevedad.',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '📞 Contactanos | MC Importados',
+    description: '¿Tenés dudas con tu pedido? Escribinos acá o por WhatsApp al +54 11 2157-4004. Estamos para ayudarte a impulsar tu negocio.',
     url:         `${env.APP_URL}/contacto`,
     type:        'website',
+    images: [{
+      url:    `${env.APP_URL}/og-contacto.png`,
+      width:  1200,
+      height: 630,
+      alt:    'Contactanos — MC Importados',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       '📞 Contactanos | MC Importados',
+    description: '¿Dudas con tu pedido? Escribinos por WhatsApp al +54 11 2157-4004. Estamos para ayudarte.',
+    images:      [`${env.APP_URL}/og-contacto.png`],
   },
 };
 export const revalidate = 300;

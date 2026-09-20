@@ -9,10 +9,24 @@ export const metadata: Metadata = {
   description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
   alternates: { canonical: `${env.APP_URL}/faq`, languages: { 'es-AR': `${env.APP_URL}/faq`, 'x-default': `${env.APP_URL}/faq` } },
   openGraph: {
-    title:       'Preguntas frecuentes',
-    description: 'Respondemos todas tus dudas sobre envíos, métodos de pago, packs y políticas de cambio.',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '❓ Centro de Ayuda | MC Importados',
+    description: 'Todo lo que necesitás saber antes de comprar: envíos por Andreani o Vía Cargo, mínimos por docena, pagos y descuentos.',
     url:         `${env.APP_URL}/faq`,
     type:        'website',
+    images: [{
+      url:    `${env.APP_URL}/og-faq.png`,
+      width:  1200,
+      height: 630,
+      alt:    'Centro de Ayuda — MC Importados',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       '❓ Centro de Ayuda | MC Importados',
+    description: 'Envíos, mínimos por docena, métodos de pago y descuentos. Todo lo que necesitás saber antes de comprar.',
+    images:      [`${env.APP_URL}/og-faq.png`],
   },
 };
 

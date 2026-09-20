@@ -14,25 +14,24 @@ export const metadata: Metadata = {
   description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',
   alternates:  { canonical: `${env.APP_URL}/productos`, languages: { 'es-AR': `${env.APP_URL}/productos`, 'x-default': `${env.APP_URL}/productos` } },
   openGraph: {
-    title:       'Productos',
-    description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '🔥 Catálogo Mayorista | MC Importados',
+    description: 'Indumentaria, sandalias y zuecos importados por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
     url:         `${env.APP_URL}/productos`,
     type:        'website',
-    // Sin esto el og:image queda vacío — el openGraph de esta página
-    // reemplaza (no fusiona) al del layout raíz. Mismo fallback que usa
-    // el resto del sitio (ver fix reciente en /ubicacion).
     images: [{
-      url:    `${env.APP_URL}/og-default.png?v=2`,
+      url:    `${env.APP_URL}/og-productos.png`,
       width:  1200,
       height: 630,
-      alt:    'Productos',
+      alt:    'Catálogo Mayorista — MC Importados',
     }],
   },
   twitter: {
     card:        'summary_large_image',
-    title:       'Productos',
-    description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',
-    images:      [`${env.APP_URL}/og-default.png`],
+    title:       '🔥 Catálogo Mayorista | MC Importados',
+    description: 'Indumentaria, sandalias y zuecos importados por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
+    images:      [`${env.APP_URL}/og-productos.png`],
   },
 };
 

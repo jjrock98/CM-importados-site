@@ -3,11 +3,27 @@ import { env } from '@/env';
 import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title:       'Políticas de privacidad',
+  description: 'Conocé cómo protegemos tus datos de registro, comprobantes de pago y el uso seguro de cookies esenciales en nuestra tienda.',
   alternates:  { canonical: `${env.APP_URL}/politicas`, languages: { 'es-AR': `${env.APP_URL}/politicas`, 'x-default': `${env.APP_URL}/politicas` } },
   openGraph: {
-    title: 'Políticas de privacidad',
-    url:   `${env.APP_URL}/politicas`,
-    type:  'website',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '🔒 Políticas de Privacidad | MC Importados',
+    description: 'Conocé cómo protegemos tus datos de registro, comprobantes de pago y el uso de cookies esenciales.',
+    url:         `${env.APP_URL}/politicas`,
+    type:        'website',
+    images: [{
+      url:    `${env.APP_URL}/og-politicas.png`,
+      width:  1200,
+      height: 630,
+      alt:    'Políticas de Privacidad — MC Importados',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       '🔒 Políticas de Privacidad | MC Importados',
+    description: 'Cómo protegemos tus datos de registro, comprobantes de pago y el uso de cookies.',
+    images:      [`${env.APP_URL}/og-politicas.png`],
   },
 };
 export default function PoliticasPage() {

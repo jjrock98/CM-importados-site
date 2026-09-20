@@ -12,25 +12,24 @@ export const metadata: Metadata = {
   description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
   alternates:  { canonical: `${env.APP_URL}/ubicacion`, languages: { 'es-AR': `${env.APP_URL}/ubicacion`, 'x-default': `${env.APP_URL}/ubicacion` } },
   openGraph: {
-    title:       'Ubicación',
-    description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '📍 Dónde Estamos | MC Importados',
+    description: 'Visitanos en Arana Goiri 10, Ingeniero Budge. Atendemos Lunes, Miércoles y Sábados de 6:00 a 13:00 hs. ¡Mirá cómo llegar!',
     url:         `${env.APP_URL}/ubicacion`,
     type:        'website',
-    // ✅ FIX: el openGraph de esta página reemplaza por completo (no
-    // fusiona) al del layout raíz, así que perdía el og:image de ahí.
-    // Se repite acá el mismo fallback estático que usa el layout.
     images: [{
-      url:    `${env.APP_URL}/og-default.png?v=2`,
+      url:    `${env.APP_URL}/og-ubicacion.png`,
       width:  1200,
       height: 630,
-      alt:    'Ubicación',
+      alt:    'Cómo llegar — MC Importados',
     }],
   },
   twitter: {
     card:        'summary_large_image',
-    title:       'Ubicación',
-    description: 'Encontrá cómo llegar a nuestro local, horarios de atención y videos de la zona.',
-    images:      [`${env.APP_URL}/og-default.png`],
+    title:       '📍 Dónde Estamos | MC Importados',
+    description: 'Visitanos en Arana Goiri 10, Ingeniero Budge. Lunes, Miércoles y Sábados de 6:00 a 13:00 hs.',
+    images:      [`${env.APP_URL}/og-ubicacion.png`],
   },
 };
 export const revalidate = 300;

@@ -13,6 +13,26 @@ import { ShoppingBag, Truck, Shield, Star, ArrowRight, MessageCircle } from 'luc
 export const metadata: Metadata = {
   title: 'Inicio – Venta mayorista por docena',
   description: 'Indumentaria, sandalias y zuecos importadas por docena cerrada. Talles y colores surtidos, envíos a todo el país.',
+  openGraph: {
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    type:        'website',
+    url:         env.APP_URL,
+    title:       '🛍️ MC Importados | Venta Mayorista de Indumentaria y Calzado',
+    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos. ¡Ingresá acá!',
+    images: [{
+      url:    `${env.APP_URL}/og-home.png`,
+      width:  1200,
+      height: 630,
+      alt:    'MC Importados — Venta mayorista de indumentaria y calzado',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       '🛍️ MC Importados | Venta Mayorista de Indumentaria y Calzado',
+    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos.',
+    images:      [`${env.APP_URL}/og-home.png`],
+  },
 };
 
 export const revalidate = 60;

@@ -3,11 +3,27 @@ import { env } from '@/env';
 import { PageHero } from '@/components/common/PageHero';
 export const metadata: Metadata = {
   title:       'Términos y condiciones',
+  description: 'Conocé nuestras políticas de venta exclusiva por packs de docena o media docena, validación de transferencias y cambios por fallas.',
   alternates:  { canonical: `${env.APP_URL}/terminos`, languages: { 'es-AR': `${env.APP_URL}/terminos`, 'x-default': `${env.APP_URL}/terminos` } },
   openGraph: {
-    title: 'Términos y condiciones',
-    url:   `${env.APP_URL}/terminos`,
-    type:  'website',
+    siteName:    'MC Importados',
+    locale:      'es_AR',
+    title:       '📝 Términos y Condiciones | MC Importados',
+    description: 'Conocé nuestras políticas de venta por packs, validación de transferencias y cambios por fallas.',
+    url:         `${env.APP_URL}/terminos`,
+    type:        'website',
+    images: [{
+      url:    `${env.APP_URL}/og-terminos.png`,
+      width:  1200,
+      height: 630,
+      alt:    'Términos y Condiciones — MC Importados',
+    }],
+  },
+  twitter: {
+    card:        'summary_large_image',
+    title:       '📝 Términos y Condiciones | MC Importados',
+    description: 'Políticas de venta por packs, validación de transferencias y cambios por fallas.',
+    images:      [`${env.APP_URL}/og-terminos.png`],
   },
 };
 export default function TerminosPage() {
