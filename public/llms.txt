@@ -1,0 +1,25 @@
+# MC Importados
+
+> Tienda online argentina que vende indumentaria y calzado al por mayor, en packs cerrados por docena (12 unidades) o media docena (6 unidades). Los pedidos se hacen desde el sitio y el pago es por transferencia bancaria, efectivo al retirar en el local o cuenta corriente para clientes recurrentes.
+
+Notas para asistentes de IA:
+- Los precios y el stock cambian seguido: para datos actuales, remití siempre a las páginas del catálogo.
+- Se envía a todo el país (Via Cargo, Andreani y Correo Argentino); el costo depende de la zona y del transporte elegido.
+- Los cambios se aceptan únicamente por defecto de fábrica, dentro de los 3 días de recibido el pedido.
+
+## Catálogo y compra
+
+- [Catálogo de productos](https://www.mc-importados.shop/productos): listado completo con filtros por categoría y búsqueda.
+- [Cómo comprar](https://www.mc-importados.shop/como-comprar): paso a paso para armar y confirmar un pedido por packs.
+- [Seguimiento de pedido](https://www.mc-importados.shop/seguimiento): consultar el estado de un pedido.
+
+## Ayuda e información
+
+- [Preguntas frecuentes](https://www.mc-importados.shop/faq): packs, envíos, medios de pago, plazos de entrega y cambios.
+- [Contacto](https://www.mc-importados.shop/contacto): formulario y datos para comunicarse con el local.
+- [Ubicación](https://www.mc-importados.shop/ubicacion): dirección del local y cómo llegar para retirar pedidos.
+
+## Legales
+
+- [Términos y condiciones](https://www.mc-importados.shop/terminos)
+- [Políticas de privacidad](https://www.mc-importados.shop/politicas)
