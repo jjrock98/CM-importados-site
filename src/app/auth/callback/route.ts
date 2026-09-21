@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 /**
  * Callback de OAuth (Google, Facebook) al que Supabase redirige después
@@ -22,7 +23,9 @@ import { createClient } from '@/lib/supabase/server';
 export async function GET(request: Request) {
   const url   = new URL(request.url);
   const code  = url.searchParams.get('code');
-  const next  = url.searchParams.get('next') ?? '/';
+  // ✅ FIX seguridad: `new URL(next, origin)` con next=//sitio-malo.com o
+  // una URL absoluta resuelve a OTRO dominio (redirección abierta).
+  const next  = safeRedirectPath(url.searchParams.get('next'), '/');
 
   // Caso 1: el proveedor (Facebook/Google) devolvió un error directo —
   // ej. la persona canceló el diálogo de permisos, o el proveedor

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 /**
  * Se llega acá desde el middleware/admin layout cuando la sesión ya pasó el
@@ -12,10 +13,22 @@ import toast from 'react-hot-toast';
  * necesita aal2). No es una pantalla de login nueva — el usuario ya está
  * autenticado, solo falta este paso.
  */
+// Evita que una promesa del SDK que se cuelga deje el botón en "Verificando…"
+// para siempre: a los `ms` falla con un error y se puede reintentar.
+function withTimeout<T>(promise: PromiseLike<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); }
+    );
+  });
+}
+
 export default function MfaChallengePage() {
   const router   = useRouter();
   const params   = useSearchParams();
-  const redirect = params.get('redirect') ?? '/admin';
+  const redirect = safeRedirectPath(params.get('redirect'), '/admin');
   const supabase = createClient();
 
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -45,27 +58,41 @@ export default function MfaChallengePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!factorId || code.length !== 6) return;
+    if (!factorId || code.length !== 6 || loading) return;
     setLoading(true);
-    const { data: challenge, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
-    if (challengeError || !challenge) {
-      toast.error('Error al iniciar la verificación. Probá de nuevo.');
+    try {
+      const { data: challenge, error: challengeError } =
+        await withTimeout(supabase.auth.mfa.challenge({ factorId }), 15_000);
+      if (challengeError || !challenge) {
+        toast.error('Error al iniciar la verificación. Probá de nuevo.');
+        setLoading(false);
+        return;
+      }
+      const { error: verifyError } = await withTimeout(
+        supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code }),
+        15_000
+      );
+      if (verifyError) {
+        toast.error('Código incorrecto. Revisá tu app de autenticación.');
+        setCode('');
+        setLoading(false);
+        return;
+      }
+      // ✅ FIX (se quedaba en "Verificando…" y no continuaba): antes se hacía
+      // router.replace(redirect) + router.refresh() y `loading` nunca volvía
+      // a false en el camino de éxito. Si el servidor seguía viendo la
+      // sesión anterior (aal1) —por la caché del router de Next, que puede
+      // reutilizar la redirección a /auth/mfa hecha antes de verificar— la
+      // navegación volvía a caer en esta misma página, React conservaba el
+      // estado y quedaba el botón trabado. Ahora, con el segundo factor ya
+      // verificado y las cookies actualizadas, se hace una carga completa
+      // (igual que el login): el servidor lee las cookies nuevas sin
+      // depender de ninguna caché del lado del cliente.
+      window.location.assign(redirect);
+    } catch {
+      toast.error('La verificación tardó demasiado. Probá de nuevo.');
       setLoading(false);
-      return;
     }
-    const { error: verifyError } = await supabase.auth.mfa.verify({
-      factorId,
-      challengeId: challenge.id,
-      code,
-    });
-    if (verifyError) {
-      toast.error('Código incorrecto. Revisá tu app de autenticación.');
-      setCode('');
-      setLoading(false);
-      return;
-    }
-    router.replace(redirect);
-    router.refresh();
   };
 
   return (

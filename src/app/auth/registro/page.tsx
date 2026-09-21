@@ -10,6 +10,7 @@ import { Mail, Lock, User, Chrome, Facebook, Eye, EyeOff, CheckCircle2, XCircle 
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 // 🔴 Facebook Login pausado a propósito — ver el comentario largo en
 // auth/login/page.tsx (mismo motivo: Meta pide verificación de negocio
@@ -72,7 +73,8 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
 export default function RegistroPage() {
   const router   = useRouter();
   const params   = useSearchParams();
-  const redirect = params.get('redirect') ?? '/';
+  // ✅ FIX seguridad: solo rutas internas (ver lib/safeRedirect.ts).
+  const redirect = safeRedirectPath(params.get('redirect'), '/');
   const supabase = createClient();
 
   const [showPw,  setShowPw]  = useState(false);
@@ -134,13 +136,13 @@ export default function RegistroPage() {
       return;
     }
     toast.success('¡Cuenta creada! Revisá tu email para verificarla.');
-    router.push(`/auth/login?redirect=${redirect}&verify=1`);
+    router.push(`/auth/login?redirect=${encodeURIComponent(redirect)}&verify=1`);
   };
 
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
   };
 
@@ -148,7 +150,7 @@ export default function RegistroPage() {
   const handleFacebook = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
   };
 
@@ -316,7 +318,7 @@ export default function RegistroPage() {
 
         <p className="mt-3 text-center text-sm text-muted">
           ¿Ya tenés cuenta?{' '}
-          <Link href={`/auth/login?redirect=${redirect}`} className="text-brand-600 font-medium hover:underline">
+          <Link href={`/auth/login?redirect=${encodeURIComponent(redirect)}`} className="text-brand-600 font-medium hover:underline">
             Iniciá sesión
           </Link>
         </p>

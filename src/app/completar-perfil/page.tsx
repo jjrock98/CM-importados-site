@@ -5,11 +5,13 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { MapPin, Phone, Home, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 export default function CompletarPerfilPage() {
   const router   = useRouter();
   const params   = useSearchParams();
-  const redirect = params.get('redirect') ?? '/';
+  // ✅ FIX seguridad: solo rutas internas (ver lib/safeRedirect.ts).
+  const redirect = safeRedirectPath(params.get('redirect'), '/');
   const { user, profile, loading } = useAuth();
   const supabase = createClient();
 

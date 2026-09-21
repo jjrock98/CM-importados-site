@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, Eye, EyeOff, Chrome, Facebook } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
+import { safeRedirectPath } from '@/lib/safeRedirect';
 
 // 🔴 Facebook Login pausado a propósito: Meta pide verificación de
 // negocio para que la app pase a modo "Activo" y sirva a clientes
@@ -20,7 +21,9 @@ const FACEBOOK_LOGIN_ENABLED = false;
 
 export default function LoginPage() {
   const params   = useSearchParams();
-  const redirect = params.get('redirect') ?? '/';
+  // ✅ FIX seguridad: solo rutas internas (ver lib/safeRedirect.ts) — antes
+  // ?redirect=https://sitio-malo.com mandaba a otro sitio tras loguearse.
+  const redirect = safeRedirectPath(params.get('redirect'), '/');
   const supabase = createClient();
 
   const [email,    setEmail]    = useState('');
@@ -132,7 +135,7 @@ export default function LoginPage() {
   const handleGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
     // ✅ FIX: antes no se chequeaba este error — si el proveedor no está
     // bien configurado del lado de Supabase, esto falla ANTES de
@@ -147,7 +150,7 @@ export default function LoginPage() {
   const handleFacebook = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
-      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${redirect}` },
+      options:  { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirect)}` },
     });
     if (error) toast.error('No se pudo iniciar sesión con Facebook. Intentá de nuevo en unos minutos.');
   };
@@ -227,7 +230,7 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-muted">
           ¿No tenés cuenta?{' '}
-          <Link href={`/auth/registro?redirect=${redirect}`} className="text-brand-600 font-medium hover:underline">
+          <Link href={`/auth/registro?redirect=${encodeURIComponent(redirect)}`} className="text-brand-600 font-medium hover:underline">
             Registrate gratis
           </Link>
         </p>
