@@ -1,17 +1,17 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabase } from '@/lib/supabase/lazy';
 import { useAuth } from './useAuth';
 
 export function useWishlist() {
   const { user } = useAuth();
-  const supabase = createClient();
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!user) { setWishlist([]); return; }
     const fetch = async () => {
+      const supabase = await getSupabase();
       const { data } = await supabase
         .from('wishlists')
         .select('product_id')
@@ -24,6 +24,7 @@ export function useWishlist() {
   const toggle = useCallback(async (productId: string) => {
     if (!user) return;
     setLoading(true);
+    const supabase = await getSupabase();
     const inWishlist = wishlist.includes(productId);
     if (inWishlist) {
       await supabase.from('wishlists')

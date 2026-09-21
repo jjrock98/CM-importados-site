@@ -22,6 +22,12 @@ const ADMIN_IDLE_LIMIT_SECONDS = 30 * 60;     // 30 min sin actividad → logout
 
 const MAINTENANCE_BYPASS = ['/admin', '/auth', '/api', '/mantenimiento'];
 
+// Caché en memoria (por instancia serverless) del chequeo de modo mantenimiento.
+const MAINTENANCE_CACHE_TTL_MS       = 30_000; // consulta OK
+const MAINTENANCE_CACHE_ERROR_TTL_MS = 10_000; // consulta fallida/lenta: no reintentar en cada request
+const MAINTENANCE_QUERY_TIMEOUT_MS   = 2_500;
+let maintenanceCache: { value: boolean; expires: number } | null = null;
+
 type UpdateSessionResult = Awaited<ReturnType<typeof updateSession>>;
 
 // Chequea inactividad comparando timestamps guardados en una cookie propia
@@ -193,20 +199,41 @@ export async function proxy(request: NextRequest) {
 
     // Si la env var no lo activa, consultar DB (más flexible para el admin)
     if (!isMaintenanceActive) {
-      try {
-        const adminSupabase = createServerClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.SUPABASE_SERVICE_ROLE_KEY!,
-          { cookies: { getAll: () => [], setAll: () => {} } }
-        );
-        const { data } = await adminSupabase
-          .from('site_settings')
-          .select('valor')
-          .eq('clave', 'mantenimiento')
-          .single();
-        isMaintenanceActive = data?.valor === 'true';
-      } catch {
-        // Si falla la consulta, no activar mantenimiento (fail-open es más seguro)
+      // ✅ PERF/robustez: antes esto era una consulta a Supabase en CADA
+      // request (páginas, robots.txt, sitemap…). Si Supabase andaba lento,
+      // todo el sitio se colgaba con él (ej. "Timed out fetching resource"
+      // en PageSpeed). Ahora el resultado se cachea en memoria por
+      // instancia unos segundos y la consulta tiene timeout propio. Costo:
+      // activar/desactivar el modo mantenimiento desde el panel puede
+      // tardar hasta MAINTENANCE_CACHE_TTL_MS en aplicarse (la env var
+      // MAINTENANCE_MODE sigue siendo inmediata: se lee arriba, sin caché).
+      const nowMs = Date.now();
+      if (maintenanceCache && maintenanceCache.expires > nowMs) {
+        isMaintenanceActive = maintenanceCache.value;
+      } else {
+        let value = false;
+        let ttl   = MAINTENANCE_CACHE_ERROR_TTL_MS;
+        try {
+          const adminSupabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            { cookies: { getAll: () => [], setAll: () => {} } }
+          );
+          const { data, error } = await adminSupabase
+            .from('site_settings')
+            .select('valor')
+            .eq('clave', 'mantenimiento')
+            .abortSignal(AbortSignal.timeout(MAINTENANCE_QUERY_TIMEOUT_MS))
+            .single();
+          value = data?.valor === 'true';
+          // PGRST116 = "no hay fila" (todavía no se configuró): es un
+          // resultado válido, no un error de red.
+          if (!error || error.code === 'PGRST116') ttl = MAINTENANCE_CACHE_TTL_MS;
+        } catch {
+          // Si falla la consulta, no activar mantenimiento (fail-open es más seguro)
+        }
+        maintenanceCache = { value, expires: nowMs + ttl };
+        isMaintenanceActive = value;
       }
     }
 

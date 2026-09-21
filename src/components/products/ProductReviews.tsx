@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Star, MessageSquareText, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getSupabase } from '@/lib/supabase/lazy';
 import { formatDate, cn } from '@/utils';
 import type { ProductReview } from '@/types';
 import Link from 'next/link';
@@ -30,7 +31,7 @@ function Stars({ value, size = 16 }: { value: number; size?: number }) {
 }
 
 export function ProductReviews({ productId, initialReviews }: Props) {
-  const { user, profile, supabase, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [reviews] = useState<ProductReview[]>(initialReviews);
   const [myReview, setMyReview] = useState<ProductReview | null>(null);
   const [canReview, setCanReview] = useState(false);
@@ -43,6 +44,7 @@ export function ProductReviews({ productId, initialReviews }: Props) {
 
   const checkEligibility = useCallback(async () => {
     if (!user) { setChecking(false); return; }
+    const supabase = await getSupabase();
 
     // ¿Ya dejó una reseña (aprobada o pendiente)?
     const { data: existing } = await supabase
@@ -72,7 +74,7 @@ export function ProductReviews({ productId, initialReviews }: Props) {
 
     setCanReview(!!orderItem);
     setChecking(false);
-  }, [user, productId, supabase]);
+  }, [user, productId]);
 
   useEffect(() => {
     if (!authLoading) checkEligibility();
@@ -84,6 +86,7 @@ export function ProductReviews({ productId, initialReviews }: Props) {
     if (comentario.trim().length < 10) { toast.error('Contanos un poco más (mínimo 10 caracteres)'); return; }
 
     setSubmitting(true);
+    const supabase = await getSupabase();
     const { data, error } = await supabase
       .from('product_reviews')
       .insert({

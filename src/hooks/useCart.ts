@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabase } from '@/lib/supabase/lazy';
 import type { CartItem, TipoPack } from '@/types';
 import { pixelAddToCart } from '@/lib/fbpixel';
 import { getPrecioEscalonado } from '@/utils';
@@ -27,7 +27,9 @@ import { getPrecioEscalonado } from '@/utils';
  */
 
 async function leerStockActual(productId: string, variantId?: string | null): Promise<number | null> {
-  const supabase = createClient();
+  // Carga perezosa: Supabase solo se descarga cuando realmente hace falta
+  // leer stock (el visitante ya lo trae precargado tras su primer toque).
+  const supabase = await getSupabase();
   if (variantId) {
     const { data } = await supabase
       .from('product_variants')

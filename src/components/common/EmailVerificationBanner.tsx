@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { MailWarning, X, ExternalLink, RefreshCw } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabase, hasSupabaseSessionCookie } from '@/lib/supabase/lazy';
 import toast from 'react-hot-toast';
 
 // Map email domain → provider URL + label
@@ -27,38 +28,60 @@ function getProvider(email: string): { label: string; url: string } | null {
 }
 
 export function EmailVerificationBanner() {
-  const supabase = createClient();
+  const pathname = usePathname();
   const [show,         setShow]         = useState(false);
   const [email,        setEmail]        = useState('');
   const [resending,    setResending]    = useState(false);
   const [dismissed,    setDismissed]    = useState(false);
+  const alive   = useRef(true);
+  const started = useRef(false);
+  const unsub   = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const check = async () => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      unsub.current?.();
+      unsub.current = null;
+    };
+  }, []);
+
+  // ✅ PERF: este banner vive en el layout raíz, así que antes forzaba a
+  // TODAS las páginas a descargar Supabase (~66 KiB). Ahora solo se carga si
+  // hay una cookie de sesión (alguien logueado); un visitante anónimo no
+  // puede tener el email sin verificar. Se re-chequea al navegar, por si
+  // la persona se logueó sin recargar la página.
+  useEffect(() => {
+    if (started.current || !hasSupabaseSessionCookie()) return;
+    started.current = true;
+    (async () => {
+      const supabase = await getSupabase();
+      if (!alive.current) return;
+
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!alive.current) return;
       // If email_confirmed_at is null, email not verified
-      if (!user.email_confirmed_at) {
+      if (user && !user.email_confirmed_at) {
         setEmail(user.email ?? '');
         setShow(true);
       }
-    };
-    check();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user && !session.user.email_confirmed_at) {
-        setEmail(session.user.email ?? '');
-        setShow(true);
-      } else {
-        setShow(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+        if (!alive.current) return;
+        if (session?.user && !session.user.email_confirmed_at) {
+          setEmail(session.user.email ?? '');
+          setShow(true);
+        } else {
+          setShow(false);
+        }
+      });
+      unsub.current = () => subscription.unsubscribe();
+    })();
+  }, [pathname]);
 
   const handleResend = async () => {
     setResending(true);
+    const supabase = await getSupabase();
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,

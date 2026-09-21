@@ -6,7 +6,7 @@ import { Heart, Package, Bell, CheckCircle, Eye } from 'lucide-react';
 import { cn, formatPrice } from '@/utils';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
-import { createClient } from '@/lib/supabase/client';
+import { getSupabase } from '@/lib/supabase/lazy';
 import type { Product } from '@/types';
 import { ProductModal } from './ProductModal';
 import toast from 'react-hot-toast';
@@ -17,7 +17,16 @@ export function ProductCard({ product: p }: Props) {
   const { isInWishlist, toggle } = useWishlist();
   const { user } = useAuth();
   const [modalOpen,   setModalOpen]   = useState(false);
-  const [liveStock,   setLiveStock]   = useState(p.stock_unidades);
+  // ✅ PERF: el stock de la tarjeta ya no se actualiza por Realtime (antes
+  // cada tarjeta abría su propio canal de Supabase Realtime — decenas por
+  // catálogo — y obligaba a cargar Supabase en todas las páginas). Se toma
+  // de las props, que el servidor refresca cada 60 s (ISR). El stock real
+  // se sigue validando en el servidor al pedir, y en la página del producto
+  // y el checkout el stock sigue siendo en vivo.
+  // Al abrir el modal (intención de compra) se lee el stock actual UNA vez, en
+  // vez de mantener un canal abierto por tarjeta.
+  const [freshStock, setFreshStock] = useState<number | null>(null);
+  const liveStock = freshStock ?? p.stock_unidades;
   const [notifEmail,  setNotifEmail]  = useState('');
   const [notifSent,   setNotifSent]   = useState(false);
   const [notifLoading,setNotifLoading]= useState(false);
@@ -30,25 +39,24 @@ export function ProductCard({ product: p }: Props) {
   // pesado y arruinaría la experiencia de navegación.
   const [website, setWebsite] = useState('');
 
-  // ── MÓDULO 2: Stock en tiempo real via Supabase Realtime ─────────────────
   useEffect(() => {
-    const supabase = createClient();
-    const channel  = supabase
-      .channel(`product-stock-${p.id}`)
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'products', filter: `id=eq.${p.id}` },
-        (payload) => {
-          const updated = payload.new as Partial<Product>;
-          if (typeof updated.stock_unidades === 'number') {
-            setLiveStock(updated.stock_unidades);
-          }
+    if (!modalOpen) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const supabase = await getSupabase();
+        const { data } = await supabase
+          .from('products')
+          .select('stock_unidades')
+          .eq('id', p.id)
+          .single();
+        if (!cancelled && typeof data?.stock_unidades === 'number') {
+          setFreshStock(data.stock_unidades);
         }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [p.id]);
+      } catch { /* si falla, queda el stock que vino del servidor */ }
+    })();
+    return () => { cancelled = true; };
+  }, [modalOpen, p.id]);
 
   // Media docena opcional: si el producto no tiene precio de ½ docena
   // cargado, solo se vende por docena completa (o por curva).
