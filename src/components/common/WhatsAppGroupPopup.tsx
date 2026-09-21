@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { MessageCircle, X } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useCookieConsentStore } from '@/hooks/useCookieConsent';
 
 // ── Config ────────────────────────────────────────────────────────────────
-const SHOW_DELAY_MS   = 5000;              // aparece a los 5s, no interrumpe el LCP
+const SHOW_DELAY_MS   = 5000;              // espera 5s DESPUÉS de la primera interacción real
 const COOLDOWN_DAYS   = 14;                // si lo cierra, no lo vuelve a ver por 14 días
 const STORAGE_KEY      = 'whatsapp-group-popup-dismissed-at';
 const CONVERTED_KEY   = 'whatsapp-group-popup-converted';
@@ -44,13 +45,40 @@ export function WhatsAppGroupPopup() {
   const [dismissedAt, setDismissedAt] = useLocalStorage<number | null>(STORAGE_KEY, null);
   const [converted, setConverted]     = useLocalStorage<boolean>(CONVERTED_KEY, false);
 
+  const consentStatus = useCookieConsentStore((s) => s.status);
+
   const [isOpen, setIsOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   useEffect(() => setHasMounted(true), []);
 
+  // ✅ FIX: antes el popup se abría solo a los 5s de cargar la página. Eso
+  // traía dos problemas:
+  //  1) Tapaba el banner de cookies (el popup es z-[110] con fondo oscuro a
+  //     pantalla completa; el banner es z-50): la persona no podía aceptar
+  //     ni rechazar hasta cerrar el popup.
+  //  2) PageSpeed/Lighthouse espera varios segundos antes de medir, así que
+  //     auditaba la página CON el popup abierto (body en overflow:hidden y
+  //     todo oscurecido) — eso contaminaba la auditoría de contraste.
+  // Ahora solo se muestra cuando (a) la persona ya eligió en el banner de
+  // cookies y (b) hubo una interacción real (scroll, toque, click o tecla).
+  // Un robot de auditoría no interactúa, así que nunca lo ve.
+  useEffect(() => {
+    if (hasInteracted) return;
+    const events = ['pointerdown', 'touchstart', 'keydown', 'scroll'] as const;
+    const onFirst = () => {
+      events.forEach((e) => window.removeEventListener(e, onFirst));
+      setHasInteracted(true);
+    };
+    events.forEach((e) => window.addEventListener(e, onFirst, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, onFirst));
+  }, [hasInteracted]);
+
   useEffect(() => {
     if (!groupLink || !hasMounted) return;
+    if (consentStatus === 'unknown') return; // primero que resuelva el banner de cookies
+    if (!hasInteracted) return;
     if (isExcludedRoute(pathname)) return;
     if (converted) return; // ya se unió una vez — no lo molestamos más
 
@@ -61,7 +89,7 @@ export function WhatsAppGroupPopup() {
 
     const timer = setTimeout(() => setIsOpen(true), SHOW_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [groupLink, hasMounted, pathname, converted, dismissedAt]);
+  }, [groupLink, hasMounted, pathname, converted, dismissedAt, consentStatus, hasInteracted]);
 
   // Cerrar con Escape + bloquear scroll de fondo mientras está abierto
   // (mismo patrón que CartDrawer.tsx)
