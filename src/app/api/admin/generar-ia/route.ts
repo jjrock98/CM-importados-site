@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { categoriaLabel } from '@/lib/categorias';
+import {
+  generarConGemini,
+  generarConGroq,
+  generarConOpenRouter,
+  type ImagenData,
+  type ResultadoProveedor,
+} from './proveedores';
 
 async function verifyAdmin() {
   const supabase = await createClient();
@@ -11,23 +18,11 @@ async function verifyAdmin() {
 }
 
 // Máximo de imágenes que se mandan al modelo por request. Más fotos = más
-// tokens consumidos contra la cuota gratis de Gemini sin aportar demasiada
-// info extra (con la principal + 2-3 ángulos alcanza para describir el
+// tokens consumidos contra la cuota gratis sin aportar demasiada info
+// extra (con la principal + 2-3 ángulos alcanza para describir el
 // producto). El orden que llega ya trae la principal primero (drag&drop
 // del admin), así que tomamos las primeras `MAX_IMAGENES`.
 const MAX_IMAGENES = 4;
-
-// Se puede pisar con GEMINI_MODEL en Vercel si Google cambia los nombres
-// de modelo o si Javier quiere probar uno distinto (ej. gemini-2.5-pro
-// para mejores descripciones a costa de cuota más chica). Google renombra
-// y da de baja modelos Gemini seguido (varias veces en 2026), así que por
-// defecto usamos el alias "gemini-flash-latest": Google lo actualiza
-// automáticamente al Flash vigente, en vez de fijar un nombre de modelo
-// concreto que puede quedar discontinuado.
-const MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
-// Modelo de respaldo si el principal devuelve 503 (sobrecarga transitoria,
-// común en el tier gratis en horarios pico) después de los reintentos.
-const MODEL_FALLBACK = process.env.GEMINI_MODEL_FALLBACK || 'gemini-2.0-flash';
 
 interface GenerarIABody {
   imagenes?: string[];
@@ -38,7 +33,7 @@ interface GenerarIABody {
   ventaMayorista?: boolean;
 }
 
-async function imagenABase64(url: string): Promise<{ mimeType: string; data: string } | null> {
+async function imagenABase64(url: string): Promise<ImagenData | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -50,44 +45,47 @@ async function imagenABase64(url: string): Promise<{ mimeType: string; data: str
   }
 }
 
-async function llamarGemini(model: string, apiKey: string, requestBody: object): Promise<Response> {
-  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
-  });
-}
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 /**
- * Llama a Gemini con reintentos: el tier gratis devuelve 503 seguido en
- * horarios pico por sobrecarga transitoria del modelo, no por un error
- * real de la request. Reintenta 2 veces con backoff corto sobre el mismo
- * modelo y, si sigue devolviendo 503, prueba una vez con MODEL_FALLBACK
- * antes de rendirse.
+ * Cadena de proveedores de IA, en orden de preferencia. Los tres tienen
+ * tier gratis con soporte de imágenes. Se prueba el siguiente solo cuando
+ * el anterior falla (cuota agotada, sobrecarga persistente, error de red,
+ * JSON inválido, etc.) o directamente no tiene API key configurada en
+ * Vercel — así el sitio sigue funcionando con 1 o 2 proveedores dados de
+ * alta, sin tocar código, y de yapa cuando agreguemos uno nuevo alcanza
+ * con sumarlo a este array.
  */
-async function llamarGeminiConReintentos(apiKey: string, requestBody: object): Promise<Response> {
-  let ultimaRes: Response | null = null;
-  for (const intento of [0, 1, 2]) {
-    if (intento > 0) await sleep(intento * 1200);
-    ultimaRes = await llamarGemini(MODEL, apiKey, requestBody);
-    if (ultimaRes.ok || ultimaRes.status !== 503) return ultimaRes;
+function construirCadenaProveedores(): Array<{
+  nombre: string;
+  llamar: (prompt: string, imagenes: ImagenData[]) => Promise<ResultadoProveedor>;
+}> {
+  const cadena: Array<{ nombre: string; llamar: (prompt: string, imagenes: ImagenData[]) => Promise<ResultadoProveedor> }> = [];
+
+  if (process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    cadena.push({ nombre: 'Gemini', llamar: (prompt, imagenes) => generarConGemini(apiKey, prompt, imagenes) });
   }
-  if (MODEL_FALLBACK && MODEL_FALLBACK !== MODEL) {
-    const resFallback = await llamarGemini(MODEL_FALLBACK, apiKey, requestBody);
-    if (resFallback.ok) return resFallback;
+  if (process.env.GROQ_API_KEY) {
+    const apiKey = process.env.GROQ_API_KEY;
+    cadena.push({ nombre: 'Groq', llamar: (prompt, imagenes) => generarConGroq(apiKey, prompt, imagenes) });
   }
-  return ultimaRes!;
+  if (process.env.OPENROUTER_API_KEY) {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    cadena.push({ nombre: 'OpenRouter', llamar: (prompt, imagenes) => generarConOpenRouter(apiKey, prompt, imagenes) });
+  }
+
+  return cadena;
 }
 
 export async function POST(req: NextRequest) {
   if (!(await verifyAdmin())) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const cadena = construirCadenaProveedores();
+  if (cadena.length === 0) {
     return NextResponse.json(
-      { error: 'Falta configurar GEMINI_API_KEY en las variables de entorno del servidor' },
+      {
+        error:
+          'No hay ningún proveedor de IA configurado en el servidor (falta GEMINI_API_KEY, GROQ_API_KEY u OPENROUTER_API_KEY)',
+      },
       { status: 500 }
     );
   }
@@ -98,11 +96,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Subí al menos una imagen antes de generar con IA' }, { status: 422 });
   }
 
-  // Descarga las imágenes en paralelo y las pasa a base64: la API de Gemini
-  // no acepta URLs públicas directamente en generateContent, necesita los
-  // bytes inline.
+  // Descarga las imágenes en paralelo y las pasa a base64: ninguno de los
+  // proveedores acepta URLs públicas directamente, necesitan los bytes
+  // inline en la request.
   const imagenesData = (await Promise.all(imagenes.map(imagenABase64))).filter(
-    (i): i is { mimeType: string; data: string } => i !== null
+    (i): i is ImagenData => i !== null
   );
   if (imagenesData.length === 0) {
     return NextResponse.json({ error: 'No se pudo descargar ninguna de las imágenes del producto' }, { status: 500 });
@@ -132,62 +130,24 @@ Reglas:
 - "descripcion": 2 a 4 oraciones completas, mencionando material/estilo/uso que se vea realmente en la imagen. No inventes colores, talles ni materiales que no se puedan confirmar por la foto o por el contexto dado.
 - Todo en español rioplatense, tono comercial pero natural (no genérico de IA).`;
 
-  try {
-    const geminiRes = await llamarGeminiConReintentos(apiKey, {
-      contents: [
-        {
-          parts: [
-            { text: prompt },
-            ...imagenesData.map((img) => ({ inline_data: { mime_type: img.mimeType, data: img.data } })),
-          ],
-        },
-      ],
-      generationConfig: { responseMimeType: 'application/json' },
-    });
+  const errores: string[] = [];
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text().catch(() => '');
-      console.error('Gemini API error:', geminiRes.status, errText);
-      if (geminiRes.status === 503) {
-        return NextResponse.json(
-          { error: 'Google está saturado ahora mismo (ya reintenté varias veces). Probá de nuevo en un minuto.' },
-          { status: 503 }
-        );
-      }
-      // Devolvemos el motivo real (acortado) para poder diagnosticar desde
-      // el toast del admin sin tener que ir a mirar los logs de Vercel.
-      let detalle = errText.slice(0, 200);
-      try {
-        const parsedErr = JSON.parse(errText);
-        detalle = parsedErr?.error?.message?.slice(0, 200) || detalle;
-      } catch { /* errText no era JSON, se usa el texto crudo */ }
-      return NextResponse.json(
-        { error: `Gemini devolvió un error (${geminiRes.status}): ${detalle || 'sin detalle'}` },
-        { status: 502 }
-      );
+  for (const proveedor of cadena) {
+    const resultado = await proveedor.llamar(prompt, imagenesData);
+    if (resultado.ok) {
+      return NextResponse.json(resultado.contenido);
     }
-
-    const geminiJson = await geminiRes.json();
-    const rawText: string | undefined = geminiJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!rawText) {
-      return NextResponse.json({ error: 'La IA no devolvió contenido' }, { status: 502 });
-    }
-
-    // Por las dudas: si el modelo igual envuelve la respuesta en ```json ... ```
-    const limpio = rawText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '');
-    const parsed = JSON.parse(limpio) as { nombre?: string; descripcion_corta?: string; descripcion?: string };
-
-    if (!parsed.nombre && !parsed.descripcion_corta && !parsed.descripcion) {
-      return NextResponse.json({ error: 'La IA devolvió una respuesta vacía o inválida' }, { status: 502 });
-    }
-
-    return NextResponse.json({
-      nombre: parsed.nombre?.trim() ?? '',
-      descripcion_corta: parsed.descripcion_corta?.trim() ?? '',
-      descripcion: parsed.descripcion?.trim() ?? '',
-    });
-  } catch (err) {
-    console.error('Error generando con IA:', err);
-    return NextResponse.json({ error: 'Error inesperado generando el contenido con IA' }, { status: 500 });
+    console.error(`[generar-ia] Falló ${proveedor.nombre}:`, resultado.motivo);
+    errores.push(`${proveedor.nombre}: ${resultado.motivo}`);
   }
+
+  // Los 3 (o los que estén configurados) fallaron. Si el último motivo fue
+  // cuota agotada (429) en todos, el mensaje suele ser el más útil para el
+  // admin; si no, mostramos un resumen corto de la cadena completa.
+  const huboCuotaAgotada = errores.some((e) => e.includes('(429)'));
+  const mensaje = huboCuotaAgotada
+    ? 'Se agotó la cuota gratis de los proveedores de IA disponibles por ahora. Probá de nuevo en unos minutos.'
+    : `No se pudo generar el contenido con ningún proveedor de IA disponible. Detalle: ${errores.join(' | ')}`;
+
+  return NextResponse.json({ error: mensaje }, { status: 502 });
 }
