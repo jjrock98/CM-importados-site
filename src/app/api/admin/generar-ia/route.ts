@@ -5,6 +5,7 @@ import {
   generarConGemini,
   generarConGroq,
   generarConOpenRouter,
+  type ContenidoGenerado,
   type ImagenData,
   type ResultadoProveedor,
 } from './proveedores';
@@ -31,6 +32,10 @@ interface GenerarIABody {
   talles?: string[];
   ventaMinorista?: boolean;
   ventaMayorista?: boolean;
+  // Versiones ya generadas antes para este mismo producto que el admin
+  // descartó (botón "Generar otra versión" del admin). Se usan para
+  // pedirle al modelo algo distinto, no para mostrárselas al usuario.
+  anteriores?: ContenidoGenerado[];
 }
 
 async function imagenABase64(url: string): Promise<ImagenData | null> {
@@ -54,23 +59,22 @@ async function imagenABase64(url: string): Promise<ImagenData | null> {
  * alta, sin tocar código, y de yapa cuando agreguemos uno nuevo alcanza
  * con sumarlo a este array.
  */
-function construirCadenaProveedores(): Array<{
-  nombre: string;
-  llamar: (prompt: string, imagenes: ImagenData[]) => Promise<ResultadoProveedor>;
-}> {
-  const cadena: Array<{ nombre: string; llamar: (prompt: string, imagenes: ImagenData[]) => Promise<ResultadoProveedor> }> = [];
+type LlamarProveedor = (prompt: string, imagenes: ImagenData[], variar: boolean) => Promise<ResultadoProveedor>;
+
+function construirCadenaProveedores(): Array<{ nombre: string; llamar: LlamarProveedor }> {
+  const cadena: Array<{ nombre: string; llamar: LlamarProveedor }> = [];
 
   if (process.env.GEMINI_API_KEY) {
     const apiKey = process.env.GEMINI_API_KEY;
-    cadena.push({ nombre: 'Gemini', llamar: (prompt, imagenes) => generarConGemini(apiKey, prompt, imagenes) });
+    cadena.push({ nombre: 'Gemini', llamar: (prompt, imagenes, variar) => generarConGemini(apiKey, prompt, imagenes, variar) });
   }
   if (process.env.GROQ_API_KEY) {
     const apiKey = process.env.GROQ_API_KEY;
-    cadena.push({ nombre: 'Groq', llamar: (prompt, imagenes) => generarConGroq(apiKey, prompt, imagenes) });
+    cadena.push({ nombre: 'Groq', llamar: (prompt, imagenes, variar) => generarConGroq(apiKey, prompt, imagenes, variar) });
   }
   if (process.env.OPENROUTER_API_KEY) {
     const apiKey = process.env.OPENROUTER_API_KEY;
-    cadena.push({ nombre: 'OpenRouter', llamar: (prompt, imagenes) => generarConOpenRouter(apiKey, prompt, imagenes) });
+    cadena.push({ nombre: 'OpenRouter', llamar: (prompt, imagenes, variar) => generarConOpenRouter(apiKey, prompt, imagenes, variar) });
   }
 
   return cadena;
@@ -116,11 +120,22 @@ export async function POST(req: NextRequest) {
       : 'Se vende por docena/media docena a comercios (mayorista).'
   );
 
+  // Últimas versiones descartadas por el admin (tope 3: alcanza para que
+  // el modelo entienda qué evitar sin inflar el prompt de más — más
+  // "anteriores" no mejora la variedad, solo gasta tokens de la cuota
+  // gratis).
+  const anteriores = (body?.anteriores ?? []).slice(-3);
+  const bloqueAnteriores = anteriores.length
+    ? `\nYa generaste estas ${anteriores.length} versión(es) para esta misma foto y el admin las descartó por no convencerle — NO las repitas ni parafrasees, generá algo con un enfoque, tono o estructura genuinamente distinto:\n${anteriores
+        .map((v, i) => `${i + 1}. Nombre: "${v.nombre}" | Corta: "${v.descripcion_corta}" | Descripción: "${v.descripcion}"`)
+        .join('\n')}\n`
+    : '';
+
   const prompt = `Sos redactor de e-commerce para una tienda argentina de indumentaria y calzado importado (venta mayorista y minorista). Mirá las fotos adjuntas del producto y generá el contenido para publicarlo en el catálogo.
 
 Contexto ya cargado (no lo repitas literal, usalo de guía):
 ${contexto.join('\n')}
-
+${bloqueAnteriores}
 Respondé ÚNICAMENTE un JSON válido, sin texto adicional, sin markdown ni backticks, con esta forma exacta:
 {"nombre": "...", "descripcion_corta": "...", "descripcion": "..."}
 
@@ -130,10 +145,16 @@ Reglas:
 - "descripcion": 2 a 4 oraciones completas, mencionando material/estilo/uso que se vea realmente en la imagen. No inventes colores, talles ni materiales que no se puedan confirmar por la foto o por el contexto dado.
 - Todo en español rioplatense, tono comercial pero natural (no genérico de IA).`;
 
+  // Con reintento (hay versiones previas a evitar) subimos la temperatura
+  // para que, más allá de la instrucción explícita, el modelo también
+  // varíe por su cuenta la redacción en vez de converger siempre a la
+  // misma frase "más probable".
+  const variar = anteriores.length > 0;
+
   const errores: string[] = [];
 
   for (const proveedor of cadena) {
-    const resultado = await proveedor.llamar(prompt, imagenesData);
+    const resultado = await proveedor.llamar(prompt, imagenesData, variar);
     if (resultado.ok) {
       return NextResponse.json(resultado.contenido);
     }

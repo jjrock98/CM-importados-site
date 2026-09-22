@@ -9,6 +9,12 @@ import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product, PriceTier } from '@/types';
 import toast from 'react-hot-toast';
 
+interface ContenidoIA {
+  nombre: string;
+  descripcion_corta: string;
+  descripcion: string;
+}
+
 const EMPTY: Omit<Product, 'id' | 'created_at' | 'updated_at'> = {
   nombre: '', slug: '', descripcion: '', descripcion_corta: '',
   imagenes: [], videos: [], stock_unidades: 0,
@@ -29,6 +35,12 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   const [search, setSearch]     = useState('');
   const [uploading, setUploading] = useState(false);
   const [generandoIA, setGenerandoIA] = useState(false);
+  // Historial de versiones generadas por IA para el producto que se está
+  // editando: permite "Generar otra versión" cuando la actual no convence,
+  // y volver atrás a una anterior sin tener que regenerarla (no gasta
+  // cuota). Se reinicia al abrir/cerrar el modal de edición.
+  const [historialIA, setHistorialIA] = useState<ContenidoIA[]>([]);
+  const [historialIAIndex, setHistorialIAIndex] = useState<number>(-1);
   // Índice de la imagen que se está arrastrando en el modal de edición
   // (drag & drop nativo del navegador, sin librerías externas).
   const [draggedImgIndex, setDraggedImgIndex] = useState<number | null>(null);
@@ -44,8 +56,8 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     .filter((p) => p.nombre.toLowerCase().includes(search.toLowerCase()))
     .filter((p) => !soloStockBajo || p.stock_unidades < 12);
 
-  const openNew = () => { setEditing({ ...EMPTY }); setIsNew(true); };
-  const openEdit = (p: Product) => { setEditing({ ...p }); setIsNew(false); };
+  const openNew = () => { setEditing({ ...EMPTY }); setIsNew(true); setHistorialIA([]); setHistorialIAIndex(-1); };
+  const openEdit = (p: Product) => { setEditing({ ...p }); setIsNew(false); setHistorialIA([]); setHistorialIAIndex(-1); };
 
   /**
    * Duplica un producto como su versión del otro canal (mayorista ↔ minorista)
@@ -173,9 +185,15 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
 
   /**
    * Manda las fotos ya subidas del producto + los datos cargados (categoría,
-   * colores, talles) a Gemini (Google AI, tier gratis) para que complete
-   * nombre, descripción corta y descripción completa. El slug se recalcula
-   * localmente a partir del nombre generado, igual que en carga manual.
+   * colores, talles) a la cadena de proveedores de IA (Gemini → Groq →
+   * OpenRouter) para que complete nombre, descripción corta y descripción
+   * completa. El slug se recalcula localmente a partir del nombre generado,
+   * igual que en carga manual.
+   *
+   * Si ya hay versiones generadas antes para este producto (historialIA),
+   * se mandan como "anteriores" para que el backend le pida al modelo algo
+   * distinto en vez de repetir lo mismo — así el botón "Generar otra
+   * versión" da variedad real y no una copia con otras palabras.
    */
   const generarConIA = async () => {
     if (!editing?.imagenes?.length) {
@@ -194,6 +212,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
           talles: editing.talles,
           ventaMinorista: editing.venta_minorista,
           ventaMayorista: editing.venta_mayorista,
+          anteriores: historialIA,
         }),
       });
       const json = await res.json();
@@ -201,14 +220,28 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
         toast.error(json?.error || 'No se pudo generar el contenido con IA');
         return;
       }
+      const nueva: ContenidoIA = {
+        nombre: json.nombre || '',
+        descripcion_corta: json.descripcion_corta || '',
+        descripcion: json.descripcion || '',
+      };
       setEditing((prev) => ({
         ...prev,
-        nombre: json.nombre || prev?.nombre,
-        slug: json.nombre ? slugify(json.nombre) : prev?.slug,
-        descripcion_corta: json.descripcion_corta || prev?.descripcion_corta,
-        descripcion: json.descripcion || prev?.descripcion,
+        nombre: nueva.nombre || prev?.nombre,
+        slug: nueva.nombre ? slugify(nueva.nombre) : prev?.slug,
+        descripcion_corta: nueva.descripcion_corta || prev?.descripcion_corta,
+        descripcion: nueva.descripcion || prev?.descripcion,
       }));
-      toast.success('Nombre y descripciones generados — revisalos antes de guardar');
+      setHistorialIA((prev) => {
+        const actualizado = [...prev, nueva];
+        setHistorialIAIndex(actualizado.length - 1);
+        return actualizado;
+      });
+      toast.success(
+        historialIA.length > 0
+          ? `Versión ${historialIA.length + 1} generada — revisala antes de guardar`
+          : 'Nombre y descripciones generados — revisalos antes de guardar'
+      );
     } catch {
       toast.error('Error de conexión al generar con IA');
     } finally {
@@ -216,7 +249,21 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     }
   };
 
-  const close = () => { setEditing(null); setIsNew(false); };
+  /** Vuelve a aplicar una versión anterior del historial sin gastar cuota. */
+  const aplicarVersionIA = (i: number) => {
+    const version = historialIA[i];
+    if (!version) return;
+    setEditing((prev) => ({
+      ...prev,
+      nombre: version.nombre || prev?.nombre,
+      slug: version.nombre ? slugify(version.nombre) : prev?.slug,
+      descripcion_corta: version.descripcion_corta || prev?.descripcion_corta,
+      descripcion: version.descripcion || prev?.descripcion,
+    }));
+    setHistorialIAIndex(i);
+  };
+
+  const close = () => { setEditing(null); setIsNew(false); setHistorialIA([]); setHistorialIAIndex(-1); };
 
   const setField = (k: keyof Product) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const val = e.target.type === 'number' ? Number(e.target.value) :
@@ -557,15 +604,45 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                   </label>
                 </div>
                 {(editing.imagenes?.length ?? 0) > 0 && (
-                  <button
-                    onClick={generarConIA}
-                    type="button"
-                    disabled={generandoIA}
-                    className="text-[11px] text-brand-600 hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
-                    title="Analiza las fotos + categoría/colores/talles cargados y completa nombre, descripción corta y descripción completa"
-                  >
-                    {generandoIA ? '✨ Generando con IA…' : '✨ Generar nombre y descripciones con IA'}
-                  </button>
+                  <div className="space-y-1.5">
+                    <button
+                      onClick={generarConIA}
+                      type="button"
+                      disabled={generandoIA}
+                      className="text-[11px] text-brand-600 hover:underline flex items-center gap-1 disabled:opacity-50 disabled:no-underline"
+                      title={
+                        historialIA.length > 0
+                          ? 'Le pide al modelo una versión distinta a las anteriores (no repite lo mismo con otras palabras)'
+                          : 'Analiza las fotos + categoría/colores/talles cargados y completa nombre, descripción corta y descripción completa'
+                      }
+                    >
+                      {generandoIA
+                        ? '✨ Generando con IA…'
+                        : historialIA.length > 0
+                          ? '🔁 No me convence, generar otra versión'
+                          : '✨ Generar nombre y descripciones con IA'}
+                    </button>
+                    {historialIA.length > 1 && (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span className="text-[10px] text-muted">Versiones:</span>
+                        {historialIA.map((_, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => aplicarVersionIA(i)}
+                            title="Volver a aplicar esta versión (no gasta cuota de IA)"
+                            className={`rounded-full px-2 py-0.5 text-[10px] transition-colors ${
+                              i === historialIAIndex
+                                ? 'bg-brand-600 text-white'
+                                : 'bg-surface-2 text-muted hover:bg-border'
+                            }`}
+                          >
+                            {i + 1}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 

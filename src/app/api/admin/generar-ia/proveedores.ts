@@ -106,7 +106,8 @@ async function llamarGeminiConReintentos(apiKey: string, requestBody: object): P
 export async function generarConGemini(
   apiKey: string,
   prompt: string,
-  imagenes: ImagenData[]
+  imagenes: ImagenData[],
+  variar = false
 ): Promise<ResultadoProveedor> {
   try {
     const res = await llamarGeminiConReintentos(apiKey, {
@@ -118,7 +119,14 @@ export async function generarConGemini(
           ],
         },
       ],
-      generationConfig: { responseMimeType: 'application/json' },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        // Default de Gemini ya es ~1; al reintentar ("generar otra
+        // versión") lo subimos un poco más para que, además de la
+        // instrucción explícita de no repetirse, también varíe por su
+        // cuenta la redacción.
+        ...(variar ? { temperature: 1.15 } : {}),
+      },
     });
 
     if (!res.ok) {
@@ -154,7 +162,8 @@ const GROQ_MODEL = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-i
 export async function generarConGroq(
   apiKey: string,
   prompt: string,
-  imagenes: ImagenData[]
+  imagenes: ImagenData[],
+  variar = false
 ): Promise<ResultadoProveedor> {
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -166,6 +175,7 @@ export async function generarConGroq(
       body: JSON.stringify({
         model: GROQ_MODEL,
         response_format: { type: 'json_object' },
+        ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {
             role: 'user',
@@ -218,7 +228,8 @@ const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'openrouter/free';
 export async function generarConOpenRouter(
   apiKey: string,
   prompt: string,
-  imagenes: ImagenData[]
+  imagenes: ImagenData[],
+  variar = false
 ): Promise<ResultadoProveedor> {
   try {
     const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -233,6 +244,7 @@ export async function generarConOpenRouter(
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
+        ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {
             role: 'user',
