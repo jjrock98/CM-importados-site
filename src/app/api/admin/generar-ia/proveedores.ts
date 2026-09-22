@@ -34,6 +34,15 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * Extrae el JSON de la respuesta de texto de un modelo, tolerando que lo
  * envuelva en ```json ... ``` (pasa seguido con modelos que no soportan
  * "modo JSON" forzado, como los que sirve OpenRouter en su tier gratis).
+ *
+ * Exige los TRES campos completos (no alcanza con que venga el nombre):
+ * algunos modelos de respaldo (Groq/OpenRouter, sobre todo con temperature
+ * alta al "generar otra versión") a veces devuelven un JSON técnicamente
+ * válido pero con descripcion_corta/descripcion vacías o truncadas. Si
+ * dejáramos pasar eso como éxito, el admin ve el nombre cambiar pero las
+ * descripciones quedan pisadas por lo que hubiera antes en el formulario
+ * (o vacías) sin ningún aviso. Tratándolo como fallo, route.ts prueba el
+ * siguiente proveedor de la cadena en su lugar.
  */
 function parsearContenido(rawText: string): ContenidoGenerado | null {
   const limpio = rawText
@@ -43,12 +52,11 @@ function parsearContenido(rawText: string): ContenidoGenerado | null {
     .replace(/```\s*$/i, '');
   try {
     const parsed = JSON.parse(limpio) as Partial<ContenidoGenerado>;
-    if (!parsed.nombre && !parsed.descripcion_corta && !parsed.descripcion) return null;
-    return {
-      nombre: parsed.nombre?.trim() ?? '',
-      descripcion_corta: parsed.descripcion_corta?.trim() ?? '',
-      descripcion: parsed.descripcion?.trim() ?? '',
-    };
+    const nombre = parsed.nombre?.trim() ?? '';
+    const descripcion_corta = parsed.descripcion_corta?.trim() ?? '';
+    const descripcion = parsed.descripcion?.trim() ?? '';
+    if (!nombre || !descripcion_corta || !descripcion) return null;
+    return { nombre, descripcion_corta, descripcion };
   } catch {
     return null;
   }
@@ -121,6 +129,7 @@ export async function generarConGemini(
       ],
       generationConfig: {
         responseMimeType: 'application/json',
+        maxOutputTokens: 700,
         // Default de Gemini ya es ~1; al reintentar ("generar otra
         // versión") lo subimos un poco más para que, además de la
         // instrucción explícita de no repetirse, también varíe por su
@@ -175,6 +184,11 @@ export async function generarConGroq(
       body: JSON.stringify({
         model: GROQ_MODEL,
         response_format: { type: 'json_object' },
+        // Explícito para no depender del default del modelo: de sobra
+        // para nombre+2 descripciones cortas, pero evita que una
+        // respuesta larga se corte a mitad del JSON (eso rompía el
+        // parseo silenciosamente, ver parsearContenido más arriba).
+        max_tokens: 700,
         ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {
@@ -244,6 +258,7 @@ export async function generarConOpenRouter(
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
+        max_tokens: 700,
         ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {
