@@ -34,6 +34,40 @@ export interface Product {
   precio_tiers: PriceTier[];
 }
 
+/**
+ * Costo de un producto específico, expresado por docena (bulto), para
+ * el Módulo de Análisis y Reportes de Costos por Docena del admin.
+ * Es simulación interna — no tiene relación con precio_docena de venta.
+ */
+export interface ProductCost {
+  id: string;
+  product_id: string;
+  costo_compra_docena: number;
+  transporte_docena: number;
+  empaque_docena: number;
+  otros_docena: number;
+  notas: string | null;
+  updated_at: string;
+}
+
+/** Gasto fijo/compartido del negocio (alquiler, sueldo ayudante, etc.) a prorratear por docena. */
+export interface CostSetting {
+  id: string;
+  nombre: string;
+  monto_mensual: number;
+  activo: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Docenas estimadas del período — divisor del prorrateo de cost_settings. */
+export interface CostPeriodConfig {
+  id: string;
+  periodo: string; // 'YYYY-MM'
+  docenas_estimadas: number;
+  updated_at: string;
+}
+
 export interface ClienteMayorista {
   id: string;
   profile_id: string;

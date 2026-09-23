@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Menu, X, LayoutDashboard, Package, ShoppingBag,
-  Users, MessageSquare, Settings, Star,
+  Users, MessageSquare, Settings, Star, Calculator,
 } from 'lucide-react';
 import { cn } from '@/utils';
 
 const LINKS = [
   { href: '/admin',               icon: LayoutDashboard, label: 'Dashboard'     },
   { href: '/admin/productos',     icon: Package,         label: 'Productos'     },
+  { href: '/admin/costos',        icon: Calculator,      label: 'Costos por Docena' },
   { href: '/admin/pedidos',       icon: ShoppingBag,     label: 'Pedidos'       },
   { href: '/admin/clientes',      icon: Users,           label: 'Clientes'      },
   { href: '/admin/resenas',       icon: Star,            label: 'Reseñas'       },
