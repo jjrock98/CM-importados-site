@@ -8,9 +8,9 @@ Stack: **Next.js 14 · TypeScript · Tailwind CSS · Supabase · Mercado Pago ·
 
 - 🛒 Venta por packs (media docena / docena)
 - 💳 Pago con Mercado Pago (popup) + Transferencia bancaria
-- 🏪 Envío a domicilio y retiro en local
+- 🏪 Envío a domicilio, retiro en local y entrega en micros
 - 👤 Auth con email/contraseña y Google OAuth
-- 🔔 Notificaciones en tiempo real para el admin (Supabase Realtime)
+- 🔔 Notificaciones en tiempo real para el admin (Supabase Realtime y bot telegram)
 - ✅ Aprobación de comprobantes de transferencia con workflow completo
 - 📧 Emails transaccionales con Resend
 - 🌙 Modo oscuro / claro
@@ -23,7 +23,7 @@ Stack: **Next.js 14 · TypeScript · Tailwind CSS · Supabase · Mercado Pago ·
 
 - Node.js 18+
 - Cuenta en [Supabase](https://supabase.com)
-- Cuenta en [Mercado Pago Developers](https://www.mercadopago.com.ar/developers)
+- Cuenta en [Mercado Pago]
 - Cuenta en [Resend](https://resend.com)
 
 ---
