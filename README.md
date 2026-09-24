@@ -10,11 +10,11 @@ Tienda online de indumentaria y calzado al por mayor (packs por docena y media d
 
 **Tienda**
 - Venta mayorista por packs (docena / media docena), con precios escalonados por volumen y curva de talles por pack.
-- Venta minorista en `/minorista` para los productos que la tengan habilitada, con mínimo de unidades por producto.
-- Variantes por talle y color, con stock propio por variante.
+- Venta minorista en `/minorista` para los productos que la tengan habilitada, con mínimo de unidades por producto(Deshabilitado)
+- Variantes por talle y color, con stock propio por variante(Deshabilitado)
 - Carrito con reserva de stock, wishlist, pedido rápido (`/pedido-rapido`) y "repetir pedido".
-- Compra como invitado o con cuenta (email/contraseña, Google y Facebook).
-- Envío a domicilio o retiro en el local, con zonas de envío configurables.
+- Compra como invitado o con cuenta (email/contraseña, Google).
+- Envío a domicilio, retiro en el local y entrega en micros, con zonas de envío configurables.
 - Seguimiento de pedidos por número (`/seguimiento`) y historial en `/mis-pedidos`.
 - Buscador, filtros por categoría, reseñas, productos relacionados y aviso de reposición de stock.
 - Modo oscuro / claro, PWA y diseño responsive.
@@ -241,5 +241,3 @@ Ambos reciben `?secret=<REVALIDATE_SECRET_TOKEN>`. El paso a paso está en [CRON
 5. Dar de alta los crons externos según `CRON_SETUP.md`.
 
 ## Licencia
-
-MIT
