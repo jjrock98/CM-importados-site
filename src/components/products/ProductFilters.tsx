@@ -235,7 +235,13 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
+          {/* Las primeras 4 tarjetas son las que quedan arriba de todo sin
+              scroll (2 filas de a 2 en mobile, 1 fila en desktop) — se
+              cargan sin lazy para no retrasar el LCP. Ver comentario en
+              ProductCard.tsx. */}
+          {filtered.map((p, i) => (
+            <ProductCard key={p.id} product={p} priority={i < 4} />
+          ))}
         </div>
       )}
     </div>

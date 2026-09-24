@@ -15,48 +15,74 @@ function useCartStock(productIds: string[], variantIds: string[]) {
   const [variantStocks, setVariantStocks] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const supabase = createClient();
-    const channels: ReturnType<typeof supabase.channel>[] = [];
+    // ✅ PERF: antes esto corría de forma síncrona apenas montaba la página
+    // (armar el cliente de Supabase, pedir stock y abrir DOS canales de
+    // Realtime), compitiendo por CPU/red justo en el momento más crítico
+    // para pintar la página (mobile, sobre todo). El carrito no necesita
+    // el stock en vivo al primer frame — con que esté listo antes de que
+    // el usuario llegue a tocar +/- o "Ir a pagar" alcanza. Se difiere
+    // este trabajo con requestIdleCallback (o un setTimeout corto como
+    // fallback en navegadores sin esa API) para que el hilo principal
+    // termine primero de pintar e hidratar la página.
+    let cancelled = false;
+    const channels: ReturnType<ReturnType<typeof createClient>['channel']>[] = [];
 
-    if (productIds.length > 0) {
-      supabase.from('products').select('id, stock_unidades').in('id', productIds)
-        .then(({ data }) => {
-          if (data) {
-            const map: Record<string, number> = {};
-            data.forEach((p) => { map[p.id] = p.stock_unidades; });
-            setProductStocks(map);
-          }
-        });
-      channels.push(
-        supabase.channel('cart-stock-watch').on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'products',
-        }, (payload) => {
-          const p = payload.new as { id: string; stock_unidades: number };
-          if (productIds.includes(p.id)) setProductStocks((prev) => ({ ...prev, [p.id]: p.stock_unidades }));
-        }).subscribe()
-      );
-    }
+    const run = () => {
+      if (cancelled) return;
+      const supabase = createClient();
 
-    if (variantIds.length > 0) {
-      supabase.from('product_variants').select('id, stock_unidades').in('id', variantIds)
-        .then(({ data }) => {
-          if (data) {
-            const map: Record<string, number> = {};
-            data.forEach((v) => { map[v.id] = v.stock_unidades; });
-            setVariantStocks(map);
-          }
-        });
-      channels.push(
-        supabase.channel('cart-variant-stock-watch').on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'product_variants',
-        }, (payload) => {
-          const v = payload.new as { id: string; stock_unidades: number };
-          if (variantIds.includes(v.id)) setVariantStocks((prev) => ({ ...prev, [v.id]: v.stock_unidades }));
-        }).subscribe()
-      );
-    }
+      if (productIds.length > 0) {
+        supabase.from('products').select('id, stock_unidades').in('id', productIds)
+          .then(({ data }) => {
+            if (!cancelled && data) {
+              const map: Record<string, number> = {};
+              data.forEach((p) => { map[p.id] = p.stock_unidades; });
+              setProductStocks(map);
+            }
+          });
+        channels.push(
+          supabase.channel('cart-stock-watch').on('postgres_changes', {
+            event: 'UPDATE', schema: 'public', table: 'products',
+          }, (payload) => {
+            const p = payload.new as { id: string; stock_unidades: number };
+            if (productIds.includes(p.id)) setProductStocks((prev) => ({ ...prev, [p.id]: p.stock_unidades }));
+          }).subscribe()
+        );
+      }
 
-    return () => { channels.forEach((c) => supabase.removeChannel(c)); };
+      if (variantIds.length > 0) {
+        supabase.from('product_variants').select('id, stock_unidades').in('id', variantIds)
+          .then(({ data }) => {
+            if (!cancelled && data) {
+              const map: Record<string, number> = {};
+              data.forEach((v) => { map[v.id] = v.stock_unidades; });
+              setVariantStocks(map);
+            }
+          });
+        channels.push(
+          supabase.channel('cart-variant-stock-watch').on('postgres_changes', {
+            event: 'UPDATE', schema: 'public', table: 'product_variants',
+          }, (payload) => {
+            const v = payload.new as { id: string; stock_unidades: number };
+            if (variantIds.includes(v.id)) setVariantStocks((prev) => ({ ...prev, [v.id]: v.stock_unidades }));
+          }).subscribe()
+        );
+      }
+    };
+
+    const ric = typeof window.requestIdleCallback === 'function'
+      ? window.requestIdleCallback(run, { timeout: 1500 })
+      : window.setTimeout(run, 200);
+
+    return () => {
+      cancelled = true;
+      if (typeof window.requestIdleCallback === 'function') {
+        window.cancelIdleCallback(ric as number);
+      } else {
+        window.clearTimeout(ric as number);
+      }
+      channels.forEach((c) => createClient().removeChannel(c));
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productIds.join(','), variantIds.join(',')]);
 

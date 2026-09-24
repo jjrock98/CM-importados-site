@@ -11,9 +11,18 @@ import type { Product } from '@/types';
 import { ProductModal } from './ProductModal';
 import toast from 'react-hot-toast';
 
-interface Props { product: Product }
+interface Props {
+  product: Product;
+  /** Marcar `true` solo para las tarjetas visibles sin scroll (arriba de
+   *  todo en la grilla, ~primeras 4). Esa imagen suele ser el elemento LCP
+   *  de la página — lazy-loadearla como al resto retrasa a propósito la
+   *  imagen que Lighthouse/Speed Insights usa para medir LCP. El resto de
+   *  las tarjetas del catálogo sigue en lazy (default), que es lo correcto
+   *  para no bajar imágenes que ni se van a ver. */
+  priority?: boolean;
+}
 
-export function ProductCard({ product: p }: Props) {
+export function ProductCard({ product: p, priority = false }: Props) {
   const { isInWishlist, toggle } = useWishlist();
   const { user } = useAuth();
   const [modalOpen,   setModalOpen]   = useState(false);
@@ -145,7 +154,9 @@ export function ProductCard({ product: p }: Props) {
             {p.imagenes[0] ? (
               <Image
                 src={p.imagenes[0]} alt={p.nombre} fill
-                loading="lazy"
+                {...(priority
+                  ? { priority: true, fetchPriority: 'high' as const }
+                  : { loading: 'lazy' as const })}
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
               />
