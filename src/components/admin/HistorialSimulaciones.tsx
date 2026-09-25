@@ -22,6 +22,7 @@ export interface SimulacionGuardada {
   veredicto: Veredicto;
   notas: string | null;
   inputs: EntradaRentabilidad;
+  compra: { tipo?: string; [k: string]: unknown } | null;
   created_at: string;
 }
 
@@ -96,7 +97,10 @@ export function HistorialSimulaciones({ version, onCargar }: Props) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="break-words font-medium">{s.nombre}</p>
-                <p className="text-xs text-muted">{new Date(s.created_at).toLocaleString('es-AR')}</p>
+                <p className="text-xs text-muted">
+                  {new Date(s.created_at).toLocaleString('es-AR')}
+                  {s.compra?.tipo === 'multimodelo' && ' · compra multimodelo'}
+                </p>
               </div>
               <span className={cn('badge shrink-0', BADGE[s.veredicto].clase)}>{BADGE[s.veredicto].texto}</span>
             </div>

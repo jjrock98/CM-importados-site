@@ -47,7 +47,15 @@ function normalizarEntrada(raw: unknown): EntradaRentabilidad | null {
     !esNumero(e.margenObjetivoPct, 0, 99)
   ) return null;
 
+  let imprevistos: EntradaRentabilidad['imprevistos'];
+  if (e.imprevistos !== undefined && e.imprevistos !== null) {
+    const imp = e.imprevistos as Record<string, unknown>;
+    if (!esNumero(imp?.monto) || (imp.moneda !== 'ARS' && imp.moneda !== 'USD')) return null;
+    imprevistos = { monto: imp.monto, moneda: imp.moneda };
+  }
+
   return {
+    imprevistos,
     precioDocena: e.precioDocena,
     docenasCompra: e.docenasCompra,
     costosDirectos,
@@ -68,7 +76,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('cost_simulations')
-    .select('id, nombre, product_id, precio_docena, docenas_compra, cotizacion_usd, cotizacion_origen, cotizacion_fecha, costo_real_docena, ganancia_docena, margen_pct, markup_pct, veredicto, notas, inputs, created_at')
+    .select('id, nombre, product_id, precio_docena, docenas_compra, cotizacion_usd, cotizacion_origen, cotizacion_fecha, costo_real_docena, ganancia_docena, margen_pct, markup_pct, veredicto, notas, inputs, compra, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -78,39 +86,59 @@ export async function GET() {
 
 /**
  * POST /api/admin/costos/simulaciones
- * body: { nombre, product_id?, notas?, cotizacion_origen?, cotizacion_fecha?, entrada }
  *
- * Guarda una simulación en el historial. El resultado se RECALCULA acá
- * con la misma función que usa la pantalla (lib/rentabilidad.ts), así lo
- * guardado siempre es coherente con lo ingresado. No toca products.
+ * Guarda simulaciones en el historial. Dos formas de body:
+ *  - Un modelo:      { nombre, product_id?, notas?, cotizacion_origen?, cotizacion_fecha?, entrada }
+ *  - Multimodelo:    { items: [{ nombre, product_id?, entrada }], compra, notas?, cotizacion_origen?, cotizacion_fecha? }
+ *    (una fila por modelo; `compra` es la foto de la compra — lonas, envío,
+ *    prorrateo — para poder auditarla y recargarla)
+ *
+ * El resultado de cada entrada se RECALCULA acá con la misma función que
+ * usa la pantalla (lib/rentabilidad.ts). No toca products.
  */
 export async function POST(req: NextRequest) {
   const adminUser = await verifyAdmin();
   if (!adminUser) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
 
   const body = await req.json().catch(() => null);
-  const nombre = typeof body?.nombre === 'string' ? body.nombre.trim().slice(0, 120) : '';
-  if (!nombre) return NextResponse.json({ error: 'Poné un nombre o modelo para guardar la simulación' }, { status: 400 });
 
-  const entrada = normalizarEntrada(body?.entrada);
-  if (!entrada) return NextResponse.json({ error: 'Datos de la simulación inválidos' }, { status: 400 });
+  const crudos: unknown[] = Array.isArray(body?.items)
+    ? body.items
+    : [{ nombre: body?.nombre, product_id: body?.product_id, entrada: body?.entrada }];
+  if (crudos.length === 0 || crudos.length > 30) {
+    return NextResponse.json({ error: 'Cantidad de modelos inválida' }, { status: 400 });
+  }
 
-  const resultado = calcularRentabilidad(entrada);
-  if (!resultado.ok) return NextResponse.json({ error: resultado.error }, { status: 400 });
+  let compra: Record<string, unknown> | null = null;
+  if (body?.compra !== undefined && body?.compra !== null) {
+    if (typeof body.compra !== 'object' || JSON.stringify(body.compra).length > 60000) {
+      return NextResponse.json({ error: 'Datos de la compra inválidos' }, { status: 400 });
+    }
+    compra = body.compra as Record<string, unknown>;
+  }
 
-  const productId = typeof body?.product_id === 'string' && UUID_RE.test(body.product_id) ? body.product_id : null;
   const notas = typeof body?.notas === 'string' && body.notas.trim() ? body.notas.trim().slice(0, 500) : null;
-
-  const usaDolar = entrada.cotizacionUsd !== null;
   const origen = body?.cotizacion_origen === 'manual' ? 'manual' : 'blue';
   const fecha = typeof body?.cotizacion_fecha === 'string' && !Number.isNaN(Date.parse(body.cotizacion_fecha))
     ? new Date(body.cotizacion_fecha).toISOString()
     : null;
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from('cost_simulations')
-    .insert({
+  const filas = [];
+  for (const c of crudos) {
+    const item = c as Record<string, unknown>;
+    const nombre = typeof item?.nombre === 'string' ? item.nombre.trim().slice(0, 120) : '';
+    if (!nombre) return NextResponse.json({ error: 'Poné un nombre o modelo para guardar la simulación' }, { status: 400 });
+
+    const entrada = normalizarEntrada(item?.entrada);
+    if (!entrada) return NextResponse.json({ error: 'Datos de la simulación inválidos' }, { status: 400 });
+
+    const resultado = calcularRentabilidad(entrada);
+    if (!resultado.ok) return NextResponse.json({ error: resultado.error }, { status: 400 });
+
+    const productId = typeof item?.product_id === 'string' && UUID_RE.test(item.product_id) ? item.product_id : null;
+    const usaDolar = entrada.cotizacionUsd !== null;
+
+    filas.push({
       nombre,
       product_id: productId,
       precio_docena: entrada.precioDocena,
@@ -126,10 +154,13 @@ export async function POST(req: NextRequest) {
       notas,
       inputs: entrada,
       resultados: resultado,
+      compra,
       created_by: adminUser.id,
-    })
-    .select('id')
-    .single();
+    });
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.from('cost_simulations').insert(filas).select('id');
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ data });

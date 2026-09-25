@@ -10,11 +10,12 @@
  *  - Costo directo/docena   = (mercadería + transporte + envío + otros) / docenas de la compra
  *  - Gastos variables/docena = comisión % × precio + monto fijo por docena
  *  - Gastos fijos/docena     = gastos fijos mensuales / docenas estimadas del mes
- *  - Costo real/docena       = directo + variables + fijos asignados
+ *  - Imprevistos/docena      = imprevistos del lote (opcional) / docenas de la compra
+ *  - Costo real/docena       = directo + variables + fijos asignados + imprevistos
  *  - Ganancia                = precio − costo real
  *  - Margen                  = ganancia / precio × 100
  *  - Markup                  = ganancia / costo real × 100
- *  - Punto de equilibrio     = gastos fijos mensuales / (precio − directo − variables)
+ *  - Punto de equilibrio     = gastos fijos mensuales / (precio − directo − variables − imprevistos)
  */
 
 export type Moneda = 'ARS' | 'USD';
@@ -35,6 +36,7 @@ export interface EntradaRentabilidad {
   comisionPct: number;               // % del precio (medios de pago, etc.)
   variableFijoDocena: number;        // ARS por docena (embalaje de venta, etc.)
   margenObjetivoPct: number;         // para el veredicto y el precio sugerido
+  imprevistos?: { monto: number; moneda: Moneda }; // gasto sorpresivo opcional del lote
 }
 
 export interface LineaConvertida extends LineaCosto {
@@ -52,6 +54,7 @@ export interface ResultadoRentabilidad {
   variableFijoDocena: number;
   variablesDocena: number;
   fijoDocena: number;
+  imprevistosDocena: number;
   costoRealDocena: number;
   gananciaDocena: number;
   margenPct: number;
@@ -82,7 +85,10 @@ export function calcularRentabilidad(
     return { ok: false, error: 'Ingresá la cantidad de docenas de la compra (mayor a 0).' };
   }
 
-  const hayUsd = e.costosDirectos.some((l) => l.moneda === 'USD' && l.monto > 0);
+  const imp = e.imprevistos;
+  const hayUsd =
+    e.costosDirectos.some((l) => l.moneda === 'USD' && l.monto > 0) ||
+    (!!imp && imp.moneda === 'USD' && imp.monto > 0);
   if (hayUsd && !(e.cotizacionUsd && e.cotizacionUsd > 0)) {
     return { ok: false, error: 'Hay costos en USD pero no hay cotización del dólar. Ingresá una manualmente.' };
   }
@@ -109,12 +115,15 @@ export function calcularRentabilidad(
     }
   }
 
-  const costoRealDocena = directoDocena + variablesDocena + fijoDocena;
+  const imprevistosTotalArs = imp ? (imp.moneda === 'USD' ? imp.monto * cot : imp.monto) : 0;
+  const imprevistosDocena = imprevistosTotalArs / e.docenasCompra;
+
+  const costoRealDocena = directoDocena + variablesDocena + fijoDocena + imprevistosDocena;
   const gananciaDocena = e.precioDocena - costoRealDocena;
   const margenPct = e.precioDocena > 0 ? (gananciaDocena / e.precioDocena) * 100 : 0;
   const markupPct = costoRealDocena > 0 ? (gananciaDocena / costoRealDocena) * 100 : 0;
 
-  const contribucionDocena = e.precioDocena - directoDocena - variablesDocena;
+  const contribucionDocena = e.precioDocena - directoDocena - variablesDocena - imprevistosDocena;
   let puntoEquilibrioDocenas: number | null = null;
   if (e.gastosFijosMensuales <= 0) {
     puntoEquilibrioDocenas = 0;
@@ -124,7 +133,7 @@ export function calcularRentabilidad(
 
   // Precio con el que la ganancia es 0 / con el que se logra el margen objetivo.
   // Se despeja P de: P − (base + pct·P) = margen·P
-  const base = directoDocena + e.variableFijoDocena + fijoDocena;
+  const base = directoDocena + e.variableFijoDocena + fijoDocena + imprevistosDocena;
   const pct = e.comisionPct / 100;
   const denMin = 1 - pct;
   const denObj = 1 - pct - e.margenObjetivoPct / 100;
@@ -152,6 +161,7 @@ export function calcularRentabilidad(
     variableFijoDocena: round2(e.variableFijoDocena),
     variablesDocena: round2(finito(variablesDocena)),
     fijoDocena: round2(finito(fijoDocena)),
+    imprevistosDocena: round2(finito(imprevistosDocena)),
     costoRealDocena: round2(finito(costoRealDocena)),
     gananciaDocena: round2(finito(gananciaDocena)),
     margenPct: round2(finito(margenPct)),
