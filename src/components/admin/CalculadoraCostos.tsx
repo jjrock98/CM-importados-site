@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, RefreshCw, Save, X } from 'lucide-react';
+import { Download, Plus, RefreshCw, Save, X } from 'lucide-react';
 import { cn } from '@/utils';
 import {
   calcularRentabilidad,
@@ -161,6 +161,7 @@ export function CalculadoraCostos() {
   const [notas, setNotas] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [historialVersion, setHistorialVersion] = useState(0);
+  const [exportando, setExportando] = useState<'csv' | 'excel' | 'pdf' | null>(null);
 
   // Catálogo (nombre + precio) y gastos fijos ya cargados en el módulo.
   useEffect(() => {
@@ -333,6 +334,67 @@ export function CalculadoraCostos() {
       res: m.precioVenta > 0 ? calcularRentabilidad(entradaParaModelo(m, comunes)) : null,
     }));
   }, [compra, comunes, modelosActivos]);
+
+  const exportarMultimodelo = async (format: 'csv' | 'excel' | 'pdf') => {
+    if (!compra.ok) return;
+    setExportando(format);
+    try {
+      const modelosBody = compra.modelos.map((m, i) => {
+        const res = analisis[i]?.res;
+        return {
+          modelo: m.modelo, docenas: m.docenas, precioDocenaArs: m.precioDocenaArs,
+          mercaderiaArs: m.mercaderiaArs, lonasArs: m.lonasArs, envioArs: m.envioArs,
+          recargosArs: m.recargosArs, directoTotalArs: m.directoTotalArs, directoDocena: m.directoDocena,
+          imprevistosArs: m.imprevistosArs, precioVenta: m.precioVenta,
+          costoRealDocena: res && res.ok ? res.costoRealDocena : null,
+          gananciaDocena: res && res.ok ? res.gananciaDocena : null,
+          margenPct: res && res.ok ? res.margenPct : null,
+          markupPct: res && res.ok ? res.markupPct : null,
+          veredicto: res && res.ok ? res.veredicto : null,
+        };
+      });
+      const body = {
+        nombre: nombre || 'Compra multimodelo',
+        fecha: new Date().toISOString(),
+        docenasTotales: compra.docenasTotales,
+        docenasDeclaradas: compra.docenasDeclaradas,
+        lonasUsadas: compra.lonasUsadas,
+        lonasCobradas: compra.lonasCobradas,
+        bultosEnvio: compra.bultosEnvio,
+        lonaUnitariaArs: compra.lonaUnitariaArs,
+        envioUnitarioArs: compra.envioUnitarioArs,
+        costoLonasArs: compra.costoLonasArs,
+        costoEnvioArs: compra.costoEnvioArs,
+        mercaderiaTotalArs: compra.mercaderiaTotalArs,
+        recargoPctArs: compra.recargoPctArs,
+        mercaderiaConRecargoArs: compra.mercaderiaConRecargoArs,
+        recargoFijoArs: compra.recargoFijoArs,
+        costoDirectoTotalArs: compra.costoDirectoTotalArs,
+        imprevistosArs: compra.imprevistosArs,
+        modelos: modelosBody,
+      };
+      const res = await fetch(`/api/admin/costos/export/multimodelo?format=${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ext = format === 'excel' ? 'xlsx' : format;
+      const slug = (nombre || 'compra-multimodelo').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      a.download = `${slug}.${ext}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      const label = format === 'pdf' ? 'PDF' : format === 'excel' ? 'Excel' : 'CSV';
+      toast.error(`No se pudo generar el ${label}`);
+    } finally {
+      setExportando(null);
+    }
+  };
 
   const guardarSimulacion = async () => {
     if (!nombre.trim()) {
@@ -521,6 +583,22 @@ export function CalculadoraCostos() {
           )}
         </div>
       ))}
+
+      <div className="card space-y-2 p-4">
+        <h2 className="flex items-center gap-2 font-semibold"><Download size={16} /> Exportar esta compra</h2>
+        <div className="flex flex-wrap gap-2">
+          <button onClick={() => exportarMultimodelo('csv')} disabled={exportando !== null} className="btn-ghost">
+            {exportando === 'csv' ? 'Generando…' : 'CSV'}
+          </button>
+          <button onClick={() => exportarMultimodelo('excel')} disabled={exportando !== null} className="btn-ghost">
+            {exportando === 'excel' ? 'Generando…' : 'Excel'}
+          </button>
+          <button onClick={() => exportarMultimodelo('pdf')} disabled={exportando !== null} className="btn-ghost">
+            {exportando === 'pdf' ? 'Generando…' : 'PDF'}
+          </button>
+        </div>
+        <p className="text-xs text-muted">Exporta el detalle por modelo y el resumen de esta compra, tal como se ve en pantalla.</p>
+      </div>
 
       {tarjetaGuardar}
     </>
