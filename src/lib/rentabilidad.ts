@@ -63,6 +63,7 @@ export interface ResultadoRentabilidad {
   puntoEquilibrioDocenas: number | null; // null = con este precio nunca se cubren los fijos
   precioMinimo: number | null;           // precio con ganancia 0
   precioObjetivo: number | null;         // precio que da el margen objetivo
+  precioRecomendado: number | null;      // precioObjetivo redondeado hacia arriba (sin decimales), para evaluar
   veredicto: Veredicto;
   avisos: string[];
 }
@@ -139,6 +140,12 @@ export function calcularRentabilidad(
   const denObj = 1 - pct - e.margenObjetivoPct / 100;
   const precioMinimo = denMin > 0 ? base / denMin : null;
   const precioObjetivo = denObj > 0 ? base / denObj : null;
+  // El precio recomendado es el precio objetivo, pero siempre redondeado
+  // hacia arriba (nunca hacia abajo) y sin decimales — se calcula sobre el
+  // valor crudo (antes de round2) para que el redondeo hacia arriba sea
+  // exacto y no quede afectado por un redondeo previo a 2 decimales. Es
+  // solo una sugerencia: el admin decide si le sirve o no.
+  const precioRecomendado = precioObjetivo === null ? null : Math.ceil(precioObjetivo);
 
   let veredicto: Veredicto;
   if (gananciaDocena < 0) veredicto = 'perdida';
@@ -170,6 +177,7 @@ export function calcularRentabilidad(
     puntoEquilibrioDocenas: puntoEquilibrioDocenas === null ? null : round2(puntoEquilibrioDocenas),
     precioMinimo: precioMinimo === null ? null : round2(precioMinimo),
     precioObjetivo: precioObjetivo === null ? null : round2(precioObjetivo),
+    precioRecomendado,
     veredicto,
     avisos,
   };

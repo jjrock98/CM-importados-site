@@ -19,6 +19,7 @@ export interface SimulacionGuardada {
   ganancia_docena: number;
   margen_pct: number;
   markup_pct: number;
+  precio_recomendado: number | null;
   veredicto: Veredicto;
   notas: string | null;
   inputs: EntradaRentabilidad;
@@ -112,6 +113,12 @@ export function HistorialSimulaciones({ version, onCargar }: Props) {
               <span className="text-muted">Margen / Markup</span>
               <span className="text-right">{num2(s.margen_pct)} % / {num2(s.markup_pct)} %</span>
               <span className="text-muted">Docenas de la compra</span><span className="text-right">{num2(s.docenas_compra)}</span>
+              {s.precio_recomendado !== null && (
+                <>
+                  <span className="text-muted">Precio recomendado</span>
+                  <span className="text-right font-semibold">{ars(s.precio_recomendado)}</span>
+                </>
+              )}
               {s.cotizacion_usd !== null && (
                 <>
                   <span className="text-muted">Dólar usado</span>

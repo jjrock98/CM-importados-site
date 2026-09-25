@@ -350,6 +350,7 @@ export function CalculadoraCostos() {
           gananciaDocena: res && res.ok ? res.gananciaDocena : null,
           margenPct: res && res.ok ? res.margenPct : null,
           markupPct: res && res.ok ? res.markupPct : null,
+          precioRecomendado: res && res.ok ? res.precioRecomendado : null,
           veredicto: res && res.ok ? res.veredicto : null,
         };
       });
@@ -963,6 +964,11 @@ export function CalculadoraCostos() {
                 k={`Precio para margen objetivo (${num2(toNum(margenObjetivo))} %)`}
                 v={resultado.precioObjetivo === null ? '—' : ars(resultado.precioObjetivo)}
               />
+              <Fila
+                k="Precio recomendado (redondeado hacia arriba)"
+                v={resultado.precioRecomendado === null ? '—' : ars(resultado.precioRecomendado)}
+                fuerte
+              />
               <Fila k="Contribución por docena (precio − directo − variables)" v={ars(resultado.contribucionDocena)} />
               <p className="pt-1">
                 {resultado.puntoEquilibrioDocenas === null
@@ -1049,6 +1055,7 @@ function IndicadoresPrecio({
       </div>
       <Fila k="Precio mínimo para no perder" v={res.precioMinimo === null ? '—' : ars(res.precioMinimo)} />
       <Fila k={`Precio para margen objetivo (${num2(margenObjetivo)} %)`} v={res.precioObjetivo === null ? '—' : ars(res.precioObjetivo)} />
+      <Fila k="Precio recomendado (redondeado hacia arriba)" v={res.precioRecomendado === null ? '—' : ars(res.precioRecomendado)} fuerte />
       <p className="pt-1">
         {res.puntoEquilibrioDocenas === null
           ? 'Con este precio no se cubren los gastos fijos: no hay punto de equilibrio.'

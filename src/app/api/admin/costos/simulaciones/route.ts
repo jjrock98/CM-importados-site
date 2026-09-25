@@ -76,7 +76,7 @@ export async function GET() {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('cost_simulations')
-    .select('id, nombre, product_id, precio_docena, docenas_compra, cotizacion_usd, cotizacion_origen, cotizacion_fecha, costo_real_docena, ganancia_docena, margen_pct, markup_pct, veredicto, notas, inputs, compra, created_at')
+    .select('id, nombre, product_id, precio_docena, docenas_compra, cotizacion_usd, cotizacion_origen, cotizacion_fecha, costo_real_docena, ganancia_docena, margen_pct, markup_pct, precio_recomendado, veredicto, notas, inputs, compra, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -150,6 +150,7 @@ export async function POST(req: NextRequest) {
       ganancia_docena: resultado.gananciaDocena,
       margen_pct: resultado.margenPct,
       markup_pct: resultado.markupPct,
+      precio_recomendado: resultado.precioRecomendado,
       veredicto: resultado.veredicto,
       notas,
       inputs: entrada,

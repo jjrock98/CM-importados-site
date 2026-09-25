@@ -28,6 +28,7 @@ interface ModeloExport {
   gananciaDocena: number | null;
   margenPct: number | null;
   markupPct: number | null;
+  precioRecomendado: number | null;
   veredicto: 'optimo' | 'bajo_objetivo' | 'perdida' | null;
 }
 
@@ -73,7 +74,7 @@ function normalizar(raw: unknown): CompraExport | null {
       !esNumero(x.directoTotalArs) || !esNumero(x.directoDocena) || !esNumero(x.imprevistosArs) ||
       !esNumero(x.precioVenta) ||
       !esNumeroONull(x.costoRealDocena) || !esNumeroONull(x.gananciaDocena) ||
-      !esNumeroONull(x.margenPct) || !esNumeroONull(x.markupPct) ||
+      !esNumeroONull(x.margenPct) || !esNumeroONull(x.markupPct) || !esNumeroONull(x.precioRecomendado) ||
       !(x.veredicto === null || VEREDICTOS.includes(x.veredicto as typeof VEREDICTOS[number]))
     ) return null;
 
@@ -83,7 +84,7 @@ function normalizar(raw: unknown): CompraExport | null {
       lonasArs: x.lonasArs, envioArs: x.envioArs, recargosArs: x.recargosArs,
       directoTotalArs: x.directoTotalArs, directoDocena: x.directoDocena, imprevistosArs: x.imprevistosArs,
       precioVenta: x.precioVenta, costoRealDocena: x.costoRealDocena, gananciaDocena: x.gananciaDocena,
-      margenPct: x.margenPct, markupPct: x.markupPct,
+      margenPct: x.margenPct, markupPct: x.markupPct, precioRecomendado: x.precioRecomendado,
       veredicto: x.veredicto as ModeloExport['veredicto'],
     });
   }
@@ -158,7 +159,7 @@ export async function POST(req: NextRequest) {
       'Modelo', 'Docenas', 'Precio compra/docena', 'Mercadería', 'Lonas (prorrateo)',
       'Envío (prorrateo)', 'Recargos', 'Costo directo total', 'Costo directo/docena',
       'Imprevistos', 'Precio venta pretendido', 'Costo real/docena', 'Ganancia/docena',
-      'Margen %', 'Markup %', 'Veredicto',
+      'Margen %', 'Markup %', 'Precio recomendado', 'Veredicto',
     ];
     const lines = [headers.map(csvCell).join(',')];
     for (const m of compra.modelos) {
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
         m.modelo, m.docenas, m.precioDocenaArs, m.mercaderiaArs, m.lonasArs, m.envioArs,
         m.recargosArs, m.directoTotalArs, m.directoDocena, m.imprevistosArs, m.precioVenta,
         m.costoRealDocena ?? '', m.gananciaDocena ?? '', m.margenPct ?? '', m.markupPct ?? '',
-        VEREDICTO_TXT[m.veredicto ?? '—'],
+        m.precioRecomendado ?? '', VEREDICTO_TXT[m.veredicto ?? '—'],
       ].map(csvCell).join(','));
     }
     lines.push('');
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest) {
       'Modelo', 'Docenas', 'Precio compra/docena', 'Mercadería', 'Lonas (prorrateo)',
       'Envío (prorrateo)', 'Recargos', 'Costo directo total', 'Costo directo/docena',
       'Imprevistos', 'Precio venta pretendido', 'Costo real/docena', 'Ganancia/docena',
-      'Margen %', 'Markup %', 'Veredicto',
+      'Margen %', 'Markup %', 'Precio recomendado', 'Veredicto',
     ];
     const aoa: (string | number)[][] = [headers];
     for (const m of compra.modelos) {
@@ -201,7 +202,7 @@ export async function POST(req: NextRequest) {
         m.modelo, m.docenas, m.precioDocenaArs, m.mercaderiaArs, m.lonasArs, m.envioArs,
         m.recargosArs, m.directoTotalArs, m.directoDocena, m.imprevistosArs, m.precioVenta,
         m.costoRealDocena ?? '', m.gananciaDocena ?? '', m.margenPct ?? '', m.markupPct ?? '',
-        VEREDICTO_TXT[m.veredicto ?? '—'],
+        m.precioRecomendado ?? '', VEREDICTO_TXT[m.veredicto ?? '—'],
       ]);
     }
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -256,7 +257,7 @@ export async function POST(req: NextRequest) {
   const red = rgb(0.7, 0.15, 0.15);
   const amber = rgb(0.7, 0.5, 0.05);
 
-  const colX = { modelo: margin, docenas: 160, directoDoc: 210, costoReal: 280, precio: 350, ganancia: 420, margen: 490 };
+  const colX = { modelo: margin, docenas: 150, directoDoc: 195, costoReal: 260, precio: 325, ganancia: 390, margen: 455, recomendado: 505 };
 
   let page = pdfDoc.addPage([pageW, pageH]);
   let y = pageH - margin;
@@ -276,6 +277,7 @@ export async function POST(req: NextRequest) {
     page.drawText('Precio venta', { x: colX.precio, y, size: 8, font: fontBold, color: gray });
     page.drawText('Ganancia/doc', { x: colX.ganancia, y, size: 8, font: fontBold, color: gray });
     page.drawText('Margen', { x: colX.margen, y, size: 8, font: fontBold, color: gray });
+    page.drawText('Recomendado', { x: colX.recomendado, y, size: 8, font: fontBold, color: gray });
     y -= 14;
   };
 
@@ -301,6 +303,7 @@ export async function POST(req: NextRequest) {
     page.drawText(m.precioVenta > 0 ? formatPrice(m.precioVenta) : '—', { x: colX.precio, y, size: 8, font, color: gray });
     page.drawText(m.gananciaDocena !== null ? formatPrice(m.gananciaDocena) : '—', { x: colX.ganancia, y, size: 8, font: fontBold, color: colorVeredicto });
     page.drawText(m.margenPct !== null ? `${m.margenPct.toFixed(1)}%` : '—', { x: colX.margen, y, size: 8, font, color: colorVeredicto });
+    page.drawText(m.precioRecomendado !== null ? formatPrice(m.precioRecomendado) : '—', { x: colX.recomendado, y, size: 8, font: fontBold, color: brand });
     y -= 16;
   }
 
