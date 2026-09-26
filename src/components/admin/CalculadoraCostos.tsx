@@ -6,6 +6,7 @@ import { Download, Plus, RefreshCw, Save, X } from 'lucide-react';
 import { cn } from '@/utils';
 import {
   calcularRentabilidad,
+  round2,
   type EntradaRentabilidad,
   type LineaCosto,
   type Moneda,
@@ -149,6 +150,10 @@ export function CalculadoraCostos() {
   const [comisionPct, setComisionPct] = useState('');
   const [variableDocena, setVariableDocena] = useState('');
   const [fijosMensuales, setFijosMensuales] = useState('');
+  const [alquiler, setAlquiler] = useState('');
+  const [despensas, setDespensas] = useState('');
+  const [diasTrabajados, setDiasTrabajados] = useState('');
+  const [pagoPorDia, setPagoPorDia] = useState('');
   const [docenasMes, setDocenasMes] = useState('');
   const [margenObjetivo, setMargenObjetivo] = useState('30');
 
@@ -222,6 +227,19 @@ export function CalculadoraCostos() {
   const cotizacion = usarManual ? toNum(dolarManual) : dolar?.venta ?? 0;
   const origenCotizacion = usarManual ? 'manual' : 'blue';
 
+  // Sueldo del único empleado, que se paga por día: días trabajados en el
+  // mes × pago por día. Se suma a alquiler + despensas + "otros gastos
+  // fijos" (el campo que ya venía del módulo de Costos) para dar el total
+  // de gastos fijos mensuales que se prorratea por docena.
+  const sueldoEmpleadoMensual = useMemo(
+    () => round2(toNum(diasTrabajados) * toNum(pagoPorDia)),
+    [diasTrabajados, pagoPorDia]
+  );
+  const fijosMensualesTotal = useMemo(
+    () => round2(toNum(fijosMensuales) + toNum(alquiler) + toNum(despensas) + sueldoEmpleadoMensual),
+    [fijosMensuales, alquiler, despensas, sueldoEmpleadoMensual]
+  );
+
   const actualizarLinea = (id: number, patch: Partial<LineaForm>) =>
     setLineas((ls) => ls.map((l) => (l.id === id ? { ...l, ...patch } : l)));
   const agregarLinea = () =>
@@ -239,14 +257,14 @@ export function CalculadoraCostos() {
       docenasCompra: toNum(docenas),
       costosDirectos: costos,
       cotizacionUsd: cotizacion > 0 ? cotizacion : null,
-      gastosFijosMensuales: toNum(fijosMensuales),
+      gastosFijosMensuales: fijosMensualesTotal,
       docenasEstimadasMes: toNum(docenasMes),
       comisionPct: toNum(comisionPct),
       variableFijoDocena: toNum(variableDocena),
       margenObjetivoPct: toNum(margenObjetivo),
       imprevistos: toNum(imprevistos) > 0 ? { monto: toNum(imprevistos), moneda: imprevistosMoneda } : undefined,
     };
-  }, [lineas, precio, docenas, cotizacion, fijosMensuales, docenasMes, comisionPct, variableDocena, margenObjetivo, imprevistos, imprevistosMoneda]);
+  }, [lineas, precio, docenas, cotizacion, fijosMensualesTotal, docenasMes, comisionPct, variableDocena, margenObjetivo, imprevistos, imprevistosMoneda]);
 
   const resultado = useMemo(() => calcularRentabilidad(entrada), [entrada]);
 
@@ -318,12 +336,12 @@ export function CalculadoraCostos() {
 
   const comunes = useMemo<ComunesRentabilidad>(() => ({
     cotizacionUsd: cotizacion > 0 ? cotizacion : null,
-    gastosFijosMensuales: toNum(fijosMensuales),
+    gastosFijosMensuales: fijosMensualesTotal,
     docenasEstimadasMes: toNum(docenasMes),
     comisionPct: toNum(comisionPct),
     variableFijoDocena: toNum(variableDocena),
     margenObjetivoPct: toNum(margenObjetivo),
-  }), [cotizacion, fijosMensuales, docenasMes, comisionPct, variableDocena, margenObjetivo]);
+  }), [cotizacion, fijosMensualesTotal, docenasMes, comisionPct, variableDocena, margenObjetivo]);
 
   const analisis = useMemo(() => {
     if (!compra.ok) return [];
@@ -410,6 +428,10 @@ export function CalculadoraCostos() {
         cotizacion_origen: usaDolar ? origenCotizacion : null,
         cotizacion_fecha: usaDolar && origenCotizacion === 'blue' ? dolar?.fecha ?? null : null,
       };
+      // Desglose de gastos fijos (otros + alquiler + despensas + sueldo por
+      // día del empleado) tal como se cargó en el formulario, para poder
+      // reconstruirlo exacto al recargar la simulación desde el historial.
+      const desagregadoFijos = { fijosMensuales, alquiler, despensas, diasTrabajados, pagoPorDia };
 
       let payload: Record<string, unknown>;
       if (modo === 'multi') {
@@ -433,10 +455,17 @@ export function CalculadoraCostos() {
             tipo: 'multimodelo',
             form: { cfg, modelos: modelosForm, imprevistos, imprevistosMoneda },
             desglose: compra,
+            desagregadoFijos,
           },
         };
       } else {
-        payload = { ...meta, nombre, product_id: productoId || null, entrada };
+        payload = {
+          ...meta,
+          nombre,
+          product_id: productoId || null,
+          entrada,
+          compra: { tipo: 'simple', desagregadoFijos },
+        };
       }
 
       const res = await fetch('/api/admin/costos/simulaciones', {
@@ -493,7 +522,22 @@ export function CalculadoraCostos() {
       setUsarManual(true);
       setDolarManual(String(e.cotizacionUsd));
     }
-    setFijosMensuales(String(e.gastosFijosMensuales));
+    const desagregado = (s.compra as { desagregadoFijos?: Record<string, string> } | null)?.desagregadoFijos;
+    if (desagregado) {
+      setFijosMensuales(desagregado.fijosMensuales ?? String(e.gastosFijosMensuales));
+      setAlquiler(desagregado.alquiler ?? '');
+      setDespensas(desagregado.despensas ?? '');
+      setDiasTrabajados(desagregado.diasTrabajados ?? '');
+      setPagoPorDia(desagregado.pagoPorDia ?? '');
+    } else {
+      // simulaciones guardadas antes de este desglose: el total viejo va
+      // entero a "otros gastos fijos", sin alquiler/despensas/sueldo aparte.
+      setFijosMensuales(String(e.gastosFijosMensuales));
+      setAlquiler('');
+      setDespensas('');
+      setDiasTrabajados('');
+      setPagoPorDia('');
+    }
     setDocenasMes(String(e.docenasEstimadasMes));
     setComisionPct(String(e.comisionPct));
     setVariableDocena(String(e.variableFijoDocena));
@@ -577,7 +621,7 @@ export function CalculadoraCostos() {
               res={res}
               precio={m.precioVenta}
               comisionPct={toNum(comisionPct)}
-              fijosMensuales={toNum(fijosMensuales)}
+              fijosMensuales={fijosMensualesTotal}
               docenasMes={toNum(docenasMes)}
               margenObjetivo={toNum(margenObjetivo)}
             />
@@ -891,12 +935,20 @@ export function CalculadoraCostos() {
               <input type="number" step="any" min={0} value={variableDocena} onChange={(e) => setVariableDocena(e.target.value)} className={campo} placeholder="0" />
             </div>
             <div>
-              <label className={label}>Gastos fijos mensuales (ARS)</label>
+              <label className={label}>Otros gastos fijos mensuales (ARS)</label>
               <input type="number" step="any" min={0} value={fijosMensuales} onChange={(e) => setFijosMensuales(e.target.value)} className={campo} />
             </div>
             <div>
               <label className={label}>Docenas estimadas a vender en el mes</label>
               <input type="number" step="any" min={0} value={docenasMes} onChange={(e) => setDocenasMes(e.target.value)} className={campo} />
+            </div>
+            <div>
+              <label className={label}>Alquiler mensual (ARS)</label>
+              <input type="number" step="any" min={0} value={alquiler} onChange={(e) => setAlquiler(e.target.value)} className={campo} placeholder="0" />
+            </div>
+            <div>
+              <label className={label}>Despensas / insumos mensuales (ARS)</label>
+              <input type="number" step="any" min={0} value={despensas} onChange={(e) => setDespensas(e.target.value)} className={campo} placeholder="0" />
             </div>
             <CampoMonto label="Gastos imprevistos del lote (opcional)" valor={imprevistos} moneda={imprevistosMoneda}
               onValor={setImprevistos} onMoneda={setImprevistosMoneda} />
@@ -905,9 +957,37 @@ export function CalculadoraCostos() {
               <input type="number" step="any" min={0} max={99} value={margenObjetivo} onChange={(e) => setMargenObjetivo(e.target.value)} className={campo} />
             </div>
           </div>
+
+          <div className="rounded-lg border border-border p-3">
+            <p className="text-sm font-medium">Sueldo del empleado (se paga por día)</p>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={label}>Días trabajados en el mes</label>
+                <input type="number" step="any" min={0} max={31} value={diasTrabajados} onChange={(e) => setDiasTrabajados(e.target.value)} className={campo} placeholder="Ej: 24" />
+              </div>
+              <div>
+                <label className={label}>Pago por día (ARS)</label>
+                <input type="number" step="any" min={0} value={pagoPorDia} onChange={(e) => setPagoPorDia(e.target.value)} className={campo} placeholder="Ej: 15000" />
+              </div>
+            </div>
+            {sueldoEmpleadoMensual > 0 && (
+              <p className="mt-2 text-xs text-muted">
+                {num2(toNum(diasTrabajados))} días × {ars(toNum(pagoPorDia))} = <strong className="text-inherit">{ars(sueldoEmpleadoMensual)}</strong> ese mes
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-md bg-surface-2 px-3 py-2 text-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-muted">Total gastos fijos mensuales (otros + alquiler + despensas + sueldo)</span>
+              <span className="font-semibold">{ars(fijosMensualesTotal)}</span>
+            </div>
+          </div>
+
           <p className="text-xs text-muted">
-            Los gastos fijos y las docenas estimadas vienen de lo que ya cargaste en “Gastos fijos y docenas estimadas”;
-            acá los podés ajustar solo para este cálculo.
+            “Otros gastos fijos” y las docenas estimadas vienen de lo que ya cargaste en “Gastos fijos y docenas estimadas”;
+            acá los podés ajustar solo para este cálculo. Alquiler, despensas y el sueldo del empleado se suman aparte y entran
+            igual al prorrateo por docena.
           </p>
         </div>
       </div>
@@ -945,7 +1025,7 @@ export function CalculadoraCostos() {
               <Fila k={`Comisiones (${num2(toNum(comisionPct))} % del precio)`} v={ars(resultado.comisionDocena)} />
               <Fila k="Otros gastos variables" v={ars(resultado.variableFijoDocena)} />
               <Fila
-                k={`Gastos fijos asignados (${ars(toNum(fijosMensuales))} ÷ ${num2(toNum(docenasMes))} docenas)`}
+                k={`Gastos fijos asignados (${ars(fijosMensualesTotal)} ÷ ${num2(toNum(docenasMes))} docenas)`}
                 v={ars(resultado.fijoDocena)}
               />
 
