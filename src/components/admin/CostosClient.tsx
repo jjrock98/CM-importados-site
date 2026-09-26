@@ -176,7 +176,10 @@ export function CostosClient() {
                 <th className="px-3 py-3 text-right">Costo Total/Doc</th>
                 <th className="px-3 py-3 text-right">Precio actual</th>
                 {margenes.map((m) => (
-                  <th key={m} className="px-3 py-3 text-right whitespace-nowrap">Sugerido {m}%</th>
+                  <th key={m} className="px-3 py-3 text-right whitespace-nowrap">
+                    Sugerido {m}%
+                    <span className="block text-[10px] font-normal normal-case text-muted">→ recomendado</span>
+                  </th>
                 ))}
                 <th className="px-3 py-3 text-center">Editar</th>
               </tr>
@@ -209,8 +212,9 @@ export function CostosClient() {
                     {margenes.map((m) => {
                       const sim = simularMargen(row.costo_total_docena, m);
                       return (
-                        <td key={m} className="px-3 py-2.5 text-right text-green-700 dark:text-green-400 whitespace-nowrap">
-                          {formatPrice(sim.precio_sugerido_docena)}
+                        <td key={m} className="px-3 py-2.5 text-right whitespace-nowrap">
+                          <div className="text-green-700 dark:text-green-400">{formatPrice(sim.precio_sugerido_docena)}</div>
+                          <div className="text-[11px] text-muted">→ {formatPrice(sim.precio_sugerido_docena_recomendado)}</div>
                         </td>
                       );
                     })}
@@ -278,7 +282,7 @@ export function CostosClient() {
                   const sim = simularMargen(row.costo_total_docena, m);
                   return (
                     <span key={m} className="badge bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400">
-                      {m}%: {formatPrice(sim.precio_sugerido_docena)}
+                      {m}%: {formatPrice(sim.precio_sugerido_docena)} → {formatPrice(sim.precio_sugerido_docena_recomendado)}
                     </span>
                   );
                 })}

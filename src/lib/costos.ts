@@ -33,6 +33,7 @@ export interface MarginSimulation {
   margen_pct: number;
   precio_sugerido_docena: number;
   precio_sugerido_unidad: number;
+  precio_sugerido_docena_recomendado: number; // precio_sugerido_docena redondeado hacia arriba (sin decimales)
   ganancia_docena: number;
 }
 
@@ -92,6 +93,10 @@ export function simularMargen(costoTotalDocena: number, margenPct: number): Marg
     margen_pct: margenPct,
     precio_sugerido_docena: round2(precio_sugerido_docena),
     precio_sugerido_unidad: round2(precio_sugerido_docena / 12),
+    // Redondeado hacia arriba y sin decimales, calculado sobre el valor
+    // crudo (antes de round2) para que el redondeo hacia arriba sea
+    // exacto. Es solo una sugerencia — el admin decide si le sirve.
+    precio_sugerido_docena_recomendado: Math.ceil(precio_sugerido_docena),
     ganancia_docena: round2(precio_sugerido_docena - costoTotalDocena),
   };
 }

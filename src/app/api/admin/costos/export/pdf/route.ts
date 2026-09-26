@@ -102,7 +102,24 @@ export async function GET(req: NextRequest) {
   let page = pdfDoc.addPage([pageW, pageH]);
   let y = pageH - margin;
 
-  const drawHeader = () => {
+  const drawTableHeader = () => {
+    page.drawLine({ start: { x: margin, y }, end: { x: pageW - margin, y }, thickness: 1, color: brand });
+    y -= 16;
+    page.drawText('Producto', { x: colX.producto, y, size: 8, font: fontBold, color: gray });
+    page.drawText('Costo/Doc', { x: colX.costo, y, size: 8, font: fontBold, color: gray });
+    page.drawText('Precio actual', { x: colX.actual, y, size: 8, font: fontBold, color: gray });
+    margenes.forEach((m, i) => {
+      page.drawText(`Sugerido ${m}%`, { x: colX.margenes + i * margenColWidth, y, size: 8, font: fontBold, color: gray });
+    });
+    y -= 10;
+    page.drawText('(línea chica: precio recomendado, redondeado hacia arriba)', { x: colX.margenes, y, size: 6.5, font, color: gray });
+    y -= 12;
+  };
+
+  // primera=true dibuja además el desglose de gastos fijos activos (solo
+  // tiene sentido una vez, arriba de todo — en las páginas siguientes
+  // alcanza con repetir el encabezado de columnas de la tabla).
+  const drawHeader = (primera: boolean) => {
     page.drawText(nombreTienda, { x: margin, y, size: 16, font: fontBold, color: brand });
     y -= 18;
     page.drawText(`Análisis de Costos por Docena — Período ${periodo}`, { x: margin, y, size: 10, font, color: gray });
@@ -115,41 +132,58 @@ export async function GET(req: NextRequest) {
       `Gastos fijos prorrateados: ${formatPrice(gastosFijosPorDocena)} / docena  ·  Base: ${docenasEstimadas} docenas estimadas`,
       { x: margin, y, size: 8, font, color: gray }
     );
-    y -= 16;
-    page.drawLine({ start: { x: margin, y }, end: { x: pageW - margin, y }, thickness: 1, color: brand });
-    y -= 16;
-    page.drawText('Producto', { x: colX.producto, y, size: 8, font: fontBold, color: gray });
-    page.drawText('Costo/Doc', { x: colX.costo, y, size: 8, font: fontBold, color: gray });
-    page.drawText('Precio actual', { x: colX.actual, y, size: 8, font: fontBold, color: gray });
-    margenes.forEach((m, i) => {
-      page.drawText(`Sugerido ${m}%`, { x: colX.margenes + i * margenColWidth, y, size: 8, font: fontBold, color: gray });
-    });
     y -= 14;
+
+    if (primera) {
+      const settingsList = (settings ?? []) as CostSetting[];
+      if (settingsList.length > 0) {
+        page.drawText('Detalle de gastos fijos activos:', { x: margin, y, size: 8, font: fontBold, color: gray });
+        y -= 12;
+        for (const s of settingsList) {
+          const detalle = s.tipo === 'por_dia'
+            ? `${s.dias_mes ?? 0} días × ${formatPrice(s.pago_por_dia ?? 0)}/día = ${formatPrice(s.monto_mensual)}/mes`
+            : `${formatPrice(s.monto_mensual)}/mes`;
+          page.drawText(`•  ${s.nombre}: ${detalle}`, { x: margin + 6, y, size: 7.5, font, color: gray });
+          y -= 11;
+        }
+        y -= 4;
+      }
+    }
+
+    // Salvaguarda: si el detalle de gastos fijos fue muy largo (muchos
+    // gastos cargados) y no queda lugar para la tabla, se pasa a una
+    // página nueva antes de dibujar el encabezado de columnas.
+    if (y < margin + 80) {
+      page = pdfDoc.addPage([pageW, pageH]);
+      y = pageH - margin;
+    }
+
+    drawTableHeader();
   };
 
   const newPage = () => {
     page = pdfDoc.addPage([pageW, pageH]);
     y = pageH - margin;
-    drawHeader();
+    drawHeader(false);
   };
 
-  drawHeader();
+  drawHeader(true);
 
   for (const { row, simulaciones } of rows) {
-    if (y - 16 < margin + 30) newPage();
+    if (y - 24 < margin + 30) newPage();
 
-    page.drawRectangle({ x: margin - 4, y: y - 3, width: pageW - margin * 2 + 8, height: 14, color: lightRow, opacity: 0.5 });
+    page.drawRectangle({ x: margin - 4, y: y - 11, width: pageW - margin * 2 + 8, height: 22, color: lightRow, opacity: 0.5 });
 
     const nombreTrunc = row.nombre.length > 34 ? row.nombre.slice(0, 31) + '…' : row.nombre;
     page.drawText(nombreTrunc, { x: colX.producto, y, size: 8, font, color: rgb(0, 0, 0) });
     page.drawText(formatPrice(row.costo_total_docena), { x: colX.costo, y, size: 8, font: fontBold, color: brand });
     page.drawText(formatPrice(row.precio_docena_actual), { x: colX.actual, y, size: 8, font, color: gray });
     simulaciones.forEach((s, i) => {
-      page.drawText(formatPrice(s.precio_sugerido_docena), {
-        x: colX.margenes + i * margenColWidth, y, size: 8, font, color: green,
-      });
+      const x = colX.margenes + i * margenColWidth;
+      page.drawText(formatPrice(s.precio_sugerido_docena), { x, y, size: 8, font, color: green });
+      page.drawText(`→ ${formatPrice(s.precio_sugerido_docena_recomendado)}`, { x, y: y - 10, size: 7, font, color: gray });
     });
-    y -= 16;
+    y -= 24;
   }
 
   const totalPages = pdfDoc.getPageCount();

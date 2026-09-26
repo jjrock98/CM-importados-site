@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
   const headers = [
     'Producto', 'Compra/Doc', 'Transporte/Doc', 'Empaque/Doc',
     'Fijos prorrateados/Doc', 'Costo Total/Doc', 'Precio actual catálogo',
-    ...margenes.map((m) => `Sugerido ${m}%`),
+    ...margenes.flatMap((m) => [`Sugerido ${m}%`, `Recomendado ${m}%`]),
   ];
 
   const aoa: (string | number)[][] = [headers];
@@ -97,10 +97,15 @@ export async function GET(req: NextRequest) {
       row.gastos_fijos_prorrateados_docena,
       row.costo_total_docena,
       row.precio_docena_actual,
-      // Valor calculado como respaldo; se reemplaza por una fórmula viva
+      // Valores calculados como respaldo; se reemplazan por fórmulas vivas
       // justo abajo, celda por celda (aoa_to_sheet no soporta fórmulas
-      // directamente en el array de entrada).
-      ...margenes.map((m) => Math.round(row.costo_total_docena * (1 + m / 100) * 100) / 100),
+      // directamente en el array de entrada). Cada margen ocupa dos
+      // columnas: el precio sugerido exacto y su redondeo hacia arriba
+      // (sin decimales) como recomendación.
+      ...margenes.flatMap((m) => {
+        const sugerido = Math.round(row.costo_total_docena * (1 + m / 100) * 100) / 100;
+        return [sugerido, Math.ceil(sugerido)];
+      }),
     ]);
   });
 
@@ -108,28 +113,38 @@ export async function GET(req: NextRequest) {
   ws['!cols'] = [
     { wch: 32 }, { wch: 13 }, { wch: 14 }, { wch: 12 },
     { wch: 20 }, { wch: 14 }, { wch: 18 },
-    ...margenes.map(() => ({ wch: 14 })),
+    ...margenes.flatMap(() => [{ wch: 14 }, { wch: 14 }]),
   ];
 
   // Fórmula viva por celda: si el admin cambia cualquier costo de la
-  // fila, el precio sugerido se recalcula solo en Excel, sin necesidad
-  // de volver a exportar. Costo Total/Doc siempre cae en la columna F.
+  // fila, el precio sugerido y el recomendado se recalculan solos en
+  // Excel, sin necesidad de volver a exportar. Costo Total/Doc siempre
+  // cae en la columna F. Cada margen ocupa dos columnas consecutivas:
+  // la del precio sugerido exacto y, a su lado, CEILING(...,1) redondeado
+  // hacia arriba y sin decimales (la recomendación).
   for (let idx = 0; idx < rows.length; idx++) {
     const excelRow = idx + 2; // fila 1 = encabezados, las planillas son 1-based
     const costoTotalCell = `F${excelRow}`;
     margenes.forEach((m, i) => {
-      const colLetter = XLSX.utils.encode_col(7 + i); // las columnas de margen arrancan en H (índice 7)
-      const cellRef = `${colLetter}${excelRow}`;
-      const cell = ws[cellRef];
-      if (cell) cell.f = `${costoTotalCell}*(1+${m}/100)`;
+      const colSugerido = XLSX.utils.encode_col(7 + i * 2); // las columnas de margen arrancan en H (índice 7)
+      const colRecomendado = XLSX.utils.encode_col(7 + i * 2 + 1);
+      const sugeridoCell = `${colSugerido}${excelRow}`;
+      const recomendadoCell = `${colRecomendado}${excelRow}`;
+      const sugerido = ws[sugeridoCell];
+      const recomendado = ws[recomendadoCell];
+      if (sugerido) sugerido.f = `${costoTotalCell}*(1+${m}/100)`;
+      if (recomendado) recomendado.f = `CEILING(${sugeridoCell},1)`;
     });
   }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Costos por Docena');
 
-  // Segunda hoja: parámetros usados, para que quede trazable de dónde
-  // sale el "Fijos prorrateados/Doc" de la primera hoja.
+  // Segunda hoja: parámetros usados + detalle de cada gasto fijo activo
+  // (nombre, si es monto fijo o por día trabajado, y su desglose), para
+  // que quede trazable de dónde sale el "Fijos prorrateados/Doc" de la
+  // primera hoja.
+  const settingsList = (settings ?? []) as CostSetting[];
   const wsParams = XLSX.utils.aoa_to_sheet([
     ['Parámetro', 'Valor'],
     ['Período', periodo],
@@ -137,9 +152,19 @@ export async function GET(req: NextRequest) {
     ['Docenas estimadas del período', docenasEstimadas],
     ['Gastos fijos prorrateados por docena', gastosFijosPorDocena],
     [],
+    ['Detalle de gastos fijos activos', '', '', '', ''],
+    ['Nombre', 'Tipo', 'Días/mes', 'Pago/día', 'Monto mensual'],
+    ...settingsList.map((s) => [
+      s.nombre,
+      s.tipo === 'por_dia' ? 'Por día trabajado' : 'Monto fijo',
+      s.tipo === 'por_dia' ? (s.dias_mes ?? '') : '',
+      s.tipo === 'por_dia' ? (s.pago_por_dia ?? '') : '',
+      s.monto_mensual,
+    ]),
+    [],
     ['Nota', 'Herramienta de simulación interna. No modifica los precios publicados en el catálogo.'],
   ]);
-  wsParams['!cols'] = [{ wch: 36 }, { wch: 40 }];
+  wsParams['!cols'] = [{ wch: 32 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 16 }];
   XLSX.utils.book_append_sheet(wb, wsParams, 'Parámetros');
 
   const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });

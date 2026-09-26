@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   const headers = [
     'Producto', 'Compra/Doc', 'Transporte/Doc', 'Empaque/Doc',
     'Fijos prorrateados/Doc', 'Costo Total/Doc', 'Precio actual catálogo',
-    ...margenes.map((m) => `Sugerido ${m}%`),
+    ...margenes.flatMap((m) => [`Sugerido ${m}%`, `Recomendado ${m}%`]),
   ];
 
   const lines = [headers.map(csvCell).join(',')];
@@ -90,13 +90,38 @@ export async function GET(req: NextRequest) {
       },
       gastosFijosPorDocena
     );
-    const sugeridos = margenes.map((m) => simularMargen(row.costo_total_docena, m).precio_sugerido_docena);
+    const sugeridos = margenes.flatMap((m) => {
+      const sim = simularMargen(row.costo_total_docena, m);
+      return [sim.precio_sugerido_docena, sim.precio_sugerido_docena_recomendado];
+    });
     lines.push([
       row.nombre, row.costo_compra_docena, row.transporte_docena, row.empaque_docena,
       row.gastos_fijos_prorrateados_docena, row.costo_total_docena, row.precio_docena_actual,
       ...sugeridos,
     ].map(csvCell).join(','));
   }
+
+  // ── Detalle de gastos fijos del período ──────────────────────────────
+  // Bloque aparte, debajo de la tabla de productos, para que quede
+  // trazable de dónde sale "Fijos prorrateados/Doc": qué gastos están
+  // activos, cuál es fijo (alquiler, despensas) y cuál se paga por día
+  // trabajado (empleado), con su desglose de días × pago.
+  lines.push('');
+  lines.push(csvCell('Gastos fijos del período (activos)'));
+  lines.push(['Nombre', 'Tipo', 'Días/mes', 'Pago/día', 'Monto mensual'].map(csvCell).join(','));
+  for (const s of (settings ?? []) as CostSetting[]) {
+    lines.push([
+      s.nombre,
+      s.tipo === 'por_dia' ? 'Por día trabajado' : 'Monto fijo',
+      s.tipo === 'por_dia' ? (s.dias_mes ?? '') : '',
+      s.tipo === 'por_dia' ? (s.pago_por_dia ?? '') : '',
+      s.monto_mensual,
+    ].map(csvCell).join(','));
+  }
+  lines.push('');
+  lines.push(['Total gastos fijos activos', '', '', '', totalGastosFijosMensuales].map(csvCell).join(','));
+  lines.push(['Docenas estimadas del período', '', '', '', docenasEstimadas].map(csvCell).join(','));
+  lines.push(['Gastos fijos prorrateados por docena', '', '', '', Math.round(gastosFijosPorDocena * 100) / 100].map(csvCell).join(','));
 
   // BOM para que Excel en Windows detecte UTF-8 y no rompa los acentos/€/$.
   const csv = '\uFEFF' + lines.join('\n');

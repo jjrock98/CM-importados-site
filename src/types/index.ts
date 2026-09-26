@@ -55,6 +55,12 @@ export interface CostSetting {
   id: string;
   nombre: string;
   monto_mensual: number;
+  /** 'fijo' = monto cargado directo (alquiler, despensas). 'por_dia' = se
+   *  paga por jornada trabajada (ej. sueldo del empleado) — monto_mensual
+   *  se calcula solo como dias_mes * pago_por_dia. */
+  tipo: 'fijo' | 'por_dia';
+  dias_mes: number | null;
+  pago_por_dia: number | null;
   activo: boolean;
   created_at: string;
   updated_at: string;
