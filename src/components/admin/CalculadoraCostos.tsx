@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Download, Plus, RefreshCw, Save, X } from 'lucide-react';
 import { cn } from '@/utils';
 import {
+  AVISO_SIN_DOCENAS_ESTIMADAS,
   calcularRentabilidad,
   round2,
   type EntradaRentabilidad,
@@ -600,6 +601,24 @@ export function CalculadoraCostos() {
         <p className="pt-1 text-xs text-muted">
           El recargo % lo carga cada modelo sobre su propia mercadería; lonas, envío y recargo fijo se reparten en proporción a las docenas.
         </p>
+        {fijosMensualesTotal > 0 && toNum(docenasMes) <= 0 && (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            ⚠ {AVISO_SIN_DOCENAS_ESTIMADAS}
+            {docenasAsignadas > 0 && (
+              <>
+                {' '}
+                <button
+                  type="button"
+                  onClick={() => setDocenasMes(String(docenasAsignadas))}
+                  className="underline underline-offset-2 hover:opacity-80"
+                >
+                  Usar las {num2(docenasAsignadas)} docenas de esta compra como estimación
+                </button>
+                .
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       {analisis.map(({ m, res }, i) => (
@@ -1143,9 +1162,14 @@ function IndicadoresPrecio({
             ? 'No hay gastos fijos cargados: no hay punto de equilibrio que calcular.'
             : `Necesitás vender aproximadamente ${num2(res.puntoEquilibrioDocenas)} docenas por mes de este modelo para cubrir los gastos fijos.`}
       </p>
-      {res.avisos.map((a, i) => (
-        <p key={i} className="text-xs text-amber-700 dark:text-amber-400">⚠ {a}</p>
-      ))}
+      {res.avisos
+        // El aviso de "sin docenas estimadas" es un dato común a toda la
+        // compra (no de este modelo en particular): se muestra una sola
+        // vez en el desglose general para no repetirlo en cada tarjeta.
+        .filter((a) => a !== AVISO_SIN_DOCENAS_ESTIMADAS)
+        .map((a, i) => (
+          <p key={i} className="text-xs text-amber-700 dark:text-amber-400">⚠ {a}</p>
+        ))}
     </>
   );
 }

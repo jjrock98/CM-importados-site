@@ -77,6 +77,16 @@ export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
 
+/**
+ * Texto del aviso cuando hay gastos fijos pero no hay docenas estimadas
+ * del mes para prorratearlos (fijoDocena queda en 0, no en error). Se
+ * exporta como constante para que la UI pueda identificarlo sin comparar
+ * texto libre — por ejemplo, para no repetirlo una vez por modelo en una
+ * compra multimodelo, donde el dato es el mismo para todos.
+ */
+export const AVISO_SIN_DOCENAS_ESTIMADAS =
+  'Hay gastos fijos cargados (alquiler, despensas, etc.) pero "Docenas estimadas a vender en el mes" está en 0, así que no se pudieron prorratear: completá ese campo en la sección de Gastos.';
+
 const finito = (n: number) => (Number.isFinite(n) ? n : 0);
 
 export function calcularRentabilidad(
@@ -112,7 +122,7 @@ export function calcularRentabilidad(
     if (e.docenasEstimadasMes > 0) {
       fijoDocena = e.gastosFijosMensuales / e.docenasEstimadasMes;
     } else {
-      avisos.push('No hay docenas estimadas del mes: los gastos fijos no se pudieron asignar a la docena.');
+      avisos.push(AVISO_SIN_DOCENAS_ESTIMADAS);
     }
   }
 
