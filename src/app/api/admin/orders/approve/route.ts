@@ -1,21 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkAdmin } from '@/lib/auth/verifyAdmin';
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderConfirmationEmail, sendAdminOrderStatusEmail } from '@/lib/email';
 import { sendAdminPushNotification } from '@/lib/webpush';
 import type { Order } from '@/types';
 
 export async function POST(req: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
-
-  const { data: profile } = await supabase
-    .from('profiles').select('rol').eq('id', user.id).single();
-  if (profile?.rol !== 'admin') {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
-  }
+  const check = await checkAdmin();
+  if (!check.ok) return NextResponse.json({ error: check.error }, { status: check.status });
+  const user = check.user;
 
   const body    = await req.json().catch(() => ({}));
   const orderId = body.id ?? body.orderId;

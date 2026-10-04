@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -42,9 +43,8 @@ export async function GET(req: NextRequest) {
   // ── Autorización: dueño del pedido, o admin ──────────────────
   let autorizado = order.user_id === user.id;
   if (!autorizado) {
-    const { data: profile } = await supabase
-      .from('profiles').select('rol').eq('id', user.id).single();
-    autorizado = profile?.rol === 'admin';
+    // Admin (con 2FA verificado si lo tiene activado).
+    autorizado = (await verifyAdmin()) !== null;
   }
   if (!autorizado) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });

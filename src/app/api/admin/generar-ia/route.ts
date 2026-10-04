@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { categoriaLabel } from '@/lib/categorias';
 import {
   generarConGemini,
@@ -9,14 +9,6 @@ import {
   type ImagenData,
   type ResultadoProveedor,
 } from './proveedores';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('rol').eq('id', user.id).single();
-  return profile?.rol === 'admin' ? user : null;
-}
 
 // Máximo de imágenes que se mandan al modelo por request. Más fotos = más
 // tokens consumidos contra la cuota gratis sin aportar demasiada info

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
 import { formatPrice } from '@/utils';
 import type { PriceTier } from '@/types';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('rol').eq('id', user.id).single();
-  return profile?.rol === 'admin' ? user : null;
-}
 
 interface RowProduct {
   nombre: string;

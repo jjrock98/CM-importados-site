@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { checkAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 const ORDER_SELECT =
@@ -20,16 +20,11 @@ type OrderSelectRow = {
 };
 
 async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { error: NextResponse.json({ error: 'No autenticado' }, { status: 401 }) };
-
-  const { data: profile } = await supabase
-    .from('profiles').select('rol').eq('id', user.id).single();
-  if (profile?.rol !== 'admin') {
-    return { error: NextResponse.json({ error: 'No autorizado' }, { status: 403 }) };
+  const check = await checkAdmin();
+  if (!check.ok) {
+    return { error: NextResponse.json({ error: check.error }, { status: check.status }) };
   }
-  return { user };
+  return { user: check.user };
 }
 
 /**

@@ -45,9 +45,9 @@ export function CookieConsent() {
         <p className="text-xs text-muted leading-relaxed mb-4">
           Usamos cookies esenciales para el carrito y la sesión. Si aceptás,
           también activamos el píxel de Meta (Facebook/Instagram) para medir
-          la efectividad de nuestros anuncios y Microsoft Clarity para
-          entender cómo se usa el sitio (mapas de calor y grabaciones
-          anónimas de navegación).{' '}
+          la efectividad de nuestros anuncios, Google Analytics para medir
+          las visitas y Microsoft Clarity para entender cómo se usa el
+          sitio (mapas de calor y grabaciones anónimas de navegación).{' '}
           <Link href="/politicas" className="text-brand-600 hover:underline">Ver política de privacidad</Link>.
         </p>
 

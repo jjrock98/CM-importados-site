@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { calcularGastosFijosPorDocena, calcularCostoTotalDocena } from '@/lib/costos';
 import type { ProductCost, CostSetting, CostPeriodConfig } from '@/types';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('rol').eq('id', user.id).single();
-  return profile?.rol === 'admin' ? user : null;
-}
 
 function periodoActual(): string {
   const d = new Date();

@@ -1,14 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: p } = await supabase.from('profiles').select('rol').eq('id', user.id).single();
-  return p?.rol === 'admin' ? user : null;
-}
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const adminUser = await verifyAdmin();

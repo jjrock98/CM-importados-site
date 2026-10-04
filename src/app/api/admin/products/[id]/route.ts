@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { Resend } from 'resend';
 import { env } from '@/env';
@@ -49,15 +49,6 @@ async function notifyStockSubscribers(productId: string, productName: string) {
   } catch (err) {
     console.error('[StockNotify] Error notificando suscriptores:', err);
   }
-}
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from('profiles').select('rol').eq('id', user.id).single();
-  return profile?.rol === 'admin' ? user : null;
 }
 
 // ✅ Next 16: params ahora es una Promise, hay que await-earlo

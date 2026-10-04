@@ -14,6 +14,7 @@ import { CookieConsent } from '@/components/common/CookieConsent';
 import { WhatsAppGroupPopup } from '@/components/common/WhatsAppGroupPopup';
 import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
 import { ClarityLoader } from '@/components/common/ClarityLoader';
+import { GoogleAnalytics } from '@/components/common/GoogleAnalytics';
 import { MotionProvider } from '@/components/common/MotionProvider';
 import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
@@ -190,6 +191,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 renderiza si el visitante aceptó cookies de marketing. */}
             <FacebookPixelLoader />
             <ClarityLoader />
+            <GoogleAnalytics />
           </MotionProvider>
         </ThemeProvider>
       </body>

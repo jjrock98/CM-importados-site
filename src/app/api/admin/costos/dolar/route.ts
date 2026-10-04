@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-
-async function verifyAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('rol').eq('id', user.id).single();
-  return profile?.rol === 'admin' ? user : null;
-}
+import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 
 const DOLAR_BLUE_URL = 'https://dolarapi.com/v1/dolares/blue';
 const TIMEOUT_MS = 6000;
