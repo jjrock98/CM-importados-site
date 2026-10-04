@@ -1,9 +1,10 @@
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState, useRef, useEffect } from 'react';
-import { ShoppingCart, Heart, Menu, X, User, Sun, Moon, Search } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { SearchAutocomplete } from '@/components/layout/SearchAutocomplete';
+import { ShoppingCart, Heart, Menu, X, User, Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useCartStore } from '@/hooks/useCart';
 import { useCartDrawerStore } from '@/hooks/useCartDrawer';
@@ -24,11 +25,8 @@ const LINKS = [
 
 export function Navbar() {
   const pathname     = usePathname();
-  const router       = useRouter();
   const [open,       setOpen]      = useState(false);
   const [userMenu,   setUserMenu]  = useState(false);
-  const [query,      setQuery]     = useState('');
-  const searchRef    = useRef<HTMLInputElement>(null);
   const { theme, setTheme } = useTheme();
   // ✅ FIX hidratación: `theme` es `undefined` en el primer render (SSR y
   // primer paint del cliente) hasta que next-themes lee localStorage en un
@@ -42,14 +40,6 @@ export function Navbar() {
   const itemCount = useCartStore((s) => s.itemCount);
   const openCartDrawer = useCartDrawerStore((s) => s.open);
   const { user, profile, isAdmin, signOut } = useAuth({ revalidateOnNavigate: true });
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim().length >= 2) {
-      router.push(`/buscar?q=${encodeURIComponent(query.trim())}`);
-      setQuery('');
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-surface">
@@ -76,20 +66,9 @@ export function Navbar() {
           </Link>
 
           {/* Search — pill claro con borde, botón de buscar en navy sólido */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md">
-            <div className="flex w-full items-center overflow-hidden rounded-lg border border-border bg-surface-2">
-              <input
-                ref={searchRef}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar productos…"
-                className="w-full bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none"
-              />
-              <button type="submit" className="flex h-full items-center justify-center bg-brand-700 px-3 py-2 text-white shrink-0" aria-label="Buscar">
-                <Search size={16} />
-              </button>
-            </div>
-          </form>
+          <div className="hidden md:block flex-1 max-w-md">
+            <SearchAutocomplete variant="desktop" />
+          </div>
 
           <div className="flex-1 md:hidden" />
 
@@ -212,16 +191,9 @@ export function Navbar() {
       {/* Mobile menu */}
       {open && (
         <div className="border-t border-border bg-surface px-4 pb-4 md:hidden animate-fade-in">
-          <form onSubmit={handleSearch} className="mt-3 flex gap-2">
-            <input
-              value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar productos…"
-              className="input-base flex-1 py-2 text-sm"
-            />
-            <button type="submit" className="btn-primary px-3 py-2 text-sm">
-              <Search size={15} />
-            </button>
-          </form>
+          <div className="mt-3">
+            <SearchAutocomplete variant="mobile" onNavigate={() => setOpen(false)} />
+          </div>
 
           <ul className="mt-3 space-y-1">
             {LINKS.map(({ href, label }) => (

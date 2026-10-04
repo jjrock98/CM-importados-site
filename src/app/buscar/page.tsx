@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { ProductCard } from '@/components/products/ProductCard';
+import { searchProducts } from '@/lib/searchProducts';
 import type { Product } from '@/types';
 import type { Metadata } from 'next';
 import { Search } from 'lucide-react';
@@ -36,22 +37,13 @@ export default async function BuscarPage({ searchParams }: Props) {
   let products: Product[] = [];
 
   if (q.length >= 2) {
+    // Ignora acentos y mayúsculas, y limpia caracteres especiales
+    // (ver src/lib/searchProducts.ts y sql/search_products.sql).
     const supabase = await createClient();
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .eq('activo', true)
-      .eq('venta_mayorista', true)
-      .or(
-        `nombre.ilike.%${q}%,` +
-        `descripcion.ilike.%${q}%,` +
-        `descripcion_corta.ilike.%${q}%`
-      )
-      .order('destacado', { ascending: false })
-      .order('stock_unidades', { ascending: false })
-      .limit(40);
-
-    products = (data ?? []) as Product[];
+    products = await searchProducts<Product>(supabase, q, {
+      includeDescription: true,
+      limit: 40,
+    });
   }
 
   return (
