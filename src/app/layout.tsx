@@ -13,6 +13,7 @@ import { TawkTo } from '@/components/common/TawkTo';
 import { CookieConsent } from '@/components/common/CookieConsent';
 import { WhatsAppGroupPopup } from '@/components/common/WhatsAppGroupPopup';
 import { FacebookPixelLoader } from '@/components/common/FacebookPixelLoader';
+import { ClarityLoader } from '@/components/common/ClarityLoader';
 import { MotionProvider } from '@/components/common/MotionProvider';
 import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
@@ -188,6 +189,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 cookies. Ahora vive en FacebookPixelLoader.tsx, que solo lo
                 renderiza si el visitante aceptó cookies de marketing. */}
             <FacebookPixelLoader />
+            <ClarityLoader />
           </MotionProvider>
         </ThemeProvider>
       </body>
