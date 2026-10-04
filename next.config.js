@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const { storefrontCsp } = require('./src/lib/csp');
+
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control',  value: 'on' },
   { key: 'X-Frame-Options',         value: 'DENY' },
@@ -9,30 +11,8 @@ const securityHeaders = [
     key:   'Strict-Transport-Security',
     value: 'max-age=63072000; includeSubDomains; preload',
   },
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.mercadopago.com https://embed.tawk.to https://va.vercel-scripts.com https://challenges.cloudflare.com https://www.clarity.ms https://scripts.clarity.ms https://*.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.tawk.to",
-      // ✅ FIX: se agregan los dominios de tawk.to — su script inyecta la
-      // fuente de íconos del widget (@font-face) directo en el <head> del
-      // documento principal, NO adentro del iframe embed.tawk.to. Al no
-      // estar permitido ese origen acá, el navegador bloqueaba la fuente
-      // en TODOS los dispositivos por igual (por eso el bug se repetía
-      // igual en el celular y en la PC, en redes distintas: lo bloqueaba
-      // el CSP del lado del navegador, no la red) y los íconos del chat
-      // se veían como cuadrados vacíos (glifo faltante).
-      "font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to",
-      "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.googletagmanager.com",
-      "frame-src 'self' https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com",
-      "media-src 'self'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; '),
-  },
+  // La política vive en src/lib/csp.js (compartida con el proxy del panel admin).
+  { key: 'Content-Security-Policy', value: storefrontCsp() },
 ];
 
 const nextConfig = {

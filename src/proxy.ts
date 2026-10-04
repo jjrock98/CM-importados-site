@@ -2,12 +2,20 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 import { createServerClient } from '@supabase/ssr';
 import { rateLimit } from '@/lib/rateLimit';
+import { adminCsp } from '@/lib/csp';
 
 const PROFILE_REQUIRED_ROUTES = ['/mis-pedidos', '/wishlist'];
 // ✅ /checkout no requiere perfil completo — invitados llenan los datos en el form
 const AUTH_REQUIRED_ROUTES    = ['/mis-pedidos', '/wishlist', '/completar-perfil', '/perfil'];
 // ✅ /checkout NO requiere login — permite compra como invitado
 const ADMIN_ROUTES             = ['/admin'];
+
+// CSP estricta con nonce para las PÁGINAS de /admin (ver src/lib/csp.js).
+//   'report-only' (default): el navegador solo avisa en la consola qué
+//                  bloquearía; no rompe nada. Usarlo unos días.
+//   'enforce':     la política se aplica de verdad.
+//   'off':         desactivada.
+const ADMIN_CSP_MODE = process.env.ADMIN_CSP_MODE ?? 'report-only';
 
 // ✅ NUEVO: timeout de inactividad implementado acá, a nivel app.
 // Originalmente la idea era usar Authentication → Sessions → "Tiempo de
@@ -242,6 +250,28 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // ── CSP con nonce para las páginas de admin ──────────────────────────────
+  // Next.js lee el nonce del header CSP de la REQUEST y se lo pone solo a sus
+  // scripts, por eso va en request.headers (antes de updateSession, que crea
+  // la respuesta con esos headers) y no solo en la respuesta.
+  let adminCspHeader: { name: string; value: string } | null = null;
+  if (
+    ADMIN_CSP_MODE !== 'off' &&
+    !pathname.startsWith('/api/') &&
+    ADMIN_ROUTES.some((r) => pathname.startsWith(r))
+  ) {
+    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+    const value = adminCsp(nonce);
+    request.headers.set('x-nonce', nonce);
+    request.headers.set('content-security-policy', value);
+    adminCspHeader = {
+      name: ADMIN_CSP_MODE === 'enforce'
+        ? 'Content-Security-Policy'
+        : 'Content-Security-Policy-Report-Only',
+      value,
+    };
+  }
+
   const { supabaseResponse, user, supabase } = await updateSession(request);
 
   // ── Timeout de inactividad para cualquier usuario logueado ────────────────
@@ -327,6 +357,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  if (adminCspHeader) supabaseResponse.headers.set(adminCspHeader.name, adminCspHeader.value);
   return supabaseResponse;
 }
 
