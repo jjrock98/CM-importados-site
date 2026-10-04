@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Search } from 'lucide-react';
 import { formatPrice } from '@/utils';
 
@@ -20,6 +21,28 @@ interface Props {
 
 const MIN_CHARS = 2;
 const DEBOUNCE_MS = 250;
+
+/**
+ * Miniatura del producto. Usa next/image (igual que ProductCard): la imagen
+ * pasa por /_next/image del propio sitio, así no depende de cómo esté
+ * configurado el acceso directo al storage. Si falla, muestra un cuadro
+ * neutro en vez del ícono de imagen rota.
+ */
+function Thumb({ src }: { src: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <span className="h-9 w-9 shrink-0 rounded bg-surface-2" />;
+  return (
+    <Image
+      src={src}
+      alt=""
+      width={36}
+      height={36}
+      sizes="36px"
+      onError={() => setFailed(true)}
+      className="h-9 w-9 shrink-0 rounded object-cover bg-surface-2"
+    />
+  );
+}
 
 /** Quita acentos y pasa a minúsculas ("Pantalón" → "pantalon"). */
 const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -191,13 +214,7 @@ export function SearchAutocomplete({ variant, onNavigate }: Props) {
                 onClick={() => go(`/productos/${p.slug}`)}
                 className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm ${active === i ? 'bg-surface-2' : ''}`}
               >
-                {p.imagen ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.imagen} alt="" width={36} height={36} loading="lazy"
-                       className="h-9 w-9 shrink-0 rounded object-cover bg-surface-2" />
-                ) : (
-                  <span className="h-9 w-9 shrink-0 rounded bg-surface-2" />
-                )}
+                <Thumb src={p.imagen} />
                 <span className="min-w-0 flex-1 truncate text-muted">
                   <Highlight text={p.nombre} term={term} />
                 </span>
