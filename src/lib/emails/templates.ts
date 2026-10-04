@@ -25,6 +25,15 @@ function esc(v: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
+// Link al estado del pedido. Con cuenta (user_id) va a su historial en
+// /mis-pedidos; si compró como invitado, esa pantalla le pide iniciar sesión,
+// así que se lo manda a /seguimiento con el código de pedido ya cargado (solo
+// tiene que escribir el email con el que compró).
+function orderLink(order: Order): string {
+  if (order.user_id) return `${APP_URL}/mis-pedidos`;
+  return `${APP_URL}/seguimiento?id=${order.id.slice(0, 8).toUpperCase()}`;
+}
+
 function base(title: string, body: string): string {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
 <body style="margin:0;padding:0;background:#f4f4f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -106,7 +115,7 @@ export function orderConfirmationHtml(order: Order): string {
         }.
       </p>
     </div>` : ''}
-    <div style="text-align:center;"><a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
+    <div style="text-align:center;"><a href="${orderLink(order)}" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
 
   return base(`Pedido #${order.id.slice(0,8).toUpperCase()} confirmado`, body);
 }
@@ -134,7 +143,7 @@ export function orderStatusHtml(order: Order): string {
     <p style="font-size:15px;color:#374151;margin:0 0 8px;line-height:1.6;">${msgs[order.estado] ?? 'El estado de tu pedido fue actualizado.'}</p>
     ${order.rejection_reason ? `<p style="font-size:14px;color:#b91c1c;margin:0 0 20px;line-height:1.6;"><strong>Motivo:</strong> ${esc(order.rejection_reason)}</p>` : ''}
     <p style="font-size:13px;color:#9ca3af;margin:${order.rejection_reason ? '0' : '20px'} 0 24px;">Pedido <strong style="color:#374151;font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</strong> · Total: <strong style="color:#374151;">${formatARS(order.total)}</strong></p>
-    <div style="text-align:center;"><a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
+    <div style="text-align:center;"><a href="${orderLink(order)}" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
 
   return base(`Tu pedido está ${ORDER_STATUS_LABELS[order.estado]?.toLowerCase() ?? 'actualizado'}`, body);
 }
@@ -151,7 +160,7 @@ export function reviewRequestHtml(order: Order): string {
 
   const filas = items.map((it) => {
     const slug = it.products?.slug;
-    const link = slug ? `${APP_URL}/productos/${slug}` : `${APP_URL}/mis-pedidos`;
+    const link = slug ? `${APP_URL}/productos/${slug}` : `${orderLink(order)}`;
     return `
       <tr>
         <td style="padding:10px 0;border-bottom:1px solid #f0ede6;font-size:14px;color:#374151;">${esc(it.nombre_snap)}</td>
@@ -166,7 +175,7 @@ export function reviewRequestHtml(order: Order): string {
     <p style="margin:0 0 24px;color:#6b7280;font-size:15px;">Hola <strong style="color:#374151;">${esc(nombre)}</strong>, esperamos que estés disfrutando tu pedido <strong style="font-family:monospace;">#${order.id.slice(0,8).toUpperCase()}</strong>.</p>
     <p style="font-size:15px;color:#374151;margin:0 0 20px;line-height:1.6;">Tu opinión ayuda un montón a otros compradores a elegir. ¿Nos dejás una reseña de lo que compraste? Te toma un minuto:</p>
     ${filas ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">${filas}</table>` : ''}
-    <div style="text-align:center;"><a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
+    <div style="text-align:center;"><a href="${orderLink(order)}" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver mi pedido</a></div>`;
 
   return base('¿Qué te pareció tu compra?', body);
 }
@@ -253,7 +262,7 @@ export function cashPaymentPendingHtml(order: Order): string {
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;"><tbody>${stepsHtml}</tbody></table>
 
     <div style="text-align:center;">
-      <a href="${APP_URL}/mis-pedidos" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver estado de mi pedido</a>
+      <a href="${orderLink(order)}" style="display:inline-block;background:${BRAND_COLOR};color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;">Ver estado de mi pedido</a>
     </div>`;
 
   return base(`Cupón generado — Pedido #${orderNumber}`, body);
