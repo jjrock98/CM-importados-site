@@ -74,13 +74,13 @@ export function SeguimientoContent() {
           </label>
           <input
             value={orderId}
-            onChange={(e) => setOrderId(e.target.value.toUpperCase())}
+            onChange={(e) => setOrderId(e.target.value.replace(/^#/, '').toUpperCase())}
             placeholder="Ej: A1B2C3D4"
             className="input-base font-mono uppercase"
             onKeyDown={(e) => e.key === 'Enter' && buscar()}
           />
           <p className="text-[10px] text-muted mt-1">
-            Lo encontrás en el email de confirmación o en el comprobante.
+            Es el código de 8 caracteres (con #) del email de confirmación.
           </p>
         </div>
         <div>

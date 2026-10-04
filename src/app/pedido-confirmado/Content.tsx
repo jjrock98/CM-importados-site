@@ -2,6 +2,7 @@
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Mail, ShoppingBag, UserPlus, Search } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Página de confirmación para compradores invitados.
@@ -13,6 +14,11 @@ export function PedidoConfirmadoContent() {
   const orderId   = params.get('orderId') ?? '';
   const email     = params.get('email')   ?? '';
   const orderNum  = orderId.slice(0, 8).toUpperCase();
+  const { user, loading } = useAuth();
+  // La invitación a crear cuenta solo tiene sentido para compradores
+  // invitados. Mientras se verifica la sesión no se muestra, para evitar
+  // que parpadee en usuarios que ya iniciaron sesión.
+  const showGuestCta = !loading && !user;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-16 text-center">
@@ -62,7 +68,11 @@ export function PedidoConfirmadoContent() {
       {/* Seguimiento sin login */}
       {orderId && (
         <Link
-          href={`/seguimiento?id=${orderId}&email=${encodeURIComponent(email)}`}
+          href={
+            user
+              ? `/mis-pedidos/${orderId}`
+              : `/seguimiento?id=${orderId}&email=${encodeURIComponent(email)}`
+          }
           className="btn-secondary gap-2"
         >
           <Search size={15} /> Ver estado del pedido
@@ -71,6 +81,7 @@ export function PedidoConfirmadoContent() {
 
       {/* CTAs */}
       <div className="flex flex-col gap-3 w-full max-w-xs">
+        {showGuestCta && (
         <div className="flex items-start gap-3 card px-4 py-3 text-left">
           <UserPlus size={16} className="text-brand-500 shrink-0 mt-0.5" />
           <div>
@@ -83,6 +94,7 @@ export function PedidoConfirmadoContent() {
             </p>
           </div>
         </div>
+        )}
         <Link href="/" className="btn-ghost gap-2 justify-center text-sm">
           <ShoppingBag size={15} /> Seguir comprando
         </Link>

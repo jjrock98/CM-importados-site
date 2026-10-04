@@ -28,7 +28,22 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Aceptar tanto el ID completo (UUID) como los primeros 8 caracteres
+  // Aceptar el ID completo (UUID) o el código corto de 8 caracteres que ven
+  // los clientes en el email y en la pantalla de confirmación (#A1B2C3D4).
+  // ✅ FIX: antes el código corto se buscaba con ilike('id', 'xxxx%'), pero
+  // `id` es de tipo uuid y Postgres no tiene ILIKE para uuid: la consulta
+  // fallaba y el cliente veía "No encontramos ningún pedido" aunque el
+  // número fuera correcto. Ahora el prefijo se busca como rango de UUID.
+  const cleanId = rawId.replace(/^#/, '').toLowerCase();
+  const isFull  = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(cleanId);
+  const isShort = /^[0-9a-f]{8}$/.test(cleanId);
+
+  const NOT_FOUND = NextResponse.json(
+    { error: 'No encontramos un pedido con esos datos' },
+    { status: 404 }
+  );
+  if (!isFull && !isShort) return NOT_FOUND;
+
   const admin = createAdminClient();
   let query = admin
     .from('orders')
@@ -41,31 +56,19 @@ export async function GET(req: NextRequest) {
       order_items(id, nombre_snap, tipo_pack, cantidad_packs, unidades, precio_unit, subtotal)
     `);
 
-  // Si tiene formato UUID completo, buscar por ID exacto
-  if (rawId.length === 36) {
-    query = query.eq('id', rawId);
-  } else {
-    // Buscar por los primeros 8 caracteres del UUID (formato amigable)
-    query = query.ilike('id', `${rawId}%`);
-  }
+  query = isFull
+    ? query.eq('id', cleanId)
+    : query
+        .gte('id', `${cleanId}-0000-0000-0000-000000000000`)
+        .lte('id', `${cleanId}-ffff-ffff-ffff-ffffffffffff`);
 
-  const { data: orders } = await query.limit(1);
-  const order = orders?.[0];
+  const { data: orders } = await query.limit(10);
 
-  if (!order) {
-    return NextResponse.json(
-      { error: 'No encontramos ningún pedido con ese número' },
-      { status: 404 }
-    );
-  }
-
-  // Validar que el email coincide (previene que alguien adivine IDs)
-  if (order.email.toLowerCase() !== email) {
-    return NextResponse.json(
-      { error: 'El email no coincide con el de la compra' },
-      { status: 403 }
-    );
-  }
+  // El email tiene que coincidir. Se devuelve el mismo error si no existe el
+  // pedido o si el email no es el de la compra, para no confirmar a un
+  // tercero qué números de pedido existen.
+  const order = orders?.find((o) => o.email.toLowerCase() === email);
+  if (!order) return NOT_FOUND;
 
   return NextResponse.json({ data: order });
 }
