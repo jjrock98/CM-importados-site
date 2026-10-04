@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminMobileNav } from '@/components/admin/AdminMobileNav';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
+import { AdminIdleTimer } from '@/components/admin/AdminIdleTimer';
 
 export const metadata = { title: 'Panel de administración' };
 
@@ -25,6 +26,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen">
+      {/* Logout automático por inactividad (30 min) con aviso previo */}
+      <AdminIdleTimer />
       <AdminSidebar />
 
       <div className="flex flex-1 min-w-0 flex-col">
