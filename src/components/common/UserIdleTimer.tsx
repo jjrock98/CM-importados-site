@@ -55,8 +55,6 @@ export function UserIdleTimer() {
   const lastHeartbeat = useRef(Date.now());
   const expiring      = useRef(false);
   const warningShown  = useRef(false);
-  const pathRef       = useRef(pathname);
-  pathRef.current = pathname;
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
 
   const expire = useCallback(() => {
