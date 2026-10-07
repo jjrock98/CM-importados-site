@@ -76,7 +76,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // soportan (el Depurador de Meta lo marcaba como "tipo de contenido no
   // válido"). /api/og-photo devuelve siempre un JPEG de 1200 px y liviano.
   const ogPhoto = image
-    ? `${appUrl}/api/og-photo?src=${encodeURIComponent(image)}`
+    ? `${appUrl}/api/og-photo?src=${encodeURIComponent(image)}&v=2&f=og.jpg`
     : null;
   const ogImages = ogPhoto
     ? [{ url: ogPhoto, width: 1200, alt: product.nombre }, ogImageBranded]

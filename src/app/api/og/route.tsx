@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { ImageResponse } from 'next/og';
 import { env } from '@/env';
 import { NextRequest } from 'next/server';
@@ -130,14 +131,14 @@ export async function GET(req: NextRequest) {
               {/* Product image */}
               {img && (
                 <div style={{
+                  display: 'flex',
                   width: 360, height: 360,
                   borderRadius: '24px',
                   overflow: 'hidden',
                   boxShadow: '0 25px 50px rgba(0,0,0,0.15)',
                   flexShrink: 0,
                 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={img} alt={title} width={360} height={360} style={{ width: 360, height: 360, objectFit: 'cover' }} />
                 </div>
               )}
             </div>
