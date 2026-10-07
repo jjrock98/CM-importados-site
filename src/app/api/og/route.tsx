@@ -35,6 +35,19 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // La foto original puede pesar varios MB; se usa la versión liviana en JPEG
+  // de /api/og-photo para que la tarjeta se genere rápido y sin fallar.
+  // Solo aplica a fotos del storage de Supabase (las únicas que acepta).
+  if (image) {
+    try {
+      if (new URL(image).hostname.endsWith('.supabase.co')) {
+        image = `${req.nextUrl.origin}/api/og-photo?src=${encodeURIComponent(image)}`;
+      }
+    } catch {
+      image = '';
+    }
+  }
+
   return new ImageResponse(
     (
       <div
@@ -64,7 +77,10 @@ export async function GET(req: NextRequest) {
               display: 'flex', alignItems: 'center', gap: '12px',
               background: 'rgba(217,142,30,0.1)',
               borderRadius: '50px', padding: '8px 20px',
-              width: 'fit-content',
+              // ✅ FIX 500: Satori (next/og) no soporta width: 'fit-content' y tiraba
+              // 'Invalid value "fit-content" for "width"' → la imagen nunca se generaba
+              // (Facebook/WhatsApp quedaban sin esta tarjeta). alignSelf logra lo mismo.
+              alignSelf: 'flex-start',
             }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#2c4270' }} />
               <span style={{ color: '#c07015', fontWeight: 700, fontSize: 18 }}>
