@@ -70,8 +70,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     height: 630,
     alt:    product.nombre,
   };
-  const ogImages = image
-    ? [{ url: image, width: 1200, height: 1200, alt: product.nombre }, ogImageBranded]
+  // ✅ FIX preview sin imagen en WhatsApp: la foto original que sube el admin
+  // puede pesar varios MB (el bucket admite hasta 5 MB) y WhatsApp descarta
+  // la imagen de la vista previa si es muy pesada (el límite práctico ronda
+  // los 300 KB) — queda solo título + descripción, justo lo que se veía en
+  // algunos productos y en otros no. Se sirve la foto redimensionada a 1200 px
+  // y comprimida por el optimizador de imágenes de Next (/_next/image), que ya
+  // está habilitado para el storage de Supabase (remotePatterns). Es un
+  // archivo chico, cacheado, y se resuelve en el propio dominio.
+  const ogPhoto = image
+    ? `${appUrl}/_next/image?url=${encodeURIComponent(image)}&w=1200&q=60`
+    : null;
+  const ogImages = ogPhoto
+    ? [{ url: ogPhoto, width: 1200, alt: product.nombre }, ogImageBranded]
     : [ogImageBranded];
 
   return {
@@ -89,7 +100,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card:        'summary_large_image',
       title:       product.nombre,
       description,
-      images: [image ?? ogImageBranded.url],
+      images: [ogPhoto ?? ogImageBranded.url],
     },
   };
 }
