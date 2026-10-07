@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Age: 0
+Cache-Control: public, max-age=86400, immutable
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://sdk.mercadopago.com https://embed.tawk.to https://va.vercel-scripts.com https://challenges.cloudflare.com https://www.clarity.ms https://scripts.clarity.ms https://*.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://embed.tawk.to; font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to; img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com; frame-src 'self' https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+Content-Type: image/jpeg
+Date: Wed, 07 Oct 2026 22:31:56 GMT
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+Referrer-Policy: strict-origin-when-cross-origin
+Server: Vercel
+Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+X-Content-Type-Options: nosniff
+X-Dns-Prefetch-Control: on
+X-Frame-Options: DENY
+X-Matched-Path: /api/og-photo
+X-Vercel-Cache: MISS
+X-Vercel-Id: gru1::gru1::kjs8n-1791412315310-f4145039eab6
+Transfer-Encoding: chunked
+

@@ -62,14 +62,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // nada más, así que siempre está disponible. La versión con marca y
   // precio queda como segunda opción para las plataformas que soportan
   // varias imágenes candidatas.
-  const ogImageBranded = {
-    url:    `${appUrl}/api/og?title=${encodeURIComponent(product.nombre)}&subtitle=${encodeURIComponent('Comprá por pack')}&price=${encodeURIComponent(
-      new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(product.precio_media_docena ?? product.precio_docena)
-    )}${image ? `&image=${encodeURIComponent(image)}` : ''}`,
-    width:  1200,
-    height: 630,
-    alt:    product.nombre,
-  };
   // ✅ FIX preview sin imagen en WhatsApp/Facebook: la foto original puede
   // pesar varios MB (WhatsApp descarta imágenes de vista previa de más de
   // ~300 KB) y /_next/image les devolvía AVIF, que esos rastreadores no
@@ -78,9 +70,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const ogPhoto = image
     ? `${appUrl}/api/og-photo?src=${encodeURIComponent(image)}&v=2&f=og.jpg`
     : null;
+  // ✅ Solo la foto del producto como og:image (sin tarjeta con título/precio).
+  // Si el producto no tiene foto, se usa la imagen de marca por defecto.
   const ogImages = ogPhoto
-    ? [{ url: ogPhoto, width: 1200, type: 'image/jpeg', alt: product.nombre }, ogImageBranded]
-    : [ogImageBranded];
+    ? [{ url: ogPhoto, type: 'image/jpeg', alt: product.nombre }]
+    : [{ url: `${appUrl}/og-default.png?v=2`, width: 1200, height: 630, alt: product.nombre }];
 
   return {
     title:      product.nombre,
@@ -97,7 +91,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card:        'summary_large_image',
       title:       product.nombre,
       description,
-      images: [ogPhoto ?? ogImageBranded.url],
+      images: [ogPhoto ?? `${appUrl}/og-default.png?v=2`],
     },
   };
 }
