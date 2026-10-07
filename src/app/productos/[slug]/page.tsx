@@ -70,16 +70,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     height: 630,
     alt:    product.nombre,
   };
-  // ✅ FIX preview sin imagen en WhatsApp: la foto original que sube el admin
-  // puede pesar varios MB (el bucket admite hasta 5 MB) y WhatsApp descarta
-  // la imagen de la vista previa si es muy pesada (el límite práctico ronda
-  // los 300 KB) — queda solo título + descripción, justo lo que se veía en
-  // algunos productos y en otros no. Se sirve la foto redimensionada a 1200 px
-  // y comprimida por el optimizador de imágenes de Next (/_next/image), que ya
-  // está habilitado para el storage de Supabase (remotePatterns). Es un
-  // archivo chico, cacheado, y se resuelve en el propio dominio.
+  // ✅ FIX preview sin imagen en WhatsApp/Facebook: la foto original puede
+  // pesar varios MB (WhatsApp descarta imágenes de vista previa de más de
+  // ~300 KB) y /_next/image les devolvía AVIF, que esos rastreadores no
+  // soportan (el Depurador de Meta lo marcaba como "tipo de contenido no
+  // válido"). /api/og-photo devuelve siempre un JPEG de 1200 px y liviano.
   const ogPhoto = image
-    ? `${appUrl}/_next/image?url=${encodeURIComponent(image)}&w=1200&q=60`
+    ? `${appUrl}/api/og-photo?src=${encodeURIComponent(image)}`
     : null;
   const ogImages = ogPhoto
     ? [{ url: ogPhoto, width: 1200, alt: product.nombre }, ogImageBranded]
