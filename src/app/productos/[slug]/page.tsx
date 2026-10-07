@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${appUrl}/api/og-photo?src=${encodeURIComponent(image)}&v=2&f=og.jpg`
     : null;
   const ogImages = ogPhoto
-    ? [{ url: ogPhoto, width: 1200, alt: product.nombre }, ogImageBranded]
+    ? [{ url: ogPhoto, width: 1200, type: 'image/jpeg', alt: product.nombre }, ogImageBranded]
     : [ogImageBranded];
 
   return {

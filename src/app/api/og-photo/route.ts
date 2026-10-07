@@ -43,7 +43,10 @@ export async function GET(req: NextRequest) {
     const upstream = await fetch(src, { signal: ctrl.signal });
     clearTimeout(timer);
 
-    if (!upstream.ok) return new NextResponse('Not found', { status: 404 });
+    if (!upstream.ok) {
+      console.error('[og-photo] origen respondió', upstream.status, src.href);
+      return new NextResponse(`og-photo: el origen respondió ${upstream.status}`, { status: 404 });
+    }
     const len = Number(upstream.headers.get('content-length') ?? 0);
     if (len > MAX_SOURCE_BYTES) return new NextResponse('Too large', { status: 413 });
 
@@ -57,21 +60,32 @@ export async function GET(req: NextRequest) {
       .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
       .flatten({ background: '#ffffff' });
 
-    let out = await base.clone().jpeg({ quality: 78, mozjpeg: true }).toBuffer();
-    for (const q of [66, 55, 45]) {
+    // JPEG "baseline" clásico (sin progresivo ni mozjpeg): es el formato que
+    // aceptan hasta los rastreadores de vista previa más estrictos.
+    const encode = (quality: number) =>
+      base.clone().jpeg({ quality, progressive: false, mozjpeg: false, chromaSubsampling: '4:2:0' }).toBuffer();
+
+    let out = await encode(78);
+    for (const q of [66, 55, 45, 38]) {
       if (out.length <= TARGET_BYTES) break;
-      out = await base.clone().jpeg({ quality: q, mozjpeg: true }).toBuffer();
+      out = await encode(q);
     }
 
     return new NextResponse(new Uint8Array(out), {
       status: 200,
       headers: {
         'Content-Type': 'image/jpeg',
-        'Content-Length': String(out.length),
         'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable',
       },
     });
-  } catch {
-    return new NextResponse('Error', { status: 502 });
+  } catch (err) {
+    // Se registra en los logs de Vercel y se devuelve el motivo en texto
+    // para poder diagnosticar abriendo la URL en el navegador.
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[og-photo] fallo al procesar', src.href, msg);
+    return new NextResponse(`og-photo error: ${msg}`, {
+      status: 502,
+      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+    });
   }
 }
