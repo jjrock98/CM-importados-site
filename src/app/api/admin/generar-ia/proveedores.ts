@@ -45,11 +45,10 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  * siguiente proveedor de la cadena en su lugar.
  */
 function parsearContenido(rawText: string): ContenidoGenerado | null {
-  const limpio = rawText
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '');
+  const sinThink = rawText.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  const ini = sinThink.indexOf('{');
+  const fin = sinThink.lastIndexOf('}');
+  const limpio = ini !== -1 && fin > ini ? sinThink.slice(ini, fin + 1) : sinThink.trim();
   try {
     const parsed = JSON.parse(limpio) as Partial<ContenidoGenerado>;
     const nombre = parsed.nombre?.trim() ?? '';
@@ -78,7 +77,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 // común en el tier gratis en horarios pico) después de los reintentos.
 // OJO: esto es distinto del fallback a OTRO PROVEEDOR (Groq/OpenRouter) —
 // este es un segundo modelo dentro de la misma cuenta/cuota de Gemini.
-const GEMINI_MODEL_FALLBACK = process.env.GEMINI_MODEL_FALLBACK || 'gemini-2.0-flash';
+const GEMINI_MODEL_FALLBACK = process.env.GEMINI_MODEL_FALLBACK || 'gemini-3.1-flash-lite';
 
 async function llamarGemini(model: string, apiKey: string, requestBody: object): Promise<Response> {
   return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -129,7 +128,7 @@ export async function generarConGemini(
       ],
       generationConfig: {
         responseMimeType: 'application/json',
-        maxOutputTokens: 700,
+        maxOutputTokens: 2048,
         // Default de Gemini ya es ~1; al reintentar ("generar otra
         // versión") lo subimos un poco más para que, además de la
         // instrucción explícita de no repetirse, también varíe por su
@@ -163,10 +162,10 @@ export async function generarConGemini(
 }
 
 // ────────────────────────────────────────────────────────────────────────
-// Groq (2do en la cadena: Llama 4 Scout, con visión, tier gratis rápido)
+// Groq (2do en la cadena: Qwen 3.8 27B, con visión; Llama 4 Scout fue dado de baja)
 // ────────────────────────────────────────────────────────────────────────
 
-const GROQ_MODEL = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b';
 
 export async function generarConGroq(
   apiKey: string,
@@ -188,7 +187,7 @@ export async function generarConGroq(
         // para nombre+2 descripciones cortas, pero evita que una
         // respuesta larga se corte a mitad del JSON (eso rompía el
         // parseo silenciosamente, ver parsearContenido más arriba).
-        max_tokens: 700,
+        max_tokens: 2048,
         ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {
@@ -258,7 +257,7 @@ export async function generarConOpenRouter(
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
-        max_tokens: 700,
+        max_tokens: 2048,
         ...(variar ? { temperature: 1.1 } : {}),
         messages: [
           {

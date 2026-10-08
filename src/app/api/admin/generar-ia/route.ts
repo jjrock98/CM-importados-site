@@ -15,7 +15,8 @@ import {
 // extra (con la principal + 2-3 ángulos alcanza para describir el
 // producto). El orden que llega ya trae la principal primero (drag&drop
 // del admin), así que tomamos las primeras `MAX_IMAGENES`.
-const MAX_IMAGENES = 4;
+// Máximo 3: es el tope de imágenes por request que acepta Groq (Qwen).
+const MAX_IMAGENES = 3;
 
 interface GenerarIABody {
   imagenes?: string[];
