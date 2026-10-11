@@ -282,7 +282,7 @@ export default function CarritoPage() {
             <div className="flex gap-2 mt-3">
               {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
                 <a
-                  href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quiero consultar sobre el envío de mi pedido.')}`}
+                  href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! ¿Quiero consultar sobre el costo del envío de mi pedido?.')}`}
                   target="_blank" rel="noopener noreferrer"
                   className="btn-secondary flex-1 text-xs py-2 justify-center gap-1.5"
                 >

@@ -17,7 +17,7 @@ export function ProductWhatsAppButton({ productName, productUrl }: Props) {
   const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
   if (!number) return null;
 
-  const mensaje = `Hola! Te consulto por "${productName}" — ¿tenés descuento llevando la caja completa cerrada?${productUrl ? `\n${productUrl}` : ''}`;
+  const mensaje = `Hola! Te consulto por "${productName}" — ¿Existe descuento llevando la caja completa cerrada? y, cuantas docenas entran en una caja?${productUrl ? `\n${productUrl}` : ''}`;
 
   return (
     <div className="space-y-2">

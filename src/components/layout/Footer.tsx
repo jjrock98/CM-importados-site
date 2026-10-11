@@ -43,7 +43,7 @@ export function Footer({ contactInfo }: Props) {
               <h3 className="font-display text-xl font-bold">{tienda}</h3>
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
-              Venta mayorista de indumentaria importada — packs por docena y curva surtida. Entregas a domicilio y retiro en local.
+              Venta mayorista de indumentaria importada — productos por docena. Entregas a domicilio y retiro en local.
             </p>
           </StaggerItem>
 
