@@ -19,13 +19,21 @@ export const runtime = 'nodejs';
 const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
 const TARGET_BYTES     = 280 * 1024;
 
+// Solo el storage de ESTE proyecto de Supabase (no cualquier *.supabase.co):
+// evita que terceros usen esta ruta para procesar imágenes ajenas con tu cuota.
+function allowedHost(): string | null {
+  try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').hostname; }
+  catch { return null; }
+}
+
 function isAllowedSource(raw: string | null): URL | null {
   if (!raw) return null;
   try {
     const u = new URL(raw);
+    const host = allowedHost();
     const ok =
       u.protocol === 'https:' &&
-      u.hostname.endsWith('.supabase.co') &&
+      (host ? u.hostname === host : u.hostname.endsWith('.supabase.co')) &&
       u.pathname.startsWith('/storage/v1/object/public/');
     return ok ? u : null;
   } catch {

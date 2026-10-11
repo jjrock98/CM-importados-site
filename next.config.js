@@ -15,6 +15,16 @@ const securityHeaders = [
   { key: 'Content-Security-Policy', value: storefrontCsp() },
 ];
 
+// Host del storage de ESTE proyecto de Supabase. Antes se permitía cualquier
+// "*.supabase.co", lo que dejaba a cualquiera usar el optimizador de imágenes
+// de este sitio (y gastar su cuota de Vercel) con fotos de otros proyectos.
+// Si la variable no está definida en el build, se vuelve al comodín para no
+// romper las imágenes.
+const supabaseHost = (() => {
+  try { return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname; }
+  catch { return '*.supabase.co'; }
+})();
+
 const nextConfig = {
   // ✅ FIX: Next detectó un package-lock.json en C:\Users\Caro (fuera del
   // repo de este proyecto, en C:\Users\Caro\Documents\proyectoNuevoclaude\
@@ -50,11 +60,21 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co', pathname: '/storage/v1/object/public/**' },
+      { protocol: 'https', hostname: supabaseHost, pathname: '/storage/v1/object/public/**' },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'via.placeholder.com' },
     ],
     formats: ['image/avif', 'image/webp'],
+    // Ahorro de transferencia/transformaciones en Vercel (plan Hobby):
+    // - minimumCacheTTL 31 días: una imagen ya optimizada no se vuelve a
+    //   procesar por mucho tiempo (las fotos de producto casi nunca cambian
+    //   bajo la misma URL).
+    // - menos tamaños permitidos: cada ancho distinto es una copia que hay que
+    //   generar y guardar, y limita lo que un bot puede pedir (antes llegaba a
+    //   3840 px).
+    minimumCacheTTL: 2678400,
+    deviceSizes: [640, 828, 1080, 1200],
+    imageSizes:  [64, 128, 256, 384],
   },
 
   async redirects() {
@@ -73,6 +93,11 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/(.*)',               headers: securityHeaders },
+      // Archivos estáticos de /public que casi no cambian: que el navegador y
+      // la CDN los reutilicen en vez de pedirlos de nuevo en cada visita.
+      { source: '/og-:name.:ext(png|jpg)', headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
+      { source: '/logo.png',              headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
+      { source: '/icons/:path*',          headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
       { source: '/api/webhooks/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }, ...securityHeaders] },
     ];
   },
