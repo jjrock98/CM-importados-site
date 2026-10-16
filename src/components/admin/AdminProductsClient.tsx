@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { Plus, Pencil, Trash2, X, Upload, Package, Search, Video, Copy, TrendingDown, FileDown } from 'lucide-react';
 import { ProductVariantsManager } from './ProductVariantsManager';
+import { ImageEditorModal } from './ImageEditorModal';
 import { createClient } from '@/lib/supabase/client';
 import { slugify, formatPrice } from '@/utils';
 import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
@@ -33,7 +34,19 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   const [isNew, setIsNew]       = useState(false);
   const [saving, setSaving]     = useState(false);
   const [search, setSearch]     = useState('');
-  const [uploading, setUploading] = useState(false);
+  // ── Editor de imágenes (ver / recortar / rotar) ───────────────────────
+  // Imagen ya subida que se está editando (se abre al tocar una miniatura).
+  const [editorTarget, setEditorTarget] = useState<{ url: string } | null>(null);
+  // Cola de archivos recién elegidos: se muestran de a uno en el editor,
+  // ANTES de subirlos (para recortarlos o subirlos tal cual).
+  const [newQueue, setNewQueue] = useState<File[]>([]);
+  const [editorBusy, setEditorBusy] = useState(false);
+  // Limpieza del storage: imágenes reemplazadas (se borran recién cuando el
+  // producto se guarda) e imágenes subidas en esta sesión de edición (se
+  // borran si se cancela o si quedaron fuera del producto).
+  const replacedUrlsRef = useRef<string[]>([]);
+  const sessionUploadedRef = useRef<string[]>([]);
+  const queueUploadedCount = useRef(0);
   const [generandoIA, setGenerandoIA] = useState(false);
   // Historial de versiones generadas por IA para el producto que se está
   // editando: permite "Generar otra versión" cuando la actual no convence,
@@ -265,6 +278,34 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
 
   const close = () => { setEditing(null); setIsNew(false); setHistorialIA([]); setHistorialIAIndex(-1); };
 
+  /**
+   * Pide al servidor que borre del storage las imágenes que ya no usa nadie.
+   * El servidor verifica que no estén en otro producto, en una variante ni en
+   * pedidos viejos antes de borrar. Es "mejor esfuerzo": si falla, no afecta
+   * al admin (solo queda un archivo de más en el storage).
+   */
+  const cleanupImages = async (urls: string[]) => {
+    const list = [...new Set(urls)];
+    if (list.length === 0) return;
+    try {
+      await fetch('/api/admin/product-images/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: list }),
+      });
+    } catch { /* no crítico */ }
+  };
+
+  /** Cancela la edición: descarta cambios y borra lo que se subió sin guardar. */
+  const cancelEdit = () => {
+    void cleanupImages(sessionUploadedRef.current);
+    replacedUrlsRef.current = [];
+    sessionUploadedRef.current = [];
+    setNewQueue([]);
+    setEditorTarget(null);
+    close();
+  };
+
   const setField = (k: keyof Product) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const val = e.target.type === 'number' ? Number(e.target.value) :
                 e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
@@ -279,34 +320,90 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     setEditing((prev) => ({ ...prev!, [k]: val.split(',').map((s) => s.trim()).filter(Boolean) }));
   };
 
-  const uploadImages = async (files: FileList) => {
-    setUploading(true);
-    const urls: string[] = [];
-    for (const file of Array.from(files)) {
-      // ✅ Antes solo se reemplazaban espacios por guiones. Nombres de
-      // archivo con paréntesis, acentos, apóstrofes, etc. (típico de
-      // fotos sacadas con el celular, ej. "IMG_2024 (3).jpg") quedaban
-      // con esos caracteres literales en la URL pública. Eso no rompe el
-      // <img src=...> normal, pero SÍ rompe el `background-image:
-      // url(...)` que usa la lupa de zoom (el paréntesis cierra el token
-      // url() antes de tiempo) — el resultado es un panel de zoom
-      // completamente negro, sin la imagen. Ahora se sanitiza todo el
-      // nombre: se sacan los acentos y se reemplaza cualquier caracter
-      // que no sea letra/número/punto/guion por "-".
-      const cleanName = file.name
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // saca acentos (á→a, ñ→n, etc.)
-        .replace(/[^a-zA-Z0-9.-]+/g, '-')                  // cualquier otro caracter → "-"
-        .replace(/-+/g, '-');                              // colapsa guiones repetidos
-      const path = `${Date.now()}-${cleanName}`;
-      const { error } = await supabase.storage.from('products').upload(path, file, { upsert: true });
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(path);
-        urls.push(publicUrl);
-      }
+  /** Sube un archivo/blob al bucket y devuelve su URL pública (o null si falla). */
+  const uploadToStorage = async (blob: Blob, fileName: string): Promise<string | null> => {
+    // ✅ Se sanitiza el nombre: nombres con paréntesis, acentos, apóstrofes, etc.
+    // (típico de fotos del celular, ej. "IMG_2024 (3).jpg") quedaban literales
+    // en la URL pública y rompían el `background-image: url(...)` de la lupa de
+    // zoom (el paréntesis cierra el token url() antes de tiempo → panel negro).
+    // Se sacan los acentos y cualquier caracter que no sea letra/número/punto/
+    // guion se reemplaza por "-".
+    const cleanName = fileName
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // saca acentos (á→a, ñ→n, etc.)
+      .replace(/[^a-zA-Z0-9.-]+/g, '-')                  // cualquier otro caracter → "-"
+      .replace(/-+/g, '-');                              // colapsa guiones repetidos
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}-${cleanName}`;
+    const { error } = await supabase.storage
+      .from('products')
+      .upload(path, blob, { upsert: false, contentType: blob.type || 'image/jpeg' });
+    if (error) return null;
+    const { data: { publicUrl } } = supabase.storage.from('products').getPublicUrl(path);
+    sessionUploadedRef.current.push(publicUrl);
+    return publicUrl;
+  };
+
+  /** El admin eligió archivos: se encolan para pasarlos por el editor antes de subir. */
+  const startUpload = (files: FileList) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (list.length === 0) return;
+    queueUploadedCount.current = 0;
+    setNewQueue(list);
+  };
+
+  /** Pasa a la siguiente foto de la cola (o termina y avisa cuántas se subieron). */
+  const advanceQueue = () => {
+    const rest = newQueue.slice(1);
+    setNewQueue(rest);
+    if (rest.length === 0) {
+      const n = queueUploadedCount.current;
+      if (n > 0) toast.success(`${n} imagen${n !== 1 ? 'es' : ''} subida${n !== 1 ? 's' : ''}`);
     }
-    setEditing((prev) => ({ ...prev!, imagenes: [...(prev?.imagenes ?? []), ...urls] }));
-    setUploading(false);
-    toast.success(`${urls.length} imagen${urls.length !== 1 ? 'es' : ''} subida${urls.length !== 1 ? 's' : ''}`);
+  };
+
+  /** Foto nueva: `result` es la versión editada, o null para subir el original tal cual. */
+  const handleNewConfirm = async (result: Blob | null) => {
+    const file = newQueue[0];
+    if (!file) return;
+    setEditorBusy(true);
+    try {
+      const url = result
+        ? await uploadToStorage(result, `${file.name.replace(/\.[^.]+$/, '') || 'imagen'}.jpg`)
+        : await uploadToStorage(file, file.name);
+      if (url) {
+        queueUploadedCount.current += 1;
+        setEditing((prev) => ({ ...prev!, imagenes: [...(prev?.imagenes ?? []), url] }));
+      } else {
+        toast.error(`No se pudo subir "${file.name}"`);
+      }
+    } finally {
+      setEditorBusy(false);
+      advanceQueue();
+    }
+  };
+
+  /**
+   * Imagen ya subida, editada: se sube la versión nueva y reemplaza a la vieja
+   * en el mismo lugar (mismo orden). La vieja se borra del storage recién
+   * cuando el producto se guarda (ver handleSave): si se cancela el formulario,
+   * el producto sigue apuntando a la original y no se rompe nada.
+   */
+  const handleExistingConfirm = async (result: Blob | null) => {
+    if (!editorTarget || !result) return;
+    const oldUrl = editorTarget.url;
+    setEditorBusy(true);
+    try {
+      const newUrl = await uploadToStorage(result, 'imagen-editada.jpg');
+      if (!newUrl) { toast.error('No se pudo subir la imagen editada'); return; }
+      setEditing((prev) => ({
+        ...prev!,
+        imagenes: (prev?.imagenes ?? []).map((u) => (u === oldUrl ? newUrl : u)),
+      }));
+      replacedUrlsRef.current.push(oldUrl);
+      setEditorTarget(null);
+      toast.success('Imagen actualizada — se aplica al guardar el producto');
+    } finally {
+      setEditorBusy(false);
+    }
   };
 
   const removeImage = (url: string) => {
@@ -411,6 +508,15 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
         setProducts((prev) => prev.map((p) => p.id === editing.id ? data : p));
         toast.success('Producto actualizado');
       }
+      // Producto guardado: ahora sí se borran del storage las imágenes
+      // reemplazadas y las que se subieron y quedaron fuera del producto.
+      const finalImgs = payload.imagenes;
+      void cleanupImages([
+        ...replacedUrlsRef.current,
+        ...sessionUploadedRef.current.filter((u) => !finalImgs.includes(u)),
+      ]);
+      replacedUrlsRef.current = [];
+      sessionUploadedRef.current = [];
       close();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al guardar');
@@ -556,21 +662,45 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
         </div>
       </div>
 
+      {/* Editor de imágenes: fotos nuevas (antes de subir) */}
+      {newQueue[0] && (
+        <ImageEditorModal
+          key={`new-${newQueue[0].name}-${newQueue[0].size}-${newQueue.length}`}
+          source={newQueue[0]}
+          mode="new"
+          title={`${newQueue[0].name}${newQueue.length > 1 ? ` — faltan ${newQueue.length - 1} más` : ''}`}
+          busy={editorBusy}
+          onCancel={advanceQueue}
+          onConfirm={handleNewConfirm}
+        />
+      )}
+      {/* Editor de imágenes: imagen ya subida (se abre al tocar una miniatura) */}
+      {editorTarget && (
+        <ImageEditorModal
+          key={editorTarget.url}
+          source={editorTarget.url}
+          mode="existing"
+          busy={editorBusy}
+          onCancel={() => setEditorTarget(null)}
+          onConfirm={handleExistingConfirm}
+        />
+      )}
+
       {/* Edit/Create modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-fade-in"
-          onClick={(e) => e.target === e.currentTarget && close()}>
+          onClick={(e) => e.target === e.currentTarget && cancelEdit()}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface shadow-2xl animate-scale-in">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <h2 className="font-semibold">{isNew ? 'Nuevo producto' : 'Editar producto'}</h2>
-              <button onClick={close} className="btn-ghost p-1.5"><X size={18} /></button>
+              <button onClick={cancelEdit} className="btn-ghost p-1.5"><X size={18} /></button>
             </div>
 
             <div className="p-6 space-y-5">
               {/* Images */}
               <div>
                 <p className="text-xs font-medium mb-2">
-                  Imágenes <span className="text-muted font-normal">(arrastrá para reordenar — la primera es la principal)</span>
+                  Imágenes <span className="text-muted font-normal">(arrastrá para reordenar — la primera es la principal — tocá una para verla, recortarla o rotarla)</span>
                 </p>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {(editing.imagenes ?? []).map((url, index) => (
@@ -581,7 +711,9 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                       onDragOver={handleImgDragOver(index)}
                       onDrop={handleImgDrop(index)}
                       onDragEnd={handleImgDragEnd}
-                      className={`relative h-16 w-16 cursor-grab active:cursor-grabbing rounded-lg transition-opacity ring-offset-2 ${
+                      onClick={() => setEditorTarget({ url })}
+                      title="Tocá para ver, recortar o rotar"
+                      className={`relative h-16 w-16 cursor-pointer active:cursor-grabbing rounded-lg transition-opacity ring-offset-2 ${
                         draggedImgIndex === index ? 'opacity-40' : ''
                       } ${dragOverImgIndex === index && draggedImgIndex !== index ? 'ring-2 ring-brand-400' : ''}`}
                     >
@@ -591,7 +723,10 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                           Principal
                         </span>
                       )}
-                      <button onClick={() => removeImage(url)}
+                      <span className="pointer-events-none absolute left-1 top-1 rounded-full bg-black/60 p-1 text-white">
+                        <Pencil size={9} />
+                      </span>
+                      <button onClick={(e) => { e.stopPropagation(); removeImage(url); }}
                         className="absolute -right-1 -top-1 rounded-full bg-red-500 p-0.5 text-white">
                         <X size={10} />
                       </button>
@@ -599,8 +734,8 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
                   ))}
                   <label className="flex h-16 w-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border hover:border-brand-400 transition-colors">
                     <input type="file" multiple accept="image/*" className="hidden"
-                      onChange={(e) => e.target.files && uploadImages(e.target.files)} />
-                    {uploading ? <span className="text-xs text-muted">...</span> : <Upload size={16} className="text-muted" />}
+                      onChange={(e) => { if (e.target.files) startUpload(e.target.files); e.target.value = ''; }} />
+                    {editorBusy ? <span className="text-xs text-muted">...</span> : <Upload size={16} className="text-muted" />}
                   </label>
                 </div>
                 {(editing.imagenes?.length ?? 0) > 0 && (
@@ -849,7 +984,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
             </div>
 
             <div className="flex justify-end gap-3 border-t border-border px-6 py-4">
-              <button onClick={close} className="btn-secondary">Cancelar</button>
+              <button onClick={cancelEdit} className="btn-secondary">Cancelar</button>
               <button onClick={handleSave} disabled={saving} className="btn-primary">
                 {saving ? 'Guardando…' : isNew ? 'Crear producto' : 'Guardar cambios'}
               </button>
