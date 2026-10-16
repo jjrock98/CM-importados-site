@@ -41,10 +41,10 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   // ANTES de subirlos (para recortarlos o subirlos tal cual).
   const [newQueue, setNewQueue] = useState<File[]>([]);
   const [editorBusy, setEditorBusy] = useState(false);
-  // Limpieza del storage: imágenes reemplazadas (se borran recién cuando el
-  // producto se guarda) e imágenes subidas en esta sesión de edición (se
-  // borran si se cancela o si quedaron fuera del producto).
-  const replacedUrlsRef = useRef<string[]>([]);
+  // Limpieza del storage: imágenes reemplazadas o quitadas con la X (se borran
+  // recién cuando el producto se guarda) e imágenes subidas en esta sesión de
+  // edición (se borran si se cancela o si quedaron fuera del producto).
+  const staleUrlsRef = useRef<string[]>([]);
   const sessionUploadedRef = useRef<string[]>([]);
   const queueUploadedCount = useRef(0);
   const [generandoIA, setGenerandoIA] = useState(false);
@@ -299,7 +299,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
   /** Cancela la edición: descarta cambios y borra lo que se subió sin guardar. */
   const cancelEdit = () => {
     void cleanupImages(sessionUploadedRef.current);
-    replacedUrlsRef.current = [];
+    staleUrlsRef.current = [];
     sessionUploadedRef.current = [];
     setNewQueue([]);
     setEditorTarget(null);
@@ -398,7 +398,7 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
         ...prev!,
         imagenes: (prev?.imagenes ?? []).map((u) => (u === oldUrl ? newUrl : u)),
       }));
-      replacedUrlsRef.current.push(oldUrl);
+      staleUrlsRef.current.push(oldUrl);
       setEditorTarget(null);
       toast.success('Imagen actualizada — se aplica al guardar el producto');
     } finally {
@@ -408,6 +408,9 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
 
   const removeImage = (url: string) => {
     setEditing((prev) => ({ ...prev!, imagenes: prev!.imagenes!.filter((i) => i !== url) }));
+    // El archivo se borra del storage recién al guardar el producto (y solo si
+    // ningún otro producto, variante o pedido lo usa — lo verifica el servidor).
+    staleUrlsRef.current.push(url);
   };
 
   // Reordena el array de imágenes moviendo la de `from` a la posición `to`.
@@ -512,10 +515,10 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
       // reemplazadas y las que se subieron y quedaron fuera del producto.
       const finalImgs = payload.imagenes;
       void cleanupImages([
-        ...replacedUrlsRef.current,
+        ...staleUrlsRef.current,
         ...sessionUploadedRef.current.filter((u) => !finalImgs.includes(u)),
       ]);
-      replacedUrlsRef.current = [];
+      staleUrlsRef.current = [];
       sessionUploadedRef.current = [];
       close();
     } catch (err: unknown) {

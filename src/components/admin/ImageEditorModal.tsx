@@ -16,12 +16,13 @@ import toast from 'react-hot-toast';
  *                     imagen nueva que la reemplaza (el que lo usa se encarga de
  *                     borrar la vieja del storage).
  *
- * El resultado siempre sale como JPEG, con un máximo de 1600 px de lado: pesa
- * mucho menos que una foto de celular y alcanza de sobra para el catálogo.
+ * El resultado siempre sale como JPEG (calidad 0.8), con un máximo de 1600 px de
+ * lado: pesa mucho menos que una foto de celular (típicamente 200-300 KB) y
+ * alcanza de sobra para el catálogo y el zoom.
  */
 
 const MAX_SIDE = 1600;
-const JPEG_QUALITY = 0.88;
+const JPEG_QUALITY = 0.8; // ~25-30% menos peso que 0.88, sin diferencia visible en fotos de producto
 
 type AspectKey = 'libre' | '1:1' | '4:5' | '3:4';
 const ASPECTS: { key: AspectKey; label: string; value: number | undefined }[] = [
@@ -114,6 +115,9 @@ export function ImageEditorModal({ source, mode, title, onCancel, onConfirm, bus
 
   const hasCrop = !!crop && crop.width > 0.5 && crop.height > 0.5;
   const hasChanges = hasCrop || rotated;
+  // En una imagen ya subida se puede guardar aunque no se haya recortado nada:
+  // sirve para "optimizar" (reducir peso) una foto pesada sin tocar el encuadre.
+  const canConfirm = hasChanges || mode === 'existing';
 
   const selectAspect = (key: AspectKey) => {
     setAspect(key);
@@ -160,7 +164,7 @@ export function ImageEditorModal({ source, mode, title, onCancel, onConfirm, bus
 
   const confirm = async () => {
     const img = imgRef.current;
-    if (!img || !hasChanges || working) return;
+    if (!img || !canConfirm || working) return;
     setWorking(true);
     try {
       const nw = img.naturalWidth;
@@ -180,6 +184,7 @@ export function ImageEditorModal({ source, mode, title, onCancel, onConfirm, bus
       // Fondo blanco: si la imagen tiene transparencia (PNG) no queda negra en el JPEG.
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.imageSmoothingQuality = 'high'; // mejor calidad al reducir
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
       onConfirm(await canvasToBlob(canvas));
     } catch {
@@ -308,8 +313,12 @@ export function ImageEditorModal({ source, mode, title, onCancel, onConfirm, bus
                 Subir sin editar
               </button>
             )}
-            <button type="button" onClick={confirm} disabled={disabled || !hasChanges} className="btn-primary">
-              {busy || working ? 'Procesando…' : mode === 'new' ? 'Recortar y subir' : 'Guardar cambios'}
+            <button type="button" onClick={confirm} disabled={disabled || !canConfirm || !workUrl} className="btn-primary">
+              {busy || working
+                ? 'Procesando…'
+                : mode === 'new'
+                  ? 'Recortar y subir'
+                  : hasChanges ? 'Guardar cambios' : 'Optimizar sin recortar'}
             </button>
           </div>
         </div>
