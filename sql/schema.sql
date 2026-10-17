@@ -334,51 +334,77 @@ RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER AS $$
 $$;
 
 -- profiles
+DROP POLICY IF EXISTS "profiles_select_own" ON profiles;
 CREATE POLICY "profiles_select_own"    ON profiles FOR SELECT USING (auth.uid() = id OR is_admin());
+DROP POLICY IF EXISTS "profiles_update_own" ON profiles;
 CREATE POLICY "profiles_update_own"    ON profiles FOR UPDATE USING (auth.uid() = id OR is_admin()) WITH CHECK (auth.uid() = id OR is_admin());
+DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
 CREATE POLICY "profiles_insert_own"    ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- products (public read, admin write)
+DROP POLICY IF EXISTS "products_public_read" ON products;
 CREATE POLICY "products_public_read"   ON products FOR SELECT USING (activo = TRUE OR is_admin());
+DROP POLICY IF EXISTS "products_admin_insert" ON products;
 CREATE POLICY "products_admin_insert"  ON products FOR INSERT WITH CHECK (is_admin());
+DROP POLICY IF EXISTS "products_admin_update" ON products;
 CREATE POLICY "products_admin_update"  ON products FOR UPDATE USING (is_admin());
+DROP POLICY IF EXISTS "products_admin_delete" ON products;
 CREATE POLICY "products_admin_delete"  ON products FOR DELETE USING (is_admin());
 
 -- orders
+DROP POLICY IF EXISTS "orders_select" ON orders;
 CREATE POLICY "orders_select"          ON orders FOR SELECT USING (user_id = auth.uid() OR is_admin());
+DROP POLICY IF EXISTS "orders_insert_auth" ON orders;
 CREATE POLICY "orders_insert_auth"     ON orders FOR INSERT WITH CHECK (user_id = auth.uid() OR auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "orders_update_admin" ON orders;
 CREATE POLICY "orders_update_admin"    ON orders FOR UPDATE USING (is_admin());
 
 -- order_items
+DROP POLICY IF EXISTS "order_items_select" ON order_items;
 CREATE POLICY "order_items_select"     ON order_items FOR SELECT USING (
   EXISTS (SELECT 1 FROM orders o WHERE o.id = order_id AND (o.user_id = auth.uid() OR is_admin()))
 );
+DROP POLICY IF EXISTS "order_items_insert" ON order_items;
 CREATE POLICY "order_items_insert"     ON order_items FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM orders o WHERE o.id = order_id AND o.user_id = auth.uid())
 );
 
 -- wishlists
+DROP POLICY IF EXISTS "wishlists_own" ON wishlists;
 CREATE POLICY "wishlists_own"          ON wishlists FOR ALL USING (user_id = auth.uid());
 
 -- shipping_zones (public read, admin write)
+DROP POLICY IF EXISTS "shipping_zones_read" ON shipping_zones;
 CREATE POLICY "shipping_zones_read"    ON shipping_zones FOR SELECT USING (activo = TRUE OR is_admin());
+DROP POLICY IF EXISTS "shipping_zones_admin" ON shipping_zones;
 CREATE POLICY "shipping_zones_admin"   ON shipping_zones FOR ALL USING (is_admin());
 
 -- contact_messages (insert public, read admin)
+DROP POLICY IF EXISTS "contact_messages_insert" ON contact_messages;
 CREATE POLICY "contact_messages_insert" ON contact_messages FOR INSERT WITH CHECK (TRUE);
+DROP POLICY IF EXISTS "contact_messages_admin" ON contact_messages;
 CREATE POLICY "contact_messages_admin"  ON contact_messages FOR SELECT USING (is_admin());
+DROP POLICY IF EXISTS "contact_messages_update" ON contact_messages;
 CREATE POLICY "contact_messages_update" ON contact_messages FOR UPDATE USING (is_admin());
 
 -- contact_info, location_info, bank_info (read public, write admin)
+DROP POLICY IF EXISTS "contact_info_read" ON contact_info;
 CREATE POLICY "contact_info_read"      ON contact_info    FOR SELECT USING (TRUE);
+DROP POLICY IF EXISTS "contact_info_admin" ON contact_info;
 CREATE POLICY "contact_info_admin"     ON contact_info    FOR ALL    USING (is_admin());
+DROP POLICY IF EXISTS "location_info_read" ON location_info;
 CREATE POLICY "location_info_read"     ON location_info   FOR SELECT USING (TRUE);
+DROP POLICY IF EXISTS "location_info_admin" ON location_info;
 CREATE POLICY "location_info_admin"    ON location_info   FOR ALL    USING (is_admin());
+DROP POLICY IF EXISTS "bank_info_read" ON bank_info;
 CREATE POLICY "bank_info_read"         ON bank_info       FOR SELECT USING (TRUE);
+DROP POLICY IF EXISTS "bank_info_admin" ON bank_info;
 CREATE POLICY "bank_info_admin"        ON bank_info       FOR ALL    USING (is_admin());
 
 -- site_settings (read public, write admin)
+DROP POLICY IF EXISTS "site_settings_read" ON site_settings;
 CREATE POLICY "site_settings_read"     ON site_settings   FOR SELECT USING (TRUE);
+DROP POLICY IF EXISTS "site_settings_admin" ON site_settings;
 CREATE POLICY "site_settings_admin"    ON site_settings   FOR ALL    USING (is_admin());
 
 -- Storage bucket for product images and receipts
@@ -388,10 +414,15 @@ VALUES
   ('comprobantes','comprobantes',FALSE, 10485760, ARRAY['image/jpeg','image/png','image/pdf','image/webp'])
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "products_public_read" ON storage.objects;
 CREATE POLICY "products_public_read"     ON storage.objects FOR SELECT USING (bucket_id = 'products');
+DROP POLICY IF EXISTS "products_admin_upload" ON storage.objects;
 CREATE POLICY "products_admin_upload"    ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products' AND is_admin());
+DROP POLICY IF EXISTS "products_admin_delete" ON storage.objects;
 CREATE POLICY "products_admin_delete"    ON storage.objects FOR DELETE USING (bucket_id = 'products' AND is_admin());
+DROP POLICY IF EXISTS "comprobantes_auth_upload" ON storage.objects;
 CREATE POLICY "comprobantes_auth_upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'comprobantes' AND auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "comprobantes_own_read" ON storage.objects;
 CREATE POLICY "comprobantes_own_read"    ON storage.objects FOR SELECT USING (bucket_id = 'comprobantes' AND (auth.uid()::TEXT = (storage.foldername(name))[1] OR is_admin()));
 
 -- ============================================================
@@ -508,6 +539,7 @@ CREATE INDEX IF NOT EXISTS idx_cart_reservations_expires   ON cart_reservations(
 CREATE INDEX IF NOT EXISTS idx_cart_reservations_product   ON cart_reservations(product_id);
 
 ALTER TABLE cart_reservations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access on cart_reservations" ON cart_reservations;
 CREATE POLICY "Service role full access on cart_reservations"
   ON cart_reservations FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -639,8 +671,10 @@ CREATE TABLE IF NOT EXISTS stock_notifications (
 CREATE INDEX IF NOT EXISTS idx_stock_notif_product ON stock_notifications(product_id);
 
 ALTER TABLE stock_notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can subscribe to stock notifications" ON stock_notifications;
 CREATE POLICY "Anyone can subscribe to stock notifications"
   ON stock_notifications FOR INSERT TO anon, authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "Service role full access on stock_notifications" ON stock_notifications;
 CREATE POLICY "Service role full access on stock_notifications"
   ON stock_notifications FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -656,9 +690,11 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users manage own push subscriptions" ON push_subscriptions;
 CREATE POLICY "Users manage own push subscriptions"
   ON push_subscriptions FOR ALL TO authenticated
   USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "Service role full access on push_subscriptions" ON push_subscriptions;
 CREATE POLICY "Service role full access on push_subscriptions"
   ON push_subscriptions FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -735,6 +771,7 @@ CREATE INDEX IF NOT EXISTS idx_notificaciones_admin_order ON notificaciones_admi
 CREATE INDEX IF NOT EXISTS idx_notificaciones_admin_tipo  ON notificaciones_admin(tipo, created_at DESC);
 
 ALTER TABLE notificaciones_admin ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Service role full access on notificaciones_admin" ON notificaciones_admin;
 CREATE POLICY "Service role full access on notificaciones_admin"
   ON notificaciones_admin FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -855,8 +892,10 @@ CREATE INDEX IF NOT EXISTS idx_product_variants_product ON product_variants(prod
 CREATE INDEX IF NOT EXISTS idx_product_variants_stock   ON product_variants(product_id, stock_unidades) WHERE activo = TRUE;
 
 ALTER TABLE product_variants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Cualquiera puede ver variantes activas" ON product_variants;
 CREATE POLICY "Cualquiera puede ver variantes activas"
   ON product_variants FOR SELECT TO anon, authenticated USING (activo = TRUE);
+DROP POLICY IF EXISTS "Service role full access on product_variants" ON product_variants;
 CREATE POLICY "Service role full access on product_variants"
   ON product_variants FOR ALL TO service_role USING (true) WITH CHECK (true);
 
@@ -1506,11 +1545,13 @@ CREATE INDEX IF NOT EXISTS idx_clientes_mayoristas_profile ON clientes_mayorista
 ALTER TABLE clientes_mayoristas ENABLE ROW LEVEL SECURITY;
 
 -- El cliente puede ver sus propias condiciones (para mostrarle su descuento/saldo)
+DROP POLICY IF EXISTS "cliente_ve_su_condicion" ON clientes_mayoristas;
 CREATE POLICY "cliente_ve_su_condicion" ON clientes_mayoristas
   FOR SELECT USING (auth.uid() = profile_id);
 
 -- Solo admin gestiona (INSERT/UPDATE/DELETE) — se hace vía API con service_role,
 -- pero se deja la policy explícita por si se consulta directo con RLS activo.
+DROP POLICY IF EXISTS "admin_gestiona_clientes_mayoristas" ON clientes_mayoristas;
 CREATE POLICY "admin_gestiona_clientes_mayoristas" ON clientes_mayoristas
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND rol = 'admin')
@@ -1705,9 +1746,11 @@ CREATE INDEX IF NOT EXISTS idx_movimientos_cc_profile ON movimientos_cuenta_corr
 ALTER TABLE movimientos_cuenta_corriente ENABLE ROW LEVEL SECURITY;
 
 -- El cliente ve su propio historial (para el estado de cuenta en /perfil)
+DROP POLICY IF EXISTS "cliente_ve_sus_movimientos" ON movimientos_cuenta_corriente;
 CREATE POLICY "cliente_ve_sus_movimientos" ON movimientos_cuenta_corriente
   FOR SELECT USING (auth.uid() = profile_id);
 
+DROP POLICY IF EXISTS "admin_gestiona_movimientos_cc" ON movimientos_cuenta_corriente;
 CREATE POLICY "admin_gestiona_movimientos_cc" ON movimientos_cuenta_corriente
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND rol = 'admin')
@@ -1787,3 +1830,294 @@ BEGIN
   RETURN v_nuevo_saldo;
 END;
 $$;
+
+
+-- >>> PARCHE: sql/fixes/2026-10-16_hardening.sql
+-- ══════════════════════════════════════════════════════════════════════
+-- HARDENING 2026-10-16 — seguridad + consistencia de stock
+-- Correr UNA vez en Supabase → SQL Editor → Run. Es idempotente
+-- (seguro de re-correr). No toca tablas ni datos.
+--
+-- Contenido:
+--   1. Reemplazo de descontar_stock_seguro / reservar_stock_orden_manual:
+--      rollback real si falla un item (antes quedaban descuentos parciales).
+--   2. Trigger anti-escalada de rol: ahora permite al SQL Editor/postgres.
+--   3. orders / order_items: se eliminan las policies de INSERT desde cliente
+--      (los pedidos se crean solo desde el backend con service role).
+--   4. Bucket "comprobantes": MIME correcto para PDF.
+--   5. REVOKE de EXECUTE en funciones internas (solo service_role) y
+--      search_path fijo en todas las SECURITY DEFINER.
+--
+-- Va en este orden a propósito: las funciones se redefinen ANTES del
+-- REVOKE/ALTER final para que los permisos queden bien al terminar.
+-- ══════════════════════════════════════════════════════════════════════
+
+
+-- ── 1a. descontar_stock_seguro (Mercado Pago, webhook approved) ───────
+CREATE OR REPLACE FUNCTION descontar_stock_seguro(p_order_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_order        orders%ROWTYPE;
+  v_item         order_items%ROWTYPE;
+  v_stock        INT;
+  v_errors       TEXT[] := '{}';
+  v_curva_result JSONB;
+  v_item_result  JSONB;
+BEGIN
+  SELECT * INTO v_order FROM orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Pedido no encontrado');
+  END IF;
+
+  IF v_order.stock_descontado THEN
+    RETURN jsonb_build_object('success', true, 'message', 'Stock ya descontado');
+  END IF;
+
+  -- Verificación: variante única o producto plano (los packs surtidos se
+  -- validan dentro de _descontar_stock_curva).
+  FOR v_item IN SELECT * FROM order_items WHERE order_id = p_order_id LOOP
+    IF v_item.curva_breakdown IS NOT NULL THEN
+      CONTINUE;
+    ELSIF v_item.variant_id IS NOT NULL THEN
+      SELECT stock_unidades INTO v_stock FROM product_variants WHERE id = v_item.variant_id FOR UPDATE;
+    ELSE
+      SELECT stock_unidades INTO v_stock FROM products WHERE id = v_item.product_id FOR UPDATE;
+    END IF;
+
+    IF v_stock IS NULL OR v_stock < v_item.unidades THEN
+      v_errors := array_append(v_errors,
+        'Stock insuficiente para "' || v_item.nombre_snap ||
+        COALESCE(' (' || v_item.variant_snap || ')', '') ||
+        '": disponible=' || COALESCE(v_stock, 0)::TEXT || ', requerido=' || v_item.unidades::TEXT
+      );
+    END IF;
+  END LOOP;
+
+  IF array_length(v_errors, 1) > 0 THEN
+    RETURN jsonb_build_object('success', false, 'errors', to_jsonb(v_errors));
+  END IF;
+
+  -- Descuento real. Cualquier falla acá hace RAISE EXCEPTION: el bloque
+  -- EXCEPTION de abajo revierte TODO lo descontado hasta ese punto.
+  FOR v_item IN SELECT * FROM order_items WHERE order_id = p_order_id LOOP
+    IF v_item.curva_breakdown IS NOT NULL THEN
+      v_curva_result := _descontar_stock_curva(v_item.curva_breakdown);
+      IF NOT (v_curva_result->>'ok')::BOOLEAN THEN
+        RAISE EXCEPTION 'Stock insuficiente para completar el pack surtido de "%"', v_item.nombre_snap;
+      END IF;
+    ELSE
+      v_item_result := _descontar_stock_item(v_item.variant_id, v_item.product_id, v_item.unidades);
+      IF NOT (v_item_result->>'ok')::BOOLEAN THEN
+        RAISE EXCEPTION 'Stock insuficiente para "%"', v_item.nombre_snap;
+      END IF;
+    END IF;
+  END LOOP;
+
+  UPDATE orders SET stock_descontado = TRUE, updated_at = NOW() WHERE id = p_order_id;
+  RETURN jsonb_build_object('success', true, 'message', 'Stock descontado correctamente');
+
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END;
+$$;
+
+
+-- ── 1b. reservar_stock_orden_manual (transferencia / efectivo / cta cte) ──
+CREATE OR REPLACE FUNCTION reservar_stock_orden_manual(p_order_id UUID)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_order        orders%ROWTYPE;
+  v_item         order_items%ROWTYPE;
+  v_stock        INT;
+  v_faltantes    JSONB := '[]'::JSONB;
+  v_curva_result JSONB;
+  v_item_result  JSONB;
+BEGIN
+  SELECT * INTO v_order FROM orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Pedido no encontrado');
+  END IF;
+
+  IF v_order.stock_descontado THEN
+    RETURN jsonb_build_object('success', true, 'message', 'Stock ya reservado para este pedido');
+  END IF;
+
+  -- Verificación (los packs surtidos se validan en _descontar_stock_curva)
+  FOR v_item IN SELECT * FROM order_items WHERE order_id = p_order_id LOOP
+    IF v_item.curva_breakdown IS NOT NULL THEN
+      CONTINUE;
+    END IF;
+
+    IF v_item.variant_id IS NOT NULL THEN
+      SELECT stock_unidades INTO v_stock FROM product_variants WHERE id = v_item.variant_id FOR UPDATE;
+    ELSE
+      SELECT stock_unidades INTO v_stock FROM products WHERE id = v_item.product_id FOR UPDATE;
+    END IF;
+
+    IF v_stock IS NULL OR v_stock < v_item.unidades THEN
+      v_faltantes := v_faltantes || jsonb_build_object(
+        'product_id', v_item.product_id,
+        'variant_id', v_item.variant_id,
+        'nombre',     v_item.nombre_snap || COALESCE(' (' || v_item.variant_snap || ')', ''),
+        'disponible', COALESCE(v_stock, 0),
+        'solicitado', v_item.unidades
+      );
+    END IF;
+  END LOOP;
+
+  IF jsonb_array_length(v_faltantes) > 0 THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error',   'Stock insuficiente al momento de confirmar el pedido',
+      'faltantes', v_faltantes
+    );
+  END IF;
+
+  -- Descuento real: RAISE EXCEPTION => rollback completo (ver bloque EXCEPTION).
+  FOR v_item IN SELECT * FROM order_items WHERE order_id = p_order_id LOOP
+    IF v_item.curva_breakdown IS NOT NULL THEN
+      v_curva_result := _descontar_stock_curva(v_item.curva_breakdown);
+      IF NOT (v_curva_result->>'ok')::BOOLEAN THEN
+        RAISE EXCEPTION 'Stock insuficiente para completar el pack surtido de "%"', v_item.nombre_snap;
+      END IF;
+    ELSE
+      v_item_result := _descontar_stock_item(v_item.variant_id, v_item.product_id, v_item.unidades);
+      IF NOT (v_item_result->>'ok')::BOOLEAN THEN
+        RAISE EXCEPTION 'Stock insuficiente para "%"', v_item.nombre_snap;
+      END IF;
+    END IF;
+  END LOOP;
+
+  UPDATE orders SET stock_descontado = TRUE, updated_at = NOW() WHERE id = p_order_id;
+  RETURN jsonb_build_object('success', true, 'message', 'Stock reservado para pago manual');
+
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
+END;
+$$;
+
+
+-- ── 2. Trigger anti-escalada de rol ───────────────────────────────────
+-- Igual que antes, pero ahora el SQL Editor (current_user = postgres /
+-- supabase_admin) y el backend (service_role) pueden cambiar roles.
+-- Un usuario logueado normal ('authenticated') sigue bloqueado.
+CREATE OR REPLACE FUNCTION _prevent_role_self_escalation()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.rol IS NOT DISTINCT FROM OLD.rol THEN
+    RETURN NEW;
+  END IF;
+
+  IF current_user IN ('postgres', 'supabase_admin', 'service_role')
+     OR auth.role() = 'service_role'
+     OR is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  RAISE EXCEPTION 'No autorizado para modificar el rol de usuario';
+END;
+$$;
+
+-- Se (re)crea el trigger por si en tu base nunca se había adjuntado.
+DROP TRIGGER IF EXISTS trg_prevent_role_self_escalation ON profiles;
+CREATE TRIGGER trg_prevent_role_self_escalation
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION _prevent_role_self_escalation();
+
+
+-- ── 3. orders / order_items: sin INSERT desde el cliente ──────────────
+-- /api/orders crea pedidos con createAdminClient() (service role, que
+-- ignora RLS). La policy vieja ("user_id = auth.uid() OR auth.uid() IS
+-- NOT NULL") dejaba a cualquier usuario logueado insertar pedidos por
+-- PostgREST con el estado/total que quisiera (incluso 'entregado', lo
+-- que habilitaba reseñas "verificadas" falsas). Sin policy de INSERT,
+-- RLS lo bloquea por defecto.
+DROP POLICY IF EXISTS "orders_insert_auth"  ON orders;
+DROP POLICY IF EXISTS "order_items_insert"  ON order_items;
+
+
+-- ── 4. Bucket "comprobantes": 'image/pdf' no existe → application/pdf ──
+UPDATE storage.buckets
+   SET allowed_mime_types = ARRAY['image/jpeg','image/png','image/webp','application/pdf']
+ WHERE id = 'comprobantes';
+
+
+-- ── 5. Permisos de ejecución + search_path ────────────────────────────
+-- Postgres da EXECUTE a PUBLIC por defecto y Supabase además lo da
+-- explícito a anon/authenticated: hay que revocar de los tres. Se hace
+-- sobre TODAS las sobrecargas por nombre (sin depender de la firma) y
+-- se ignora lo que no exista en tu base.
+-- NO se toca is_admin(), search_products() ni los triggers: las policies
+-- RLS y el buscador público las necesitan ejecutables.
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'descontar_stock_seguro', 'devolver_stock_seguro',
+        'reservar_stock_orden_manual', 'descontar_stock_solo',
+        '_descontar_stock_item', '_devolver_stock_item',
+        '_descontar_stock_curva', '_devolver_stock_curva',
+        'generar_curva_pack',
+        'sumar_saldo_cuenta_corriente', 'registrar_pago_cuenta_corriente',
+        'reservar_stock_carrito', 'liberar_reserva_carrito'
+      )
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon, authenticated', r.sig);
+    EXECUTE format('GRANT  EXECUTE ON FUNCTION %s TO service_role', r.sig);
+  END LOOP;
+END $$;
+
+-- search_path fijo en las SECURITY DEFINER que lo tenían sin definir
+-- (descontar_stock_solo, devolver_stock_seguro, las de carrito, is_admin).
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.prosecdef
+      AND p.proname IN (
+        'devolver_stock_seguro', 'descontar_stock_solo',
+        'reservar_stock_carrito', 'liberar_reserva_carrito', 'is_admin'
+      )
+  LOOP
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public', r.sig);
+  END LOOP;
+END $$;
+-- <<< FIN PARCHE: sql/fixes/2026-10-16_hardening.sql
+
+
+-- >>> PARCHE: sql/fixes/2026-10-16_bank_info_private.sql
+-- ══════════════════════════════════════════════════════════════════════
+-- bank_info: cerrar la lectura directa con la anon key
+-- ══════════════════════════════════════════════════════════════════════
+-- Todo el código lee bank_info con createAdminClient() (service role, que
+-- ignora RLS): /api/bank-info, /como-comprar, export-quote y el admin.
+-- Quitando la policy pública, nadie puede leer la tabla directo desde
+-- PostgREST con la anon key; el único acceso público queda en
+-- /api/bank-info, donde se puede limitar la tasa o agregar controles.
+-- La policy "bank_info_admin" (FOR ALL, is_admin()) se mantiene.
+-- Idempotente: seguro de correr las veces que haga falta.
+DROP POLICY IF EXISTS "bank_info_read" ON bank_info;
+-- <<< FIN PARCHE: sql/fixes/2026-10-16_bank_info_private.sql

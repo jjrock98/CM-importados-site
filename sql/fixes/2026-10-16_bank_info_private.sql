@@ -1,0 +1,11 @@
+-- ══════════════════════════════════════════════════════════════════════
+-- bank_info: cerrar la lectura directa con la anon key
+-- ══════════════════════════════════════════════════════════════════════
+-- Todo el código lee bank_info con createAdminClient() (service role, que
+-- ignora RLS): /api/bank-info, /como-comprar, export-quote y el admin.
+-- Quitando la policy pública, nadie puede leer la tabla directo desde
+-- PostgREST con la anon key; el único acceso público queda en
+-- /api/bank-info, donde se puede limitar la tasa o agregar controles.
+-- La policy "bank_info_admin" (FOR ALL, is_admin()) se mantiene.
+-- Idempotente: seguro de correr las veces que haga falta.
+DROP POLICY IF EXISTS "bank_info_read" ON bank_info;
