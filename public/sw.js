@@ -13,6 +13,10 @@ self.addEventListener('push', (event) => {
     icon:    payload.icon   ?? '/icons/icon-192.png',
     badge:   payload.badge  ?? '/icons/icon-32.png',
     tag:     payload.tag    ?? 'admin-notification',
+    // Los avisos de un mismo tipo comparten tag (p. ej. 'order-new'): sin
+    // renotify, el 2.º pedido REEMPLAZA al 1.º en silencio, sin sonar ni vibrar.
+    renotify: true,
+    vibrate:  [200, 100, 200],
     data:    payload.data   ?? { url: '/admin/pedidos' },
     actions: [
       { action: 'open',    title: 'Ver pedidos' },

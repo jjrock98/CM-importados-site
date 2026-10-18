@@ -17,6 +17,17 @@ function configureWebPush() {
   configured = true;
 }
 
+/**
+ * Opciones de envío. Sin `urgency`, el mensaje sale con prioridad "normal" y
+ * Android (modo Doze / ahorro de batería) lo POSTERGA hasta que el celular se
+ * despierta — es decir, hasta que abrís Chrome. Con "high" el servicio de
+ * mensajería (FCM) lo entrega en el momento, con el celular quieto o la
+ * pantalla apagada. Son avisos de venta: tienen que llegar ya.
+ * TTL: si el dispositivo está apagado/sin datos, el aviso se descarta
+ * pasadas 24 h (un pedido de ayer ya no es una urgencia).
+ */
+const PUSH_OPTIONS = { urgency: 'high' as const, TTL: 60 * 60 * 24 };
+
 export interface PushPayload {
   title: string;
   body:  string;
@@ -94,7 +105,8 @@ export async function sendAdminPushNotification(payload: PushPayload): Promise<v
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payloadStr
+          payloadStr,
+          PUSH_OPTIONS
         );
         sentCount++;
       } catch (err: unknown) {
