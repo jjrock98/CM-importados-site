@@ -1,6 +1,8 @@
 import webpush from 'web-push';
 import { createAdminClient } from './supabase/admin';
 import { sendAdminTelegramNotification } from './telegram';
+import { env } from '@/env';
+import { normalizeOrigin } from './pushOrigin';
 
 // ✅ Lazy init — igual que Resend y MP, no instanciar a nivel de módulo
 let configured = false;
@@ -48,14 +50,40 @@ export async function sendAdminPushNotification(payload: PushPayload): Promise<v
   }
 
   const admin = createAdminClient();
-  const { data: subscriptions } = await admin
-    .from('push_subscriptions')
-    .select('endpoint, p256dh, auth');
+  type SubRow = { endpoint: string; p256dh: string; auth: string; origin?: string | null };
 
-  if (!subscriptions || subscriptions.length === 0) {
+  const first = await admin
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth, origin');
+  let rows = first.data as SubRow[] | null;
+
+  if (first.error) {
+    // La columna "origin" todavía no existe (migración sin correr): se lee sin ella.
+    const fallback = await admin.from('push_subscriptions').select('endpoint, p256dh, auth');
+    rows = fallback.data as SubRow[] | null;
+  }
+
+  const allSubscriptions = rows ?? [];
+
+  if (allSubscriptions.length === 0) {
     console.warn('[Push] No hay suscripciones registradas en push_subscriptions — no se envía nada.');
     return;
   }
+
+  // Una suscripción push es por origen (dominio). Si el mismo navegador se
+  // suscribió desde localhost, el dominio de Vercel y el dominio real, cada
+  // aviso llegaba 2 o 3 veces. Se envía solo a las suscripciones hechas desde
+  // el dominio real; las de origen desconocido (viejas, sin la columna) se
+  // siguen enviando para no perder avisos hasta limpiarlas.
+  const appOrigin = normalizeOrigin(env.APP_URL);
+  const subscriptions = allSubscriptions.filter(
+    (s) => !s.origin || !appOrigin || normalizeOrigin(s.origin) === appOrigin
+  );
+  const skipped = allSubscriptions.length - subscriptions.length;
+  if (skipped > 0) {
+    console.warn(`[Push] ${skipped} suscripción(es) omitida(s): registradas desde un origen distinto a ${env.APP_URL}.`);
+  }
+  if (subscriptions.length === 0) return;
 
   const payloadStr = JSON.stringify(payload);
   const expiredEndpoints: string[] = [];

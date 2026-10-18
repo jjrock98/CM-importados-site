@@ -44,8 +44,15 @@ export function useRealtimeOrders(onOrdersChange?: (orders: Order[]) => void) {
     setNotifications((prev) => [notif, ...prev].slice(0, 50)); // keep last 50
     setUnreadCount((c) => c + 1);
 
-    // Browser notification (if permission granted)
-    if (typeof window !== 'undefined' && Notification.permission === 'granted') {
+    // Browser notification (if permission granted).
+    // Si este dispositivo ya tiene Web Push activo, el aviso lo muestra el
+    // Service Worker: mostrarlo también acá lo duplicaba (uno por cada
+    // pestaña de admin abierta + el push).
+    if (
+      typeof window !== 'undefined' &&
+      Notification.permission === 'granted' &&
+      localStorage.getItem('admin-push-subscribed') !== '1'
+    ) {
       new Notification(n.title, { body: n.message, icon: '/icons/icon-192.png' });
     }
   }, []);
