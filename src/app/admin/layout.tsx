@@ -34,8 +34,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         {/* Mobile nav */}
         <AdminMobileNav />
 
-        {/* Desktop top bar with notifications */}
-        <div className="hidden md:flex items-center justify-end gap-2 border-b border-border bg-surface px-6 py-2">
+        {/*
+          Barra con las notificaciones: visible en celular Y en desktop.
+          Antes tenía "hidden md:flex" y en el celular no existía el botón
+          para activar el push, así que ese dispositivo nunca se suscribía.
+          Se monta UNA sola instancia (no una por tamaño de pantalla):
+          dos instancias abrían dos canales Realtime con el mismo nombre
+          y duplicaban los avisos.
+        */}
+        <div className="flex items-center justify-end gap-2 border-b border-border bg-surface px-4 py-2 md:px-6">
           <AdminNotifications />
         </div>
 

@@ -23,7 +23,7 @@ function formatRelative(date: Date): string {
 export function AdminNotifications() {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount, markAllRead, markRead } = useRealtimeOrders();
-  const { isSubscribed, isSupported, isLoading, subscribe, unsubscribe } = useAdminPush();
+  const { isSubscribed, isSupported, isLoading, error: pushError, clearError, subscribe, unsubscribe } = useAdminPush();
 
   return (
     <div className="relative flex items-center gap-2">
@@ -37,7 +37,7 @@ export function AdminNotifications() {
             ? 'Notificaciones push activas — click para desactivar'
             : 'Activar notificaciones push en este dispositivo'}
           className={cn(
-            'btn-ghost p-2 transition-colors',
+            'btn-ghost flex items-center gap-1.5 p-2 transition-colors',
             isSubscribed ? 'text-green-500 hover:text-red-400' : 'text-muted hover:text-brand-600'
           )}
           aria-label={isSubscribed ? 'Desactivar notificaciones push' : 'Activar notificaciones push'}
@@ -47,7 +47,20 @@ export function AdminNotifications() {
             : isSubscribed
               ? <SmartphoneNfc size={18} />
               : <Smartphone    size={18} />}
+          {/* Texto visible: en celular no hay tooltip, el ícono solo no se entiende */}
+          {!isSubscribed && !isLoading && <span className="text-xs font-medium">Activar avisos</span>}
         </button>
+      )}
+
+      {/* Motivo por el que no se pudo activar (en celular no hay consola) */}
+      {pushError && (
+        <div
+          role="alert"
+          className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-red-300 bg-surface p-3 text-xs text-red-600 shadow-xl"
+        >
+          <p>{pushError}</p>
+          <button onClick={clearError} className="mt-2 font-medium underline">Cerrar</button>
+        </div>
       )}
 
       {/* Campana de notificaciones in-app (Supabase Realtime) */}
@@ -67,7 +80,7 @@ export function AdminNotifications() {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-20 mt-2 w-80 rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
+          <div className="absolute right-0 top-full z-20 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <h3 className="font-semibold text-sm">Notificaciones</h3>

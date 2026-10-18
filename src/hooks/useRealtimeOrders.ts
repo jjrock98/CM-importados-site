@@ -10,6 +10,41 @@ const METODO_PAGO_LABELS: Record<string, string> = {
   efectivo:         'Efectivo',
 };
 
+
+const PUSH_STORAGE_KEY = 'admin-push-subscribed';
+
+function isMobileDevice(): boolean {
+  return typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+function pushAlreadyActive(): boolean {
+  try { return localStorage.getItem(PUSH_STORAGE_KEY) === '1'; } catch { return false; }
+}
+
+/**
+ * Muestra un aviso del navegador. En Chrome para Android (y en general en
+ * móviles) `new Notification()` lanza "Illegal constructor": hay que
+ * mostrarlo a través del Service Worker. Nunca debe romper el panel.
+ */
+async function showBrowserNotification(title: string, body: string): Promise<void> {
+  try {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    const icon = '/icons/icon-192.png';
+
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) {
+        await reg.showNotification(title, { body, icon, data: { url: '/admin/pedidos' } });
+        return;
+      }
+    }
+    new Notification(title, { body, icon });
+  } catch (err) {
+    console.warn('[Notificaciones] No se pudo mostrar el aviso del navegador:', err);
+  }
+}
+
 export interface RealtimeNotification {
   id:      string;
   type:    'new_order' | 'comprobante_uploaded' | 'order_updated';
@@ -44,16 +79,11 @@ export function useRealtimeOrders(onOrdersChange?: (orders: Order[]) => void) {
     setNotifications((prev) => [notif, ...prev].slice(0, 50)); // keep last 50
     setUnreadCount((c) => c + 1);
 
-    // Browser notification (if permission granted).
+    // Aviso del navegador (si hay permiso).
     // Si este dispositivo ya tiene Web Push activo, el aviso lo muestra el
-    // Service Worker: mostrarlo también acá lo duplicaba (uno por cada
-    // pestaña de admin abierta + el push).
-    if (
-      typeof window !== 'undefined' &&
-      Notification.permission === 'granted' &&
-      localStorage.getItem('admin-push-subscribed') !== '1'
-    ) {
-      new Notification(n.title, { body: n.message, icon: '/icons/icon-192.png' });
+    // Service Worker: mostrarlo también acá lo duplicaba.
+    if (!pushAlreadyActive()) {
+      void showBrowserNotification(n.title, n.message);
     }
   }, []);
 
@@ -68,10 +98,19 @@ export function useRealtimeOrders(onOrdersChange?: (orders: Order[]) => void) {
   }, []);
 
   useEffect(() => {
-    // Request browser notification permission
-    if (typeof window !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
-    }
+    // Pedir permiso de notificaciones SOLO en desktop. En celular el permiso
+    // se pide al tocar el botón de activar (hace falta un gesto del usuario:
+    // pedirlo solo al cargar la página lo ignora o hasta lo bloquea Chrome).
+    try {
+      if (
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'default' &&
+        !isMobileDevice()
+      ) {
+        Promise.resolve(Notification.requestPermission()).catch(() => {});
+      }
+    } catch { /* navegador sin soporte */ }
 
     // Defensive: if a channel with this topic is already registered
     // (e.g. leftover from a Fast Refresh / StrictMode double-invoke),

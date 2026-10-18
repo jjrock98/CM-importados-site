@@ -15,6 +15,7 @@ const SCHEMA = 'sql/schema.sql';
 const PATCHES = [
   'sql/fixes/2026-10-16_hardening.sql',
   'sql/fixes/2026-10-16_bank_info_private.sql',
+  'sql/fixes/2026-10-16_push_subscriptions_origin.sql',
 ];
 
 if (!fs.existsSync(SCHEMA)) { console.error(`No encuentro ${SCHEMA}. Corré esto desde la raíz del proyecto.`); process.exit(1); }

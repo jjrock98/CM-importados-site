@@ -4,6 +4,14 @@ import { isPushOriginAllowed } from '@/lib/pushOrigin';
 
 const PUSH_STORAGE_KEY = 'admin-push-subscribed';
 
+const MSG_UNSUPPORTED =
+  'Este navegador no permite notificaciones. Si abriste el panel desde un link de Telegram u otra app, ' +
+  'abrilo directamente en Chrome (menú ⋮ → "Abrir en Chrome") y probá de nuevo.';
+
+const MSG_DENIED =
+  'Las notificaciones están bloqueadas para este sitio. En Chrome tocá el candado junto a la dirección → ' +
+  'Permisos → Notificaciones → Permitir, y volvé a tocar el botón.';
+
 /**
  * Hook para el panel admin: gestiona el registro del Service Worker
  * y la suscripción a Web Push notifications.
@@ -22,11 +30,11 @@ export function useAdminPush() {
   const [isSupported,    setIsSupported]    = useState(false);
   const [isLoading,      setIsLoading]      = useState(false);
   const [swRegistration, setSwRegistration] = useState<ServiceWorkerRegistration | null>(null);
+  const [error,          setError]          = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const supported = 'serviceWorker' in navigator && 'PushManager' in window;
-    if (!supported) return;
 
     const allowed = isPushOriginAllowed(
       window.location.origin,
@@ -37,11 +45,16 @@ export function useAdminPush() {
 
     if (!allowed) {
       // isSupported queda en false (valor inicial): el botón no se muestra.
-      void removeStaleSubscriptions();
+      if (supported) void removeStaleSubscriptions();
       return;
     }
 
+    // El botón se muestra siempre en el dominio real. Si el navegador no
+    // soporta push (p. ej. una pestaña abierta desde un link de Telegram),
+    // subscribe() explica el motivo en pantalla en vez de esconder el botón.
     setIsSupported(true);
+    if (!supported) return;
+
     navigator.serviceWorker.register('/sw.js').then((reg) => {
       setSwRegistration(reg);
       // Verificar si ya hay suscripción activa
@@ -52,12 +65,27 @@ export function useAdminPush() {
   }, []);
 
   const subscribe = useCallback(async () => {
-    if (!swRegistration) return;
+    setError(null);
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setError(MSG_UNSUPPORTED);
+      return;
+    }
+    if (!swRegistration) {
+      setError('El servicio de notificaciones todavía se está cargando. Probá de nuevo en unos segundos.');
+      return;
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+      setError(MSG_DENIED);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidPublicKey) {
         console.warn('[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurada');
+        setError('Faltan las claves de notificaciones del sitio (NEXT_PUBLIC_VAPID_PUBLIC_KEY).');
         return;
       }
 
@@ -76,7 +104,11 @@ export function useAdminPush() {
         // El servidor rechazó la suscripción: se deshace en el navegador
         // para no dejar una suscripción huérfana.
         await sub.unsubscribe().catch(() => {});
-        console.warn('[Push] El servidor rechazó la suscripción:', await res.text());
+        const text = await res.text();
+        console.warn('[Push] El servidor rechazó la suscripción:', text);
+        let detail = '';
+        try { detail = JSON.parse(text).error ?? ''; } catch { /* no era JSON */ }
+        setError(`El servidor no guardó la suscripción${detail ? `: ${detail}` : ''}.`);
         return;
       }
 
@@ -84,6 +116,11 @@ export function useAdminPush() {
       localStorage.setItem(PUSH_STORAGE_KEY, '1');
     } catch (err) {
       console.error('[Push] Error al suscribirse:', err);
+      if (err instanceof DOMException && err.name === 'NotAllowedError') {
+        setError(MSG_DENIED);
+      } else {
+        setError(`No se pudo activar: ${err instanceof Error ? err.message : 'error desconocido'}.`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +146,9 @@ export function useAdminPush() {
     }
   }, [swRegistration]);
 
-  return { isSubscribed, isSupported, isLoading, subscribe, unsubscribe };
+  const clearError = useCallback(() => setError(null), []);
+
+  return { isSubscribed, isSupported, isLoading, error, clearError, subscribe, unsubscribe };
 }
 
 /**
