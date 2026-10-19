@@ -32,6 +32,9 @@ function getMPClient(): MercadoPagoConfig {
 export async function POST(req: NextRequest) {
   const limited = rateLimiters.checkout(req);
   if (limited) return limited;
+  if (process.env.MERCADOPAGO_WEBHOOK_ENABLED !== 'true') {
+  return NextResponse.json({ error: 'Mercado Pago no disponible' }, { status: 503 });
+}
 
   try {
     const supabase = await createClient();

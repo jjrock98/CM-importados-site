@@ -116,6 +116,7 @@ function verifyMPSignature(req: NextRequest, dataId: string): boolean {
  * Los errores se loguean para debugging pero nunca se propagan al status code.
  */
 export async function POST(req: NextRequest) {
+  if (process.env.MERCADOPAGO_WEBHOOK_ENABLED !== 'true') return ackOk();
   try {
     const body = (await req.json().catch(() => null)) as MPWebhookBody | null;
 
