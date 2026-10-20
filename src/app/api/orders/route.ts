@@ -267,6 +267,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── Mercado Pago deshabilitado por ahora ──
+    // La UI ya no lo ofrece, pero se rechaza también acá para que nadie
+    // pueda crear un pedido con este método llamando a la API directo.
+    // Reactivar con MERCADOPAGO_WEBHOOK_ENABLED=true (mismo flag que el
+    // endpoint de checkout y el webhook).
+    if (formData.metodo_pago === 'mercadopago' && process.env.MERCADOPAGO_WEBHOOK_ENABLED !== 'true') {
+      return NextResponse.json({ error: 'Mercado Pago no está disponible por el momento' }, { status: 422 });
+    }
+
     // ── Cuenta corriente: validar cupo disponible antes de crear el pedido ──
     if (formData.metodo_pago === 'cuenta_corriente') {
       if (!condicionCliente || condicionCliente.limite_cuenta_corriente <= 0) {

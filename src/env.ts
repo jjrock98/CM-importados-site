@@ -7,9 +7,10 @@ const serverSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY es requerida'),
   SUPABASE_SERVICE_ROLE_KEY:     z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY es requerida'),
 
-  // Mercado Pago
-  MERCADOPAGO_ACCESS_TOKEN:           z.string().min(1, 'MERCADOPAGO_ACCESS_TOKEN es requerida'),
-  NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: z.string().min(1, 'NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY es requerida'),
+  // Mercado Pago — opcional por ahora (método de pago deshabilitado).
+  // Al reactivarlo, volver a z.string().min(1, '...') en ambas.
+  MERCADOPAGO_ACCESS_TOKEN:           z.string().optional(),
+  NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY: z.string().optional(),
 
   // Facebook Login — opcional. Sin esto configurado, el botón "Continuar
   // con Facebook" sigue funcionando igual (Supabase maneja el OAuth con
