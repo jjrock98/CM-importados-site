@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
@@ -8,6 +9,7 @@ export const metadata: Metadata = { title: 'Clientes — Admin' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminClientesPage() {
+  await requireAdminPage('/admin/clientes');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login?redirect=/admin/clientes');

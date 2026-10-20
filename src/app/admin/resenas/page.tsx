@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminReviewsClient } from '@/components/admin/AdminReviewsClient';
 
@@ -5,6 +6,7 @@ export const metadata = { title: 'Reseñas – Admin' };
 export const revalidate = 0;
 
 export default async function AdminResenasPage() {
+  await requireAdminPage('/admin/resenas');
   const admin = createAdminClient();
   const { data: reviews } = await admin
     .from('product_reviews')

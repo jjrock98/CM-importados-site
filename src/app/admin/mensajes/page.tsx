@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminMensajesClient } from '@/components/admin/AdminMensajesClient';
 import type { ContactMessage } from '@/types';
@@ -6,6 +7,7 @@ export const metadata = { title: 'Mensajes – Admin' };
 export const revalidate = 0;
 
 export default async function AdminMensajesPage() {
+  await requireAdminPage('/admin/mensajes');
   const admin = createAdminClient();
   const { data: messages } = await admin
     .from('contact_messages')

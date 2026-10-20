@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminOrdersClient } from '@/components/admin/AdminOrdersClient';
 import type { Order } from '@/types';
@@ -6,6 +7,7 @@ export const metadata = { title: 'Pedidos – Admin' };
 export const revalidate = 0;
 
 export default async function AdminPedidosPage() {
+  await requireAdminPage('/admin/pedidos');
   const admin = createAdminClient();
   const { data: orders } = await admin
     .from('orders')

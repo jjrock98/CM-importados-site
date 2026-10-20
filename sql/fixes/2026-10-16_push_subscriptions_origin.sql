@@ -16,4 +16,4 @@
 ALTER TABLE push_subscriptions ADD COLUMN IF NOT EXISTS origin TEXT;
 
 COMMENT ON COLUMN push_subscriptions.origin IS
-  'Origen (https://dominio) desde el que se creó la suscripción push. NULL = suscripciones viejas.';
+  'Origen (https://mc-importados.shop) desde el que se creó la suscripción push. NULL = suscripciones viejas.';

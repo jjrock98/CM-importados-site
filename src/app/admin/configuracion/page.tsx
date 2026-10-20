@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminConfigClient } from '@/components/admin/AdminConfigClient';
 import { AdminMfaSettings } from '@/components/admin/AdminMfaSettings';
@@ -6,6 +7,7 @@ export const metadata = { title: 'Configuración – Admin' };
 export const revalidate = 0;
 
 export default async function AdminConfiguracionPage() {
+  await requireAdminPage('/admin/configuracion', { allowEnrollment: true });
   const admin = createAdminClient();
 
   const [

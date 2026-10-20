@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { AdminProductsClient } from '@/components/admin/AdminProductsClient';
 import type { Product } from '@/types';
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default async function AdminProductosPage({ searchParams }: Props) {
+  await requireAdminPage('/admin/productos');
   const { filter } = await searchParams;
   const admin = createAdminClient();
   const { data: products } = await admin

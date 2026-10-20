@@ -1,3 +1,4 @@
+import { requireAdminPage } from '@/lib/auth/requireAdminPage';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SalesChart } from '@/components/admin/SalesChart';
 import { formatPrice } from '@/utils';
@@ -7,6 +8,7 @@ export const metadata = { title: 'Dashboard – Admin' };
 export const revalidate = 60;
 
 export default async function AdminDashboard() {
+  await requireAdminPage('/admin');
   const admin = createAdminClient();
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
