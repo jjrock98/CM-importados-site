@@ -30,11 +30,13 @@ function getMPClient(): MercadoPagoConfig {
  * - `expiration_date_to` = 3 días desde ahora → los cupones de efectivo vencen solos.
  */
 export async function POST(req: NextRequest) {
+  // Mercado Pago deshabilitado por ahora. Reactivar con MERCADOPAGO_WEBHOOK_ENABLED=true
+  if (process.env.MERCADOPAGO_WEBHOOK_ENABLED !== 'true') {
+    return NextResponse.json({ error: 'Mercado Pago no disponible' }, { status: 503 });
+  }
+
   const limited = rateLimiters.checkout(req);
   if (limited) return limited;
-  if (process.env.MERCADOPAGO_WEBHOOK_ENABLED !== 'true') {
-  return NextResponse.json({ error: 'Mercado Pago no disponible' }, { status: 503 });
-}
 
   try {
     const supabase = await createClient();
