@@ -26,6 +26,10 @@
     {
       "path": "/api/revalidate",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-visitor-logs",
+      "schedule": "30 3 * * *"
     }
   ],
 
