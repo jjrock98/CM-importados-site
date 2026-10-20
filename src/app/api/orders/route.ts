@@ -69,7 +69,7 @@ interface ItemWithProduct {
 }
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.orders(req);
+  const limited = await rateLimiters.orders(req);
   if (limited) return limited;
 
   try {

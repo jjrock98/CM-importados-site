@@ -14,7 +14,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.contact(req);
+  const limited = await rateLimiters.contact(req);
   if (limited) return limited;
 
   try {

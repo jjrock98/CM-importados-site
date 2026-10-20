@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   // el email de una compra podía probar miles de combinaciones del
   // prefijo de 8 caracteres del pedido sin ningún freno, hasta acertar
   // y ver nombre/dirección/teléfono/contenido de un pedido ajeno.
-  const limited = rateLimiters.seguimiento(req);
+  const limited = await rateLimiters.seguimiento(req);
   if (limited) return limited;
 
   const { searchParams } = req.nextUrl;

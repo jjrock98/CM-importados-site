@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Mercado Pago no disponible' }, { status: 503 });
   }
 
-  const limited = rateLimiters.checkout(req);
+  const limited = await rateLimiters.checkout(req);
   if (limited) return limited;
 
   try {

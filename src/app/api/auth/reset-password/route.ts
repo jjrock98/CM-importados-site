@@ -15,7 +15,7 @@ import { rateLimiters } from '@/lib/rateLimit';
  * la cuenta, para no revelar qué emails están registrados.
  */
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.auth(req);
+  const limited = await rateLimiters.auth(req);
   if (limited) return limited;
 
   const body  = await req.json().catch(() => null);

@@ -28,7 +28,7 @@ import { secretsMatch } from '@/lib/secureCompare';
  * }
  */
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.notifications(req);
+  const limited = await rateLimiters.notifications(req);
   if (limited) return limited;
 
   // ── Autorización: admin logueado O secret interno (para crons/servidor) ──

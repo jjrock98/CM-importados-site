@@ -25,7 +25,7 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.register(req);
+  const limited = await rateLimiters.register(req);
   if (limited) return limited;
 
   const rawBody = await req.json().catch(() => null);

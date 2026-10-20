@@ -118,7 +118,7 @@ async function escanearVirus(
  *               patrón de identidad ya usado en /api/seguimiento.
  */
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.upload(req);
+  const limited = await rateLimiters.upload(req);
   if (limited) return limited;
 
   try {

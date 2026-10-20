@@ -43,7 +43,7 @@ const PACK_LABEL: Record<QuoteItem['tipoPack'], string> = {
  *   { items: QuoteItem[], costoEnvio?: number }
  */
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.upload(req); // reutiliza el mismo limiter conservador (5/10min)
+  const limited = await rateLimiters.upload(req); // reutiliza el mismo limiter conservador (5/10min)
   if (limited) return limited;
 
   try {

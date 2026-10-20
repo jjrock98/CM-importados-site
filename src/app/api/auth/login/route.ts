@@ -26,7 +26,7 @@ import { verifyTurnstile, getClientIp } from '@/lib/turnstile';
  * lo necesita: es el blanco más común de ataques automatizados.
  */
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.auth(req);
+  const limited = await rateLimiters.auth(req);
   if (limited) return limited;
 
   const body = await req.json().catch(() => null);

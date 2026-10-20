@@ -7,7 +7,7 @@ import { rateLimiters } from '@/lib/rateLimit';
 import { verifyTurnstile, getClientIp } from '@/lib/turnstile';
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimiters.contact(req);
+  const limited = await rateLimiters.contact(req);
   if (limited) return limited;
 
   const rawBody = await req.json().catch(() => null);
