@@ -268,7 +268,9 @@ export async function proxy(request: NextRequest) {
       name: ADMIN_CSP_MODE === 'enforce'
         ? 'Content-Security-Policy'
         : 'Content-Security-Policy-Report-Only',
-      value,
+      // report-uri: el navegador avisa a /api/csp-report qué bloquearía.
+      // Va solo en el header de la RESPUESTA; el de la request (arriba) queda sin él.
+      value: `${value}; report-uri /api/csp-report`,
     };
   }
 
