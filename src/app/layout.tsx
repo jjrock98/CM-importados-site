@@ -20,6 +20,7 @@ import { PageProgress } from '@/components/common/PageProgress';
 import { FacebookHashCleanup } from '@/components/common/FacebookHashCleanup';
 import { EmailVerificationBanner } from '@/components/common/EmailVerificationBanner';
 import { UserIdleTimer } from '@/components/common/UserIdleTimer';
+import { VisitTracker } from '@/components/common/VisitTracker';
 import { BackToTop } from '@/components/common/BackToTop';
 import { createPublicClient } from '@/lib/supabase/public';
 import { env } from '@/env';
@@ -172,6 +173,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <FacebookHashCleanup />
             <EmailVerificationBanner />
             <UserIdleTimer />
+            <VisitTracker />
             <Navbar />
             <CartDrawer />
             <main id="print-root">{children}</main>
