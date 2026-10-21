@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { secretsMatch } from '@/lib/secureCompare';
-import { env } from '@/env';
 import {
   CONTENT_LANGUAGE, FEED_LABEL, getMerchantConfig,
   insertProductInput, deleteProductInput, type MerchantProductInput,
@@ -88,7 +87,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ skipped: true, reason: 'Faltan variables GOOGLE_* en Vercel' });
   }
 
-  const appUrl = (env.APP_URL || 'https://www.mc-importados.shop').replace(/\/$/, '');
+  // Los links de producto tienen que estar en el MISMO dominio que se verificó y
+  // reclamó en Merchant Center (con www). Si APP_URL apunta al dominio sin www,
+  // Google rechaza los links, por eso acá se fija el dominio reclamado.
+  const appUrl = (process.env.GOOGLE_MERCHANT_SITE_URL || 'https://www.mc-importados.shop').replace(/\/$/, '');
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('products')
