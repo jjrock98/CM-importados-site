@@ -27,6 +27,9 @@ const SCRIPT_HOSTS = [
   'https://www.clarity.ms',
   'https://scripts.clarity.ms',
   'https://*.googletagmanager.com',
+  // Reseñas de Clientes de Google (insignia + invitación a la encuesta)
+  'https://apis.google.com',
+  'https://www.gstatic.com',
 ];
 
 function buildCsp(scriptSrc) {
@@ -38,8 +41,8 @@ function buildCsp(scriptSrc) {
     // el <head> del documento principal, no dentro de su iframe: sin estos
     // orígenes los íconos del chat se ven como cuadrados vacíos.
     "font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to",
-    "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com",
-    "frame-src 'self' https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com",
+    "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://www.gstatic.com",
+    "frame-src 'self' https://apis.google.com https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com",
     "media-src 'self'",
     "object-src 'none'",

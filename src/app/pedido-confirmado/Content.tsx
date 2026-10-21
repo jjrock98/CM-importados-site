@@ -3,6 +3,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle2, Mail, ShoppingBag, UserPlus, Search } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { GoogleCustomerReviewsOptIn } from '@/components/common/GoogleCustomerReviewsOptIn';
 
 /**
  * Página de confirmación para compradores invitados.
@@ -22,6 +23,7 @@ export function PedidoConfirmadoContent() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4 py-16 text-center">
+      <GoogleCustomerReviewsOptIn orderId={orderId} email={email} />
       {/* Ícono de éxito */}
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-green-400/20 animate-pulse" />
