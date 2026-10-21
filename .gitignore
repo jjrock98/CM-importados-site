@@ -44,3 +44,7 @@ yarn-error.log*
 
 # Misc
 *.log
+
+# Claves de cuentas de servicio de Google (nunca subir)
+gen-lang-client-*.json
+clave.json
