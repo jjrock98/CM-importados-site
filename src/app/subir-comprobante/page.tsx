@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Upload, CheckCircle2, FileImage, Loader2, Copy, Landmark } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { GoogleCustomerReviewsOptIn } from '@/components/common/GoogleCustomerReviewsOptIn';
 import toast from 'react-hot-toast';
 
 interface BankInfo {
@@ -117,6 +118,11 @@ export default function SubirComprobantePage() {
 
   if (done) return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+      {/* Reseñas de Clientes de Google: los pedidos por transferencia no pasan
+          por /pedido-confirmado, así que la invitación se muestra acá, una vez
+          subido el comprobante. Logueados: el email no viaja en la URL, se
+          toma de la cuenta (si no coincide con el del pedido, no se invita). */}
+      <GoogleCustomerReviewsOptIn orderId={orderId} email={emailParam || user?.email || ''} />
       <CheckCircle2 size={60} className="text-green-500" />
       <h2 className="font-display text-2xl font-bold">¡Comprobante recibido!</h2>
       <p className="text-muted max-w-sm">
