@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     if (validationError) return NextResponse.json({ error: validationError }, { status: 422 });
     if (!body) return NextResponse.json({ error: 'Datos inválidos' }, { status: 422 });
 
-    const { items, formData, subtotal, costo_envio, total } = body;
+    const { items, formData, subtotal: subtotalCliente } = body;
     const admin = createAdminClient();
 
     // Validar stock y calcular precios en el servidor
@@ -241,12 +241,24 @@ export async function POST(req: NextRequest) {
       ? Math.round(expectedSubtotal * (1 - descuentoPct / 100))
       : expectedSubtotal;
 
-    if (Math.abs(expectedSubtotalConDescuento - subtotal) > 1) {
+    if (Math.abs(expectedSubtotalConDescuento - subtotalCliente) > 1) {
       return NextResponse.json(
         { error: 'Los precios han cambiado. Por favor, actualizá el carrito.' },
         { status: 409 }
       );
     }
+
+    // ── El SERVIDOR define los montos, no el navegador ─────────────────────
+    // Antes `costo_envio` y `total` se guardaban tal como llegaban en el
+    // body: solo se validaba el subtotal. Con una llamada directa a la API
+    // se podía mandar un total chico (ej. $1) y: (a) pasar el control de cupo
+    // de cuenta corriente, (b) sumar una deuda mínima, (c) dejar un pedido
+    // por una suma distinta a la real. Hoy el envío es "a coordinar" (el
+    // checkout manda costo_envio 0), así que total = subtotal validado.
+    // Si algún día se cobra envío, calcularlo acá con shipping_zones.
+    const subtotal    = expectedSubtotalConDescuento;
+    const costo_envio = 0;
+    const total       = subtotal + costo_envio;
 
     if (esMayorista) {
       let montoMinimo = condicionCliente?.monto_minimo_pedido ?? 0;
