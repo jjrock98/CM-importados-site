@@ -34,7 +34,10 @@ interface RateLimitConfig {
 }
 
 function getIp(req: NextRequest): string {
+  // En Vercel, x-vercel-forwarded-for y x-forwarded-for los pisa el borde de
+  // red con la IP real del cliente (no se pueden falsificar desde afuera).
   return (
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ??
     req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
     req.headers.get('x-real-ip') ??
     'anonymous'
