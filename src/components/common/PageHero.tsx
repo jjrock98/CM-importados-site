@@ -2,6 +2,7 @@
 
 import { m, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { cn } from '@/utils';
 
 interface PageHeroProps {
   eyebrow?: string;
@@ -12,6 +13,10 @@ interface PageHeroProps {
    *  de un Server Component, una referencia a función no es serializable
    *  y rompe el boundary server→client. */
   icon?: ReactNode;
+  /** Versión baja para páginas donde el contenido importa más que el título
+   *  (ej. el catálogo): menos alto, sin etiqueta superior y, en celular, sin
+   *  descripción — para que los productos queden a la vista sin hacer scroll. */
+  compact?: boolean;
 }
 
 /**
@@ -21,7 +26,7 @@ interface PageHeroProps {
  * el sitio se siente como un mismo sistema en vez de una home animada y
  * páginas internas estáticas sueltas.
  */
-export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
+export function PageHero({ eyebrow, title, description, icon, compact = false }: PageHeroProps) {
   const reduce = useReducedMotion();
 
   return (
@@ -40,8 +45,8 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
         transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
       />
 
-      <div className="relative mx-auto max-w-5xl px-4 py-14 text-center sm:py-16">
-        {eyebrow && (
+      <div className={cn('relative mx-auto max-w-5xl px-4 text-center', compact ? 'py-5 sm:py-7' : 'py-14 sm:py-16')}>
+        {eyebrow && !compact && (
           <m.span
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -56,7 +61,7 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08 }}
-          className="mt-4 flex items-center justify-center gap-3 font-display text-3xl font-bold tracking-tight md:text-4xl"
+          className={cn('flex items-center justify-center gap-3 font-display font-bold tracking-tight', compact ? 'text-2xl md:text-3xl' : 'mt-4 text-3xl md:text-4xl')}
         >
           {icon && <span className="text-accent-300 [&>svg]:h-7 [&>svg]:w-7">{icon}</span>}
           {title}
@@ -67,7 +72,7 @@ export function PageHero({ eyebrow, title, description, icon }: PageHeroProps) {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.16 }}
-            className="mx-auto mt-3 max-w-xl text-white/75"
+            className={cn('mx-auto max-w-xl text-white/75', compact ? 'mt-1 hidden text-sm sm:block' : 'mt-3')}
           >
             {description}
           </m.p>

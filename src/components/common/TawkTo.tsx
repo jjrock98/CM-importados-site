@@ -2,12 +2,14 @@
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useNearPageBottom } from '@/hooks/useNearPageBottom';
+import { useHideWhileScrolling } from '@/hooks/useHideWhileScrolling';
 
 declare global {
   interface Window {
     Tawk_API?: {
       hideWidget?: () => void;
       showWidget?: () => void;
+      isChatMaximized?: () => boolean;
       [key: string]: unknown;
     };
   }
@@ -69,15 +71,19 @@ export function TawkTo() {
   // showWidget), disponible recién una vez que su script terminó de cargar
   // — por eso se chequea que sea función antes de llamarla.
   const nearBottom = useNearPageBottom();
+  // En celular la burbuja también se oculta mientras se hace scroll (y vuelve
+  // al frenar), salvo que la conversación esté abierta: ahí nunca se esconde.
+  const scrolling = useHideWhileScrolling();
   useEffect(() => {
     if (!propertyId) return;
     const api = window.Tawk_API;
-    if (nearBottom || isAdmin) {
+    const chatOpen = api?.isChatMaximized?.() === true;
+    if (nearBottom || isAdmin || (scrolling && !chatOpen)) {
       api?.hideWidget?.();
     } else {
       api?.showWidget?.();
     }
-  }, [nearBottom, isAdmin, propertyId]);
+  }, [nearBottom, isAdmin, scrolling, propertyId]);
 
   return null;
 }

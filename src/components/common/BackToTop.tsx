@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
 import { cn } from '@/utils';
+import { useHideWhileScrolling } from '@/hooks/useHideWhileScrolling';
 
 export function BackToTop() {
   const [visible, setVisible] = useState(false);
   const pathname = usePathname();
+  const scrolling = useHideWhileScrolling();
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 400);
@@ -39,8 +41,8 @@ export function BackToTop() {
         'fixed z-40 flex items-center justify-center rounded-full',
         'border border-border bg-surface shadow-lg transition-all duration-300',
         'hover:border-brand-500 hover:text-brand-600 hover:scale-110',
-        isAdmin ? 'bottom-4 right-4 h-9 w-9' : 'bottom-24 right-6 h-10 w-10',
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        isAdmin ? 'bottom-4 right-4 h-9 w-9' : 'bottom-24 right-4 h-9 w-9 sm:right-6 sm:h-10 sm:w-10',
+        visible && !scrolling ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       )}
     >
       <ArrowUp size={isAdmin ? 15 : 17} />

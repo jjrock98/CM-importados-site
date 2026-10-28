@@ -37,7 +37,10 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 
 export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/', ordenActual = '', ordenServidor = false }: Props) {
   const router = useRouter();
-  const [query,       setQuery]       = useState('');
+  // En el catálogo (ordenServidor) el texto se busca en TODO el catálogo, en el servidor:
+  // se arranca con el ?q= actual y se navega al presionar Enter. En la home sigue siendo
+  // un filtro instantáneo sobre las tarjetas cargadas.
+  const [query,       setQuery]       = useState<string>(ordenServidor ? (busqueda ?? '') : '');
   const [sort,        setSort]        = useState<SortKey>(ordenServidor && ordenActual ? (ordenActual as SortKey) : 'relevancia');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceMax,    setPriceMax]    = useState<number | ''>('');
@@ -69,6 +72,20 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     router.push(s ? `${basePath}?${s}` : basePath);
   };
 
+  // Buscar en el catálogo completo: navega a la página 1 con ?q=... (conserva categoría y orden).
+  const goSearch = (text: string) => {
+    const qs = new URLSearchParams();
+    if (categoriaActual) qs.set('categoria', categoriaActual);
+    if (text.trim()) qs.set('q', text.trim());
+    if (sort !== 'relevancia') qs.set('orden', sort);
+    const s = qs.toString();
+    router.push(s ? `${basePath}?${s}` : basePath);
+  };
+  const onSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ordenServidor) goSearch(query);
+  };
+
   // Precio de referencia para filtrar/ordenar: media docena si el producto
   // la tiene habilitada, si no la docena completa (hay productos que solo
   // se venden por docena o por curva).
@@ -84,7 +101,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     let list = [...products];
 
     // Text search
-    if (query.trim()) {
+    if (!ordenServidor && query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
         (p) =>
@@ -153,21 +170,27 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
       {/* Search + controls bar */}
       <div className="mb-5 flex flex-wrap items-center gap-3">
         {/* Search */}
-        <div className="relative flex-1 min-w-48">
+        <form onSubmit={onSearchSubmit} role="search" className="relative flex-1 min-w-48">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" />
           <input
             value={query}
-            onChange={(e) => startTransition(() => setQuery(e.target.value))}
-            placeholder="Buscar productos, colores, talles…"
+            onChange={(e) => (ordenServidor ? setQuery(e.target.value) : startTransition(() => setQuery(e.target.value)))}
+            placeholder={ordenServidor ? 'Buscar en todo el catálogo…' : 'Buscar productos, colores, talles…'}
+            enterKeyHint="search"
             className="input-base pl-9 py-2.5 text-sm"
             aria-label="Buscar productos"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground">
+            <button
+              type="button"
+              aria-label="Borrar búsqueda"
+              onClick={() => { setQuery(''); if (ordenServidor && busqueda) goSearch(''); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground"
+            >
               <X size={14} />
             </button>
           )}
-        </div>
+        </form>
 
         {/* Sort */}
         <div className="relative">

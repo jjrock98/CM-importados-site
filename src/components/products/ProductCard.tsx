@@ -39,6 +39,9 @@ export function ProductCard({ product: p, priority = false }: Props) {
   const [notifEmail,  setNotifEmail]  = useState('');
   const [notifSent,   setNotifSent]   = useState(false);
   const [notifLoading,setNotifLoading]= useState(false);
+  // El formulario de "Avisame" arranca colapsado: antes cada tarjeta agotada mostraba
+  // un campo de email + botón y quedaba mucho más alta que las vecinas de la fila.
+  const [notifOpen,   setNotifOpen]   = useState(false);
   // Honeypot anti-bot: campo invisible para humanos (oculto por CSS, nunca
   // por atributo type="hidden", que los bots más básicos ya saben ignorar).
   // Si viene completado, el request es casi seguro un bot rellenando todos
@@ -212,7 +215,7 @@ export function ProductCard({ product: p, priority = false }: Props) {
         {/* Info */}
         <div className="flex flex-1 flex-col p-4">
           <Link href={`/productos/${p.slug}`}>
-            <h3 className="line-clamp-2 text-sm font-semibold leading-tight hover:text-brand-600 transition-colors">
+            <h3 className="line-clamp-2 min-h-[2.2rem] text-sm font-semibold leading-tight hover:text-brand-600 dark:hover:text-brand-300 transition-colors">
               {p.nombre}
             </h3>
           </Link>
@@ -237,14 +240,16 @@ export function ProductCard({ product: p, priority = false }: Props) {
           )}
 
           {/* Precios */}
-          <div className="mt-3 space-y-1">
+          {/* mt-auto acá (y no en el botón): precio, stock y botón quedan anclados al fondo,
+              así los precios de todas las tarjetas de una fila quedan a la misma altura. */}
+          <div className="mt-auto space-y-1 pt-3">
             {p.precio_media_docena != null && p.precio_media_docena > 0 && (
               <div className="flex items-center justify-between">
                 <span className={cn('text-xs', !canBuyMediaDocena ? 'text-red-400 line-through' : 'text-muted')}>
                   ½ docena (6)
                 </span>
                 <span className="text-right">
-                  <span className={cn('text-sm font-bold', canBuyMediaDocena ? 'text-brand-600' : 'text-muted')}>
+                  <span className={cn('text-sm font-bold', canBuyMediaDocena ? 'text-brand-600 dark:text-brand-300' : 'text-muted')}>
                     {formatPrice(p.precio_media_docena)}
                   </span>
                   {/* Precio por unidad: ayuda a comparar y a calcular la reventa */}
@@ -259,7 +264,7 @@ export function ProductCard({ product: p, priority = false }: Props) {
                 Docena (12)
               </span>
               <span className="text-right">
-                <span className={cn('text-sm font-bold', canBuyDocena ? 'text-brand-600' : 'text-muted')}>
+                <span className={cn('text-sm font-bold', canBuyDocena ? 'text-brand-600 dark:text-brand-300' : 'text-muted')}>
                   {formatPrice(p.precio_docena)}
                 </span>
                 <span className="block text-[11px] leading-tight text-muted">
@@ -293,7 +298,7 @@ export function ProductCard({ product: p, priority = false }: Props) {
           {!sinStock && (
             <button
               onClick={handleAddCart}
-              className="btn-primary mt-auto w-full py-2 text-xs"
+              className="btn-primary mt-3 w-full py-2 text-xs"
               aria-label={`Agregar ${p.nombre} al carrito`}
             >
               {canBuyDocena ? 'Elegir pack' : tieneMediaDocena ? 'Comprar ½ Docena' : 'Sin stock para Docena'}
@@ -302,10 +307,17 @@ export function ProductCard({ product: p, priority = false }: Props) {
 
           {/* ── Estado C: Agotado + formulario "Avísame" ──────────────────── */}
           {sinStock && (
-            <div className="mt-auto space-y-2">
-              <p className="text-center text-xs font-semibold text-red-500">Agotado</p>
-
-              {!notifSent ? (
+            <div className="mt-3 space-y-2">
+              {!notifSent && !notifOpen ? (
+                <button
+                  type="button"
+                  onClick={() => setNotifOpen(true)}
+                  className="btn-secondary flex w-full items-center justify-center gap-1.5 py-2 text-xs"
+                >
+                  <Bell size={12} />
+                  Avisame cuando haya stock
+                </button>
+              ) : !notifSent ? (
                 <form onSubmit={handleNotifSubmit} className="space-y-2">
                   {/* Honeypot — oculto para personas, visible para bots que
                      completan todos los campos del formulario */}

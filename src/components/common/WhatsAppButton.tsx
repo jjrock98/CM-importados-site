@@ -3,6 +3,7 @@ import { MessageCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/utils';
 import { useNearPageBottom } from '@/hooks/useNearPageBottom';
+import { useHideWhileScrolling } from '@/hooks/useHideWhileScrolling';
 
 export function WhatsAppButton() {
   const number  = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
@@ -10,6 +11,8 @@ export function WhatsAppButton() {
   // Se oculta con un fade al acercarse al footer para no tapar sus enlaces
   // en mobile (poco espacio horizontal), y reaparece al alejarse.
   const nearBottom = useNearPageBottom();
+  // En celular también se corre mientras se hace scroll y vuelve al frenar.
+  const scrolling = useHideWhileScrolling();
   const pathname = usePathname();
   // El panel de admin (/admin/*) es un cliente para uso interno, no de
   // compra — este botón no tiene sentido ahí y, en mobile, tapaba filas
@@ -27,13 +30,13 @@ export function WhatsAppButton() {
       // alto, tapando cualquier otro botón flotante que esté ahí. Por eso
       // este botón va a la esquina inferior IZQUIERDA.
       className={cn(
-        'buybar-lift fixed bottom-6 left-6 z-50 flex h-14 w-14 items-center justify-center',
+        'buybar-lift fixed bottom-4 left-4 z-50 flex h-12 w-12 items-center justify-center sm:bottom-6 sm:left-6 sm:h-14 sm:w-14',
         'rounded-full bg-green-500 text-white shadow-lg transition-all',
         'duration-300 hover:scale-110 hover:bg-green-600 active:scale-95',
-        nearBottom ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
+        nearBottom || scrolling ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
       )}
     >
-      <MessageCircle size={26} strokeWidth={2.2} />
+      <MessageCircle className="h-[22px] w-[22px] sm:h-[26px] sm:w-[26px]" strokeWidth={2.2} />
     </a>
   );
 }

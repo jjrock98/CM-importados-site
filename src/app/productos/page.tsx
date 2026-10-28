@@ -44,7 +44,10 @@ export default async function ProductosPage({
 }) {
   const params   = await searchParams;
   const pagina   = Math.max(1, parseInt(params.pagina ?? '1', 10));
-  const busqueda = params.q?.trim() ?? '';
+  // Se quitan los caracteres que tienen significado dentro del filtro .or() de
+  // PostgREST (coma, paréntesis, %, *, \): sin esto un texto como "a,b" rompía
+  // o alteraba el filtro. También se limita el largo.
+  const busqueda = (params.q ?? '').replace(/[,()%*\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   const categoria = params.categoria?.trim() ?? '';
   // Orden aplicado en el servidor: antes el selector solo reordenaba las 12
   // tarjetas de la página visible, no todo el catálogo.
@@ -79,7 +82,7 @@ export default async function ProductosPage({
 
   if (busqueda) {
     prodQuery = prodQuery.or(
-      `nombre.ilike.%${busqueda}%,descripcion_corta.ilike.%${busqueda}%`
+      `nombre.ilike.%${busqueda}%,descripcion_corta.ilike.%${busqueda}%,descripcion.ilike.%${busqueda}%`
     );
   }
   if (categoria) {
@@ -105,18 +108,13 @@ export default async function ProductosPage({
         title="Productos"
         description="Indumentaria, sandalias y zuecos importados por docena cerrada."
         icon={<ShoppingBag size={28} />}
+        compact
       />
 
-      <section className="mx-auto max-w-7xl px-4 py-12">
-        {/* Barra de búsqueda + contador */}
-        <AnimateIn className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <form action="/productos" method="GET" className="flex gap-2">
-            <input name="q" defaultValue={busqueda} placeholder="Buscar productos…"
-              className="input-base max-w-xs text-sm" />
-            {busqueda && (
-              <Link href="/productos" className="btn-ghost text-sm py-2 px-3">✕ Limpiar</Link>
-            )}
-          </form>
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
+        {/* Contador. El buscador vive en la barra de filtros (ProductFilters):
+            antes había dos buscadores seguidos y el de arriba duplicaba al de abajo. */}
+        <AnimateIn className="mb-4">
           <p className="text-sm text-muted">
             {totalProductos ?? 0} {(totalProductos ?? 0) === 1 ? 'producto' : 'productos'}
             {busqueda && <> para &ldquo;{busqueda}&rdquo;</>}
@@ -134,6 +132,11 @@ export default async function ProductosPage({
                   ? `No hay productos en "${categoriaLabel(categoria)}" todavía.`
                   : 'No hay productos disponibles aún.'}
             </p>
+            <form action="/productos" method="GET" className="mx-auto mt-5 flex max-w-sm gap-2 px-4">
+              <input name="q" defaultValue={busqueda} placeholder="Probá con otra búsqueda…"
+                aria-label="Buscar productos" className="input-base text-sm" />
+              <button type="submit" className="btn-primary px-4 py-2 text-sm">Buscar</button>
+            </form>
             {(busqueda || categoria) && (
               <Link href="/productos" className="btn-secondary mt-4 text-sm px-4 py-2">Ver todo el catálogo</Link>
             )}
