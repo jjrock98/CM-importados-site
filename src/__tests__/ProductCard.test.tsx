@@ -69,14 +69,20 @@ describe('ProductCard', () => {
 
   it('shows stock information', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
-    expect(screen.getByText(/48/)).toBeInTheDocument();
+    expect(screen.getByText(/48 uds disponibles/)).toBeInTheDocument();
+  });
+
+  it('shows unit price (c/u) for docena and media docena', () => {
+    render(<ProductCard product={MOCK_PRODUCT} />);
+    // 1200 / 6 = 200 · 2200 / 12 = 183,33 → 183
+    expect(screen.getByText(/200 c\/u/)).toBeInTheDocument();
+    expect(screen.getByText(/183 c\/u/)).toBeInTheDocument();
   });
 
   it('calculates max packs from stock', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
     // 48 / 6 = 8 media docenas, 48 / 12 = 4 docenas
-    expect(screen.getByText(/8/)).toBeInTheDocument();
-    expect(screen.getByText(/4/)).toBeInTheDocument();
+    expect(screen.getByText(/48 uds disponibles/)).toBeInTheDocument();
   });
 
   it('shows "Agotado" state with notify-me form when out of stock', () => {

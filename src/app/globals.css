@@ -252,3 +252,11 @@
 }
 
 .print-only { display: none; }
+
+/* Barra fija de compra (MobileBuyBar): mientras se ve, los botones flotantes
+   de la esquina inferior izquierda suben para no quedar tapados por ella. */
+@media (max-width: 1023px) {
+  body.has-buy-bar .buybar-lift {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}

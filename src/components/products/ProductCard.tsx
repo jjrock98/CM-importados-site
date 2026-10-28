@@ -243,8 +243,14 @@ export function ProductCard({ product: p, priority = false }: Props) {
                 <span className={cn('text-xs', !canBuyMediaDocena ? 'text-red-400 line-through' : 'text-muted')}>
                   ½ docena (6)
                 </span>
-                <span className={cn('text-sm font-bold', canBuyMediaDocena ? 'text-brand-600' : 'text-muted')}>
-                  {formatPrice(p.precio_media_docena)}
+                <span className="text-right">
+                  <span className={cn('text-sm font-bold', canBuyMediaDocena ? 'text-brand-600' : 'text-muted')}>
+                    {formatPrice(p.precio_media_docena)}
+                  </span>
+                  {/* Precio por unidad: ayuda a comparar y a calcular la reventa */}
+                  <span className="block text-[11px] leading-tight text-muted">
+                    {formatPrice(Math.round(p.precio_media_docena / 6))} c/u
+                  </span>
                 </span>
               </div>
             )}
@@ -252,8 +258,13 @@ export function ProductCard({ product: p, priority = false }: Props) {
               <span className={cn('text-xs', !canBuyDocena ? 'text-red-400 line-through' : 'text-muted')}>
                 Docena (12)
               </span>
-              <span className={cn('text-sm font-bold', canBuyDocena ? 'text-brand-600' : 'text-muted')}>
-                {formatPrice(p.precio_docena)}
+              <span className="text-right">
+                <span className={cn('text-sm font-bold', canBuyDocena ? 'text-brand-600' : 'text-muted')}>
+                  {formatPrice(p.precio_docena)}
+                </span>
+                <span className="block text-[11px] leading-tight text-muted">
+                  {formatPrice(Math.round(p.precio_docena / 12))} c/u
+                </span>
               </span>
             </div>
           </div>

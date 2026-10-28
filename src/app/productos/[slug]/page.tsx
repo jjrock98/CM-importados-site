@@ -10,6 +10,7 @@ import { ProductVideos } from '@/components/products/ProductVideos';
 import { ProductModalTrigger } from '@/components/products/ProductModalTrigger';
 import { VariantSelector } from '@/components/products/VariantSelector';
 import { SimpleUnitBuyBox } from '@/components/products/SimpleUnitBuyBox';
+import { MobileBuyBar } from '@/components/products/MobileBuyBar';
 import { ProductWhatsAppButton } from '@/components/products/ProductWhatsAppButton';
 import { ProductShareButton } from '@/components/products/ProductShareButton';
 import { ProductReviews } from '@/components/products/ProductReviews';
@@ -405,16 +406,20 @@ export default async function ProductoPage({ params }: Props) {
                  Un producto mayorista puro no debe mostrar este selector aunque
                  tenga variantes cargadas: esas variantes solo alimentan la curva
                  automática del pack, no implican que el cliente pueda elegirlas. */}
-            {p.venta_minorista && variants.length > 0 ? (
-              <VariantSelector product={p} initialVariants={variants} />
-            ) : p.venta_minorista ? (
-              <SimpleUnitBuyBox product={p} />
-            ) : null}
+            {/* Zona de compra: la barra fija del celular (MobileBuyBar) la usa
+                como referencia para mostrarse/ocultarse y para llevar al cliente acá. */}
+            <div id="comprar" className="scroll-mt-24 space-y-6">
+              {p.venta_minorista && variants.length > 0 ? (
+                <VariantSelector product={p} initialVariants={variants} />
+              ) : p.venta_minorista ? (
+                <SimpleUnitBuyBox product={p} />
+              ) : null}
 
-            {/* ✅ Fixed: usa ProductModalTrigger, no ProductModal */}
-            {p.venta_mayorista && (
-              <ProductModalTrigger product={p} triggerLabel="Elegir pack y agregar al carrito" />
-            )}
+              {/* ✅ Fixed: usa ProductModalTrigger, no ProductModal */}
+              {p.venta_mayorista && (
+                <ProductModalTrigger product={p} triggerLabel="Elegir pack y agregar al carrito" />
+              )}
+            </div>
 
             <ProductWhatsAppButton
               productName={p.nombre}
@@ -442,6 +447,19 @@ export default async function ProductoPage({ params }: Props) {
 
         {/* Reseñas reales de clientes con compra verificada */}
         <ProductReviews productId={p.id} initialReviews={reviews} />
+
+        {(p.venta_mayorista || p.venta_minorista) && p.stock_unidades > 0 && (
+          <MobileBuyBar
+            targetId="comprar"
+            priceLabel={
+              p.venta_mayorista && p.precio_docena > 0
+                ? `Docena ${formatPrice(p.precio_docena)}`
+                : p.precio_unitario
+                  ? formatPrice(p.precio_unitario)
+                  : p.nombre
+            }
+          />
+        )}
 
         {/* Related products */}
         <RelatedProducts currentProductId={p.id} categoria={p.categoria} />

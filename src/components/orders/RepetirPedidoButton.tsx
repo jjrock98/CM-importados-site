@@ -6,6 +6,7 @@ import { useCartStore } from '@/hooks/useCart';
 import { notifyAddedToCart } from '@/lib/cartFeedback';
 import type { TipoPack } from '@/types';
 import toast from 'react-hot-toast';
+import { cn } from '@/utils';
 
 interface RepetirItem {
   productId:   string;
@@ -30,7 +31,14 @@ interface RepetirItem {
  * pero se agregan igual los que sí están disponibles — no bloquea todo
  * el lote por un solo producto agotado.
  */
-export function RepetirPedidoButton({ items }: { items: RepetirItem[] }) {
+export function RepetirPedidoButton({
+  items,
+  variante = 'link',
+}: {
+  items: RepetirItem[];
+  /** 'link': texto chico dentro de la tarjeta · 'boton': botón destacado (detalle del pedido). */
+  variante?: 'link' | 'boton';
+}) {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const [loading, setLoading] = useState(false);
@@ -88,11 +96,15 @@ export function RepetirPedidoButton({ items }: { items: RepetirItem[] }) {
     <button
       onClick={handleClick}
       disabled={loading}
-      className="flex items-center gap-1 text-brand-600 hover:underline font-medium disabled:opacity-50"
+      className={cn(
+        variante === 'boton'
+          ? 'btn-primary gap-2 px-4 py-2 text-sm disabled:opacity-50'
+          : 'flex items-center gap-1 text-brand-600 hover:underline font-medium disabled:opacity-50',
+      )}
     >
       {loading
-        ? <><Loader2 size={11} className="animate-spin" /> Verificando stock…</>
-        : <><RotateCcw size={11} /> Repetir pedido</>}
+        ? <><Loader2 size={variante === 'boton' ? 15 : 11} className="animate-spin" /> Verificando stock…</>
+        : <><RotateCcw size={variante === 'boton' ? 15 : 11} /> Repetir pedido</>}
     </button>
   );
 }

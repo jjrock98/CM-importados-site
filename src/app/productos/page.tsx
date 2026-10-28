@@ -40,12 +40,26 @@ export const revalidate = 60;
 export default async function ProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string }>;
+  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string; orden?: string }>;
 }) {
   const params   = await searchParams;
   const pagina   = Math.max(1, parseInt(params.pagina ?? '1', 10));
   const busqueda = params.q?.trim() ?? '';
   const categoria = params.categoria?.trim() ?? '';
+  // Orden aplicado en el servidor: antes el selector solo reordenaba las 12
+  // tarjetas de la página visible, no todo el catálogo.
+  const ORDENES: Record<string, { col: string; asc: boolean }> = {
+    nuevos:      { col: 'created_at',     asc: false },
+    precio_asc:  { col: 'precio_docena',  asc: true  },
+    precio_desc: { col: 'precio_docena',  asc: false },
+    nombre:      { col: 'nombre',         asc: true  },
+    stock:       { col: 'stock_unidades', asc: false },
+  };
+  const orden = Object.keys(ORDENES).includes(params.orden ?? '') ? (params.orden as string) : '';
+  const extraQs =
+    (busqueda  ? `&q=${encodeURIComponent(busqueda)}` : '') +
+    (categoria ? `&categoria=${encodeURIComponent(categoria)}` : '') +
+    (orden     ? `&orden=${orden}` : '');
   const POR_PAGINA = 12;
   const offset     = (pagina - 1) * POR_PAGINA;
   const admin = createAdminClient();
@@ -56,10 +70,12 @@ export default async function ProductosPage({
     .from('products')
     .select('*', { count: 'exact' })
     .eq('activo', true)
-    .eq('venta_mayorista', true)
-    .order('destacado', { ascending: false })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + POR_PAGINA - 1);
+    .eq('venta_mayorista', true);
+
+  prodQuery = (orden
+    ? prodQuery.order(ORDENES[orden].col, { ascending: ORDENES[orden].asc }).order('created_at', { ascending: false })
+    : prodQuery.order('destacado', { ascending: false }).order('created_at', { ascending: false })
+  ).range(offset, offset + POR_PAGINA - 1);
 
   if (busqueda) {
     prodQuery = prodQuery.or(
@@ -130,6 +146,8 @@ export default async function ProductosPage({
               categoriaActual={categoria}
               busqueda={busqueda}
               basePath="/productos"
+              ordenActual={orden}
+              ordenServidor
             />
 
             {/* Paginación */}
@@ -137,7 +155,7 @@ export default async function ProductosPage({
               <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
                 {hayAnterior && (
                   <a
-                    href={`/productos?pagina=${pagina - 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
+                    href={`/productos?pagina=${pagina - 1}${extraQs}`}
                     className="btn-secondary text-sm px-4 py-2 gap-1.5"
                   >
                     ← Anterior
@@ -157,7 +175,7 @@ export default async function ProductosPage({
                       : (
                         <a
                           key={p}
-                          href={`/productos?pagina=${p}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
+                          href={`/productos?pagina=${p}${extraQs}`}
                           className={`h-9 w-9 flex items-center justify-center rounded-xl text-sm font-semibold transition-colors ${
                             p === pagina
                               ? 'bg-brand-500 text-white'
@@ -171,7 +189,7 @@ export default async function ProductosPage({
 
                 {haySiguiente && (
                   <a
-                    href={`/productos?pagina=${pagina + 1}${busqueda ? `&q=${encodeURIComponent(busqueda)}` : ''}${categoria ? `&categoria=${categoria}` : ''}`}
+                    href={`/productos?pagina=${pagina + 1}${extraQs}`}
                     className="btn-secondary text-sm px-4 py-2 gap-1.5"
                   >
                     Siguiente →

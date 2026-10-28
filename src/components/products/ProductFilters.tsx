@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback, useMemo, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { Search, SlidersHorizontal, X, ChevronDown } from 'lucide-react';
 import { ProductCard } from './ProductCard';
 import { cn, formatPrice } from '@/utils';
@@ -17,21 +18,27 @@ interface Props {
    *  Pasar '/productos' cuando este componente se usa en esa página, para
    *  que los chips no te saquen del catálogo dedicado. */
   basePath?: string;
+  /** Orden activo leído de la URL (?orden=...) cuando el orden se aplica en el servidor. */
+  ordenActual?: string;
+  /** Si es true, cambiar el orden navega (ordena TODO el catálogo, no solo la página visible). */
+  ordenServidor?: boolean;
 }
 
-type SortKey = 'relevancia' | 'precio_asc' | 'precio_desc' | 'nombre' | 'stock';
+type SortKey = 'relevancia' | 'nuevos' | 'precio_asc' | 'precio_desc' | 'nombre' | 'stock';
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'relevancia',  label: 'Relevancia'        },
+  { value: 'nuevos',      label: 'Más nuevos'        },
   { value: 'precio_asc',  label: 'Precio: menor a mayor' },
   { value: 'precio_desc', label: 'Precio: mayor a menor' },
   { value: 'nombre',      label: 'Nombre A–Z'         },
   { value: 'stock',       label: 'Mayor stock primero' },
 ];
 
-export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/' }: Props) {
+export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/', ordenActual = '', ordenServidor = false }: Props) {
+  const router = useRouter();
   const [query,       setQuery]       = useState('');
-  const [sort,        setSort]        = useState<SortKey>('relevancia');
+  const [sort,        setSort]        = useState<SortKey>(ordenServidor && ordenActual ? (ordenActual as SortKey) : 'relevancia');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [priceMax,    setPriceMax]    = useState<number | ''>('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -45,8 +52,21 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     const qs = new URLSearchParams();
     if (value) qs.set('categoria', value);
     if (busqueda) qs.set('q', busqueda);
+    if (ordenServidor && ordenActual) qs.set('orden', ordenActual);
     const s = qs.toString();
     return s ? `${basePath}?${s}` : basePath;
+  };
+
+  // Con orden en el servidor, cambiar el selector navega a la página 1 con ?orden=...
+  const onSort = (v: SortKey) => {
+    setSort(v);
+    if (!ordenServidor) return;
+    const qs = new URLSearchParams();
+    if (categoriaActual) qs.set('categoria', categoriaActual);
+    if (busqueda) qs.set('q', busqueda);
+    if (v !== 'relevancia') qs.set('orden', v);
+    const s = qs.toString();
+    router.push(s ? `${basePath}?${s}` : basePath);
   };
 
   // Precio de referencia para filtrar/ordenar: media docena si el producto
@@ -85,8 +105,9 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     // Price filter (por precio de referencia: media docena u, si no tiene, docena)
     if (priceMax !== '') list = list.filter((p) => precioRef(p) <= Number(priceMax));
 
-    // Sort
-    switch (sort) {
+    // Sort (si el orden lo aplicó el servidor, se respeta tal cual llegó)
+    if (!ordenServidor) switch (sort) {
+      case 'nuevos':      list.sort((a, b) => b.created_at.localeCompare(a.created_at));        break;
       case 'precio_asc':  list.sort((a, b) => precioRef(a) - precioRef(b)); break;
       case 'precio_desc': list.sort((a, b) => precioRef(b) - precioRef(a)); break;
       case 'nombre':      list.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));         break;
@@ -95,7 +116,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     }
 
     return list;
-  }, [products, query, sort, onlyInStock, priceMax]);
+  }, [products, query, sort, onlyInStock, priceMax, ordenServidor]);
 
   const hasFilters = query || onlyInStock || priceMax !== '' || categoriaActual !== '';
   const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setSort('relevancia'); };
@@ -152,7 +173,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
         <div className="relative">
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
+            onChange={(e) => onSort(e.target.value as SortKey)}
             className="input-base py-2.5 pl-3 pr-8 text-sm appearance-none cursor-pointer min-w-44"
             aria-label="Ordenar por"
           >

@@ -9,6 +9,7 @@ import type { Order, MicroTerminal } from '@/types';
 import { ArrowLeft, Package, Printer, MapPin, Store, Bus, Navigation, Receipt, CalendarClock, MessageCircle } from 'lucide-react';
 import { OrderCancelButton } from '@/components/orders/OrderCancelButton';
 import { VerComprobanteLink } from '@/components/orders/OrderCardActions';
+import { RepetirPedidoButton } from '@/components/orders/RepetirPedidoButton';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ export default async function OrderDetailPage({ params }: Props) {
 
   const { data: order } = await supabase
     .from('orders')
-    .select('id,nombre,email,telefono,direccion,ciudad,codigo_postal,estado,metodo_pago,tipo_entrega,codigo_retiro,retiro_dni_titular,retiro_retira_tercero,retiro_tercero_nombre,retiro_tercero_dni,retirado_at,micro_terminal,micro_empresa_transporte,micro_nombre_recibe,mp_payment_id,mp_status_detail,fecha_pago,comprobante_url,comprobante_revisado,rejection_reason,subtotal,costo_envio,total,notas,stock_descontado,created_at,updated_at, order_items(id,tipo_pack,cantidad_packs,unidades,precio_unit,subtotal,nombre_snap,imagen_snap,variant_id,variant_snap,curva_breakdown)')
+    .select('id,nombre,email,telefono,direccion,ciudad,codigo_postal,estado,metodo_pago,tipo_entrega,codigo_retiro,retiro_dni_titular,retiro_retira_tercero,retiro_tercero_nombre,retiro_tercero_dni,retirado_at,micro_terminal,micro_empresa_transporte,micro_nombre_recibe,mp_payment_id,mp_status_detail,fecha_pago,comprobante_url,comprobante_revisado,rejection_reason,subtotal,costo_envio,total,notas,stock_descontado,created_at,updated_at, order_items(id,product_id,products(slug,imagenes),tipo_pack,cantidad_packs,unidades,precio_unit,subtotal,nombre_snap,imagen_snap,variant_id,variant_snap,curva_breakdown)')
     .eq('id', id).eq('user_id', user.id).single();
 
   if (!order) notFound();
@@ -86,6 +87,21 @@ export default async function OrderDetailPage({ params }: Props) {
           <p className="text-sm text-muted mt-1">{formatDate(o.created_at)}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <RepetirPedidoButton
+            variante="boton"
+            items={(o.order_items ?? []).map((item) => ({
+              productId:     item.product_id,
+              productSlug:   item.products?.slug ?? '',
+              nombre:        item.nombre_snap,
+              imagen:        item.imagen_snap ?? item.products?.imagenes?.[0] ?? '',
+              tipoPack:      item.tipo_pack,
+              cantidadPacks: item.cantidad_packs,
+              unidades:      item.cantidad_packs * (item.tipo_pack === 'media_docena' ? 6 : item.tipo_pack === 'docena' ? 12 : 1),
+              precioUnit:    item.subtotal / item.cantidad_packs,
+              variantId:     item.variant_id ?? null,
+              variantLabel:  item.variant_snap ?? null,
+            }))}
+          />
           {isRetiro && (
             <span className="badge bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400 gap-1.5">
               <Store size={11} /> Retiro en local
