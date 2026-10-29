@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     siteName:    'MC Importados',
     locale:      'es_AR',
     title:       '📍 Dónde Estamos | MC Importados',
-    description: 'Visitanos en Arana Goiri 10, Ingeniero Budge. Atendemos Lunes, Miércoles y Sábados de 6:00 a 13:00 hs. ¡Mirá cómo llegar!',
+    description: 'Visitanos en Dr. Carlos Voss 1835, Ingeniero Budge. Atendemos Lunes, Miércoles y Sábados de 6:00 a 13:00 hs. ¡Mirá cómo llegar!',
     url:         `${env.APP_URL}/ubicacion`,
     type:        'website',
     images: [{
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card:        'summary_large_image',
     title:       '📍 Dónde Estamos | MC Importados',
-    description: 'Visitanos en Arana Goiri 10, Ingeniero Budge. Lunes, Miércoles y Sábados de 6:00 a 13:00 hs.',
+    description: 'Visitanos en Dr. Carlos Voss 1835, Ingeniero Budge. Lunes, Miércoles y Sábados de 6:00 a 13:00 hs.',
     images:      [`${env.APP_URL}/og-ubicacion.png`],
   },
 };

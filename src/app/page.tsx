@@ -84,14 +84,17 @@ export default async function HomePage() {
     description: `${tienda} — Venta de productos por packs. Media docena (6 uds) y Docena (12 uds). Envío a domicilio y retiro en local.`,
     ...(contactInfo?.email     && { email: contactInfo.email }),
     ...(contactInfo?.telefono  && { telephone: contactInfo.telefono }),
-    ...(contactInfo?.direccion && { address: {
+    // Dirección fija y única (la misma que figura en Google Merchant Center). Antes
+    // salía de contact_info.direccion con otro código postal, y las direcciones
+    // distintas entre el sitio y Merchant Center le restan confianza a Google.
+    address: {
       '@type': 'PostalAddress',
-      streetAddress: contactInfo.direccion,
+      streetAddress: 'Dr. Carlos Voss 1835',
       addressLocality: 'Ingeniero Budge',
       addressRegion: 'Provincia de Buenos Aires',
-      postalCode: 'B1827CMJ',
+      postalCode: 'B1827DAC',
       addressCountry: 'AR',
-    }}),
+    },
     ...(contactInfo?.horario && { openingHours: contactInfo.horario }),
     ...(whatsapp && { sameAs: [`https://wa.me/${whatsapp}`] }),
     ...(contactInfo?.instagram && { sameAs: [contactInfo.instagram] }),
