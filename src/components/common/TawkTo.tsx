@@ -73,7 +73,7 @@ export function TawkTo() {
   const nearBottom = useNearPageBottom();
   // En celular la burbuja también se oculta mientras se hace scroll (y vuelve
   // al frenar), salvo que la conversación esté abierta: ahí nunca se esconde.
-  const scrolling = useHideWhileScrolling();
+  const scrolling = useHideWhileScrolling(900, 350); // con demora: un scroll corto no hace parpadear la burbuja
   useEffect(() => {
     if (!propertyId) return;
     const api = window.Tawk_API;

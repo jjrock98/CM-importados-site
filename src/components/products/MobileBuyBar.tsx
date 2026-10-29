@@ -18,11 +18,15 @@ import { cn } from '@/utils';
  */
 export function MobileBuyBar({
   targetId,
-  priceLabel,
-  ctaLabel = 'Elegir y agregar',
+  eyebrow,
+  price,
+  ctaLabel = 'Elegir pack',
 }: {
   targetId: string;
-  priceLabel: string;
+  /** Texto chico sobre el precio (ej. "Docena (12)"). */
+  eyebrow: string;
+  /** Precio ya formateado (ej. "$ 240.000"). Va en su propia línea para que nunca se corte. */
+  price: string;
   ctaLabel?: string;
 }) {
   const [visible, setVisible] = useState(false);
@@ -59,7 +63,10 @@ export function MobileBuyBar({
       style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3">
-        <p className="min-w-0 flex-1 truncate text-sm font-bold text-brand-600">{priceLabel}</p>
+        <div className="min-w-0 flex-1 leading-tight">
+          <p className="truncate text-[11px] text-muted">{eyebrow}</p>
+          <p className="truncate text-base font-bold text-brand-600 dark:text-brand-300">{price}</p>
+        </div>
         <button
           type="button"
           onClick={goToBuyBox}

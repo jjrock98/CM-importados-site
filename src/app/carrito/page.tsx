@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Trash2, ShoppingBag, Minus, Plus, Truck, AlertTriangle, MessageCircle } from 'lucide-react';
+import { Trash2, ShoppingBag, Minus, Plus, Truck, AlertTriangle, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
 import { createClient } from '@/lib/supabase/client';
 import { formatPrice } from '@/utils';
@@ -148,6 +148,30 @@ export default function CarritoPage() {
     }
   };
 
+  // Condiciones comerciales del cliente (descuento fijo y pedido mínimo). Antes solo se
+  // conocían recién en el checkout: el carrito mostraba un total distinto del final y
+  // el mínimo aparecía en el último paso. Para invitados vienen en 0 (sin descuento ni mínimo).
+  const [cond, setCond] = useState({ descuento_fijo_pct: 0, monto_minimo_pedido: 0 });
+  useEffect(() => {
+    fetch('/api/mi-cuenta/condiciones')
+      .then((r) => r.json())
+      .then(({ data }) => {
+        if (data) setCond({
+          descuento_fijo_pct:  Number(data.descuento_fijo_pct)  || 0,
+          monto_minimo_pedido: Number(data.monto_minimo_pedido) || 0,
+        });
+      })
+      .catch(() => {});
+  }, []);
+  const subtotalConDescuento = cond.descuento_fijo_pct > 0
+    ? Math.round(subtotal * (1 - cond.descuento_fijo_pct / 100))
+    : subtotal;
+  const descuentoMonto = subtotal - subtotalConDescuento;
+  const hayMinimo      = cond.monto_minimo_pedido > 0;
+  const bajoMinimo     = hayMinimo && subtotalConDescuento < cond.monto_minimo_pedido;
+  const faltaMinimo    = cond.monto_minimo_pedido - subtotalConDescuento;
+  const progresoMinimo = hayMinimo ? Math.min(100, Math.round((subtotalConDescuento / cond.monto_minimo_pedido) * 100)) : 0;
+
   if (items.length === 0) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4">
@@ -262,6 +286,7 @@ export default function CarritoPage() {
 
                 <button
                   onClick={() => { removeItem(item.productId, item.tipoPack, item.variantId); toast('Producto eliminado'); }}
+                  aria-label={`Quitar ${item.nombre} del carrito`}
                   className="text-muted hover:text-red-500 transition-colors p-1 self-start"
                 ><Trash2 size={16} /></button>
               </div>
@@ -282,32 +307,64 @@ export default function CarritoPage() {
             <div className="flex gap-2 mt-3">
               {process.env.NEXT_PUBLIC_WHATSAPP_NUMBER && (
                 <a
-                  href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! ¿Quiero consultar sobre el costo del envío de mi pedido?.')}`}
+                  href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola! Quiero consultar el costo de envío de mi pedido.')}`}
                   target="_blank" rel="noopener noreferrer"
                   className="btn-secondary flex-1 text-xs py-2 justify-center gap-1.5"
                 >
                   <MessageCircle size={13} /> WhatsApp
                 </a>
               )}
-              <span className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-border text-xs py-2 text-muted">
+              <button
+                type="button"
+                onClick={() => {
+                  const api = (window as unknown as { Tawk_API?: { showWidget?: () => void; maximize?: () => void } }).Tawk_API;
+                  api?.showWidget?.();
+                  api?.maximize?.();
+                }}
+                className="btn-secondary flex-1 text-xs py-2 justify-center gap-1.5"
+              >
                 <MessageCircle size={13} /> Chat en vivo
-              </span>
+              </button>
             </div>
           </div>
 
           <div className="card p-5 space-y-3">
             <h3 className="font-semibold">Resumen</h3>
+            {hayMinimo && (
+              <div
+                className={`rounded-lg border px-3 py-2 text-xs ${
+                  bajoMinimo
+                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/20 dark:text-amber-300'
+                    : 'border-green-300 bg-green-50 text-green-800 dark:border-green-700 dark:bg-green-950/20 dark:text-green-300'
+                }`}
+              >
+                {bajoMinimo ? (
+                  <p>Te faltan <strong>{formatPrice(faltaMinimo)}</strong> para llegar al pedido mínimo de {formatPrice(cond.monto_minimo_pedido)}.</p>
+                ) : (
+                  <p className="flex items-center gap-1.5"><CheckCircle2 size={13} /> Llegaste al pedido mínimo.</p>
+                )}
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/10 dark:bg-white/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progresoMinimo} aria-label="Avance hacia el pedido mínimo">
+                  <div className={`h-full rounded-full ${bajoMinimo ? 'bg-amber-500' : 'bg-green-500'}`} style={{ width: `${progresoMinimo}%` }} />
+                </div>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted">Subtotal</span>
               <span>{formatPrice(subtotal)}</span>
             </div>
+            {descuentoMonto > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Tu descuento ({cond.descuento_fijo_pct}%)</span>
+                <span>−{formatPrice(descuentoMonto)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted">Envío</span>
               <span className="text-xs text-muted">A coordinar</span>
             </div>
             <div className="border-t border-border pt-3 flex justify-between font-bold">
               <span>Total</span>
-              <span className="text-brand-600 text-lg">{formatPrice(subtotal)}</span>
+              <span className="text-brand-600 dark:text-brand-300 text-lg">{formatPrice(subtotalConDescuento)}</span>
             </div>
             <p className="text-[11px] text-muted -mt-1">El total no incluye el envío — se coordina aparte.</p>
             <Link
@@ -317,7 +374,7 @@ export default function CarritoPage() {
             >
               {hasStockIssue ? 'Ajustá las cantidades' : 'Ir a pagar'}
             </Link>
-            <Link href="/" className="btn-ghost w-full text-center text-sm">
+            <Link href="/productos" className="btn-ghost w-full text-center text-sm">
               Seguir comprando
             </Link>
             <button

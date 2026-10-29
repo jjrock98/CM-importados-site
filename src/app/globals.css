@@ -259,4 +259,9 @@
   body.has-buy-bar .buybar-lift {
     bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
+  /* En la página de producto, deja lugar al final para que la barra fija no tape
+     el último texto del pie de página. (:has() lo soportan los navegadores actuales.) */
+  body:has(#comprar) {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  }
 }

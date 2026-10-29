@@ -451,12 +451,11 @@ export default async function ProductoPage({ params }: Props) {
         {(p.venta_mayorista || p.venta_minorista) && p.stock_unidades > 0 && (
           <MobileBuyBar
             targetId="comprar"
-            priceLabel={
+            eyebrow={p.venta_mayorista && p.precio_docena > 0 ? 'Docena (12)' : 'Precio por unidad'}
+            price={
               p.venta_mayorista && p.precio_docena > 0
-                ? `Docena ${formatPrice(p.precio_docena)}`
-                : p.precio_unitario
-                  ? formatPrice(p.precio_unitario)
-                  : p.nombre
+                ? formatPrice(p.precio_docena)
+                : formatPrice(p.precio_unitario ?? 0)
             }
           />
         )}

@@ -590,9 +590,9 @@ export default function CheckoutPage() {
             <div className="card p-6">
               <h2 className="font-semibold mb-4">Datos personales</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <div><label className="block text-xs font-medium mb-1">Nombre *</label><input required value={form.nombre} onChange={set('nombre')} className="input-base" /></div>
-                <div><label className="block text-xs font-medium mb-1">Email *</label><input required type="email" value={form.email} onChange={set('email')} className="input-base" /></div>
-                <div><label className="block text-xs font-medium mb-1">Teléfono *</label><input required type="tel" value={form.telefono} onChange={set('telefono')} className="input-base" /></div>
+                <div><label htmlFor="co-nombre" className="block text-xs font-medium mb-1">Nombre *</label><input id="co-nombre" name="name" autoComplete="name" required value={form.nombre} onChange={set('nombre')} className="input-base" /></div>
+                <div><label htmlFor="co-email" className="block text-xs font-medium mb-1">Email *</label><input id="co-email" name="email" autoComplete="email" inputMode="email" required type="email" value={form.email} onChange={set('email')} className="input-base" /></div>
+                <div><label htmlFor="co-telefono" className="block text-xs font-medium mb-1">Teléfono *</label><input id="co-telefono" name="tel" autoComplete="tel" inputMode="tel" required type="tel" value={form.telefono} onChange={set('telefono')} className="input-base" /></div>
               </div>
             </div>
 
@@ -601,9 +601,9 @@ export default function CheckoutPage() {
               <div className="card p-6">
                 <h2 className="font-semibold mb-4 flex items-center gap-2"><MapPin size={17} className="text-brand-500" />Dirección de entrega</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="sm:col-span-2"><label className="block text-xs font-medium mb-1">Dirección *</label><input required value={form.direccion} onChange={set('direccion')} className="input-base" /></div>
-                  <div><label className="block text-xs font-medium mb-1">Ciudad *</label><input required value={form.ciudad} onChange={set('ciudad')} className="input-base" /></div>
-                  <div><label className="block text-xs font-medium mb-1">Código postal *</label><input required value={form.codigo_postal} onChange={set('codigo_postal')} className="input-base" /></div>
+                  <div className="sm:col-span-2"><label htmlFor="co-direccion" className="block text-xs font-medium mb-1">Dirección *</label><input id="co-direccion" name="street-address" autoComplete="street-address" required value={form.direccion} onChange={set('direccion')} className="input-base" /></div>
+                  <div><label htmlFor="co-ciudad" className="block text-xs font-medium mb-1">Ciudad *</label><input id="co-ciudad" name="city" autoComplete="address-level2" required value={form.ciudad} onChange={set('ciudad')} className="input-base" /></div>
+                  <div><label htmlFor="co-cp" className="block text-xs font-medium mb-1">Código postal *</label><input id="co-cp" name="postal-code" autoComplete="postal-code" required value={form.codigo_postal} onChange={set('codigo_postal')} className="input-base" /></div>
                   <div className="sm:col-span-2"><label className="block text-xs font-medium mb-1">Notas (opcional)</label><textarea value={form.notas} onChange={set('notas')} rows={2} className="input-base resize-none" placeholder="Piso, depto, referencias…" /></div>
                 </div>
               </div>
