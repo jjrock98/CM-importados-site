@@ -22,6 +22,11 @@ interface Props {
   ordenActual?: string;
   /** Si es true, cambiar el orden navega (ordena TODO el catálogo, no solo la página visible). */
   ordenServidor?: boolean;
+  /** Filtros aplicados en el servidor (?stock=1 y ?maxprecio=N). Solo se usan con ordenServidor. */
+  soloStockActual?: boolean;
+  maxPrecioActual?: number;
+  /** Precio de referencia más alto de TODO el catálogo: tope del slider (no solo de la página visible). */
+  precioMaximoCatalogo?: number;
 }
 
 type SortKey = 'relevancia' | 'nuevos' | 'precio_asc' | 'precio_desc' | 'nombre' | 'stock';
@@ -35,52 +40,67 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'stock',       label: 'Mayor stock primero' },
 ];
 
-export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/', ordenActual = '', ordenServidor = false }: Props) {
+export function ProductFilters({ products, categoriasDisponibles, categoriaActual, busqueda, basePath = '/', ordenActual = '', ordenServidor = false, soloStockActual = false, maxPrecioActual = 0, precioMaximoCatalogo = 0 }: Props) {
   const router = useRouter();
   // En el catálogo (ordenServidor) el texto se busca en TODO el catálogo, en el servidor:
   // se arranca con el ?q= actual y se navega al presionar Enter. En la home sigue siendo
   // un filtro instantáneo sobre las tarjetas cargadas.
   const [query,       setQuery]       = useState<string>(ordenServidor ? (busqueda ?? '') : '');
   const [sort,        setSort]        = useState<SortKey>(ordenServidor && ordenActual ? (ordenActual as SortKey) : 'relevancia');
-  const [onlyInStock, setOnlyInStock] = useState(false);
-  const [priceMax,    setPriceMax]    = useState<number | ''>('');
+  const [onlyInStock, setOnlyInStock] = useState(ordenServidor ? soloStockActual : false);
+  const [priceMax,    setPriceMax]    = useState<number | ''>(ordenServidor && maxPrecioActual > 0 ? maxPrecioActual : '');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [,            startTransition] = useTransition();
 
-  // Arma el link de cada chip preservando la búsqueda de texto activa
-  // (?q=...) y navegando siempre a página 1 — el filtro de categoría se
-  // aplica server-side, así que esto es una navegación normal, no estado
-  // local (por eso no se pierde al paginar).
-  const hrefCategoria = (value: string) => {
+  // Con filtros en el servidor, si cambia la URL (botón Atrás/Adelante, link de categoría)
+  // el estado local se vuelve a alinear con ella. Patrón oficial de React para "estado
+  // derivado de props": se actualiza durante el render, solo cuando algo cambió.
+  const urlKey = `${busqueda ?? ''}|${ordenActual}|${soloStockActual}|${maxPrecioActual}`;
+  const [prevUrlKey, setPrevUrlKey] = useState(urlKey);
+  if (ordenServidor && prevUrlKey !== urlKey) {
+    setPrevUrlKey(urlKey);
+    setQuery(busqueda ?? '');
+    setSort(ordenActual ? (ordenActual as SortKey) : 'relevancia');
+    setOnlyInStock(soloStockActual);
+    setPriceMax(maxPrecioActual > 0 ? maxPrecioActual : '');
+  }
+
+  // Arma el link de la página 1 con TODOS los filtros activos (categoría, texto, orden,
+  // solo stock, precio máximo); `o` pisa solo lo que cambia. Es navegación normal del
+  // servidor, así que los filtros no se pierden al paginar.
+  const buildHref = (o: { categoria?: string; q?: string; orden?: string; stock?: boolean; max?: number | '' } = {}) => {
     const qs = new URLSearchParams();
-    if (value) qs.set('categoria', value);
-    if (busqueda) qs.set('q', busqueda);
-    if (ordenServidor && ordenActual) qs.set('orden', ordenActual);
+    const cat = o.categoria ?? categoriaActual;
+    if (cat) qs.set('categoria', cat);
+    const q = (o.q ?? busqueda ?? '').trim();
+    if (q) qs.set('q', q);
+    const ord = o.orden ?? (ordenServidor ? sort : '');
+    if (ord && ord !== 'relevancia') qs.set('orden', ord);
+    const st = o.stock ?? (ordenServidor ? onlyInStock : false);
+    if (st) qs.set('stock', '1');
+    const mx = o.max ?? (ordenServidor ? priceMax : '');
+    if (mx !== '' && Number(mx) > 0) qs.set('maxprecio', String(Math.round(Number(mx))));
     const s = qs.toString();
     return s ? `${basePath}?${s}` : basePath;
   };
+  const hrefCategoria = (value: string) => buildHref({ categoria: value });
 
   // Con orden en el servidor, cambiar el selector navega a la página 1 con ?orden=...
   const onSort = (v: SortKey) => {
     setSort(v);
-    if (!ordenServidor) return;
-    const qs = new URLSearchParams();
-    if (categoriaActual) qs.set('categoria', categoriaActual);
-    if (busqueda) qs.set('q', busqueda);
-    if (v !== 'relevancia') qs.set('orden', v);
-    const s = qs.toString();
-    router.push(s ? `${basePath}?${s}` : basePath);
+    if (ordenServidor) router.push(buildHref({ orden: v }));
   };
 
-  // Buscar en el catálogo completo: navega a la página 1 con ?q=... (conserva categoría y orden).
-  const goSearch = (text: string) => {
-    const qs = new URLSearchParams();
-    if (categoriaActual) qs.set('categoria', categoriaActual);
-    if (text.trim()) qs.set('q', text.trim());
-    if (sort !== 'relevancia') qs.set('orden', sort);
-    const s = qs.toString();
-    router.push(s ? `${basePath}?${s}` : basePath);
+  // Buscar en el catálogo completo (conserva categoría, orden y filtros).
+  const goSearch = (text: string) => router.push(buildHref({ q: text }));
+
+  const onToggleStock = (checked: boolean) => {
+    setOnlyInStock(checked);
+    if (ordenServidor) router.push(buildHref({ stock: checked }));
   };
+  // El slider solo navega al soltarlo (mientras se arrastra, cambia el valor mostrado).
+  const commitPrice = () => { if (ordenServidor) router.push(buildHref({ max: priceMax })); };
+
   const onSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (ordenServidor) goSearch(query);
@@ -93,8 +113,8 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
 
   // Derived price range
   const maxPossiblePrice = useMemo(
-    () => Math.max(...products.map(precioRef)),
-    [products]
+    () => (ordenServidor && precioMaximoCatalogo > 0 ? precioMaximoCatalogo : Math.max(...products.map(precioRef))),
+    [products, ordenServidor, precioMaximoCatalogo]
   );
 
   const filtered = useMemo(() => {
@@ -114,13 +134,13 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     }
 
     // Stock filter
-    if (onlyInStock) list = list.filter((p) => p.stock_unidades >= 6);
+    if (!ordenServidor && onlyInStock) list = list.filter((p) => p.stock_unidades >= 6);
 
     // ✅ La categoría YA viene filtrada del servidor (ver page.tsx) — acá
     // no hace falta filtrar de nuevo, "products" ya es solo esa categoría.
 
     // Price filter (por precio de referencia: media docena u, si no tiene, docena)
-    if (priceMax !== '') list = list.filter((p) => precioRef(p) <= Number(priceMax));
+    if (!ordenServidor && priceMax !== '') list = list.filter((p) => precioRef(p) <= Number(priceMax));
 
     // Sort (si el orden lo aplicó el servidor, se respeta tal cual llegó)
     if (!ordenServidor) switch (sort) {
@@ -135,8 +155,13 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
     return list;
   }, [products, query, sort, onlyInStock, priceMax, ordenServidor]);
 
-  const hasFilters = query || onlyInStock || priceMax !== '' || categoriaActual !== '';
-  const clearAll   = () => { setQuery(''); setOnlyInStock(false); setPriceMax(''); setSort('relevancia'); };
+  const hasFilters = ordenServidor
+    ? !!(busqueda || categoriaActual || soloStockActual || maxPrecioActual > 0)
+    : !!(query || onlyInStock || priceMax !== '' || categoriaActual !== '');
+  const clearAll   = () => {
+    setQuery(''); setOnlyInStock(false); setPriceMax(''); setSort('relevancia');
+    if (ordenServidor) router.push(basePath);
+  };
 
   return (
     <div>
@@ -216,7 +241,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
         </button>
 
         {hasFilters && (
-          categoriaActual
+          categoriaActual && !ordenServidor
             ? <a href={hrefCategoria('')} className="text-xs text-muted hover:text-red-500 transition-colors flex items-center gap-1">
                 <X size={12} /> Limpiar filtros
               </a>
@@ -233,7 +258,7 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox" checked={onlyInStock}
-              onChange={(e) => setOnlyInStock(e.target.checked)}
+              onChange={(e) => onToggleStock(e.target.checked)}
               className="accent-brand-500 h-4 w-4"
             />
             <span className="text-sm">Solo con stock disponible</span>
@@ -249,6 +274,10 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
               type="range" min={0} max={maxPossiblePrice} step={100}
               value={priceMax === '' ? maxPossiblePrice : priceMax}
               onChange={(e) => setPriceMax(Number(e.target.value) === maxPossiblePrice ? '' : Number(e.target.value))}
+              onMouseUp={commitPrice}
+              onTouchEnd={commitPrice}
+              onKeyUp={commitPrice}
+              aria-label="Precio máximo"
               className="w-full accent-brand-500"
             />
             <div className="flex justify-between text-xs text-muted mt-1">
@@ -259,21 +288,21 @@ export function ProductFilters({ products, categoriasDisponibles, categoriaActua
         </div>
       )}
 
-      {/* Results count */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Results count (en el catálogo, el total real lo muestra la página, no este) */}
+      {!ordenServidor && <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-muted">
           <span className="font-semibold text-foreground">{filtered.length}</span>
           {' '}producto{filtered.length !== 1 ? 's' : ''}
           {query && <> para <strong>&ldquo;{query}&rdquo;</strong></>}
         </p>
-      </div>
+      </div>}
 
       {/* Grid */}
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted gap-3">
           <Search size={40} className="opacity-20" />
           <p className="text-center">No hay productos que coincidan con los filtros.</p>
-          {categoriaActual
+          {categoriaActual && !ordenServidor
             ? <a href={hrefCategoria('')} className="btn-secondary text-sm py-2">Ver todos los productos</a>
             : <button onClick={clearAll} className="btn-secondary text-sm py-2">Ver todos los productos</button>}
         </div>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Suspense } from 'react';
 import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -57,6 +58,15 @@ export default async function HomePage() {
   ]);
 
   const productList = (destacados ?? []) as Product[];
+  // Vitrina de la portada: fotos reales de lo que se vende, para que el visitante lo vea al instante.
+  const vitrina = productList.filter((p) => p.imagenes?.[0]).slice(0, 5);
+  // La sección trae primero los destacados y completa con los más nuevos hasta 8:
+  // el título tiene que decir la verdad según lo que realmente muestra.
+  const etiquetaSeccion = productList.every((p) => p.destacado)
+    ? 'Destacados'
+    : productList.some((p) => p.destacado)
+      ? 'Destacados y novedades'
+      : 'Novedades';
   const contactInfo = rawContact as import('@/types').ContactInfo | null;
 
   const appUrl  = env.APP_URL;
@@ -153,12 +163,12 @@ export default async function HomePage() {
               hasta que corría JS. Se renderiza estático (sin animación
               de entrada) para que se pinte apenas llega el HTML. */}
           <h1 className="mt-5 font-display text-3xl font-bold tracking-tight md:text-5xl">
-            {tienda}: Eficiencia y Volumen en Indumentaria/Sandalias y Zuecos
+            Calzado e indumentaria importada, por docena cerrada
           </h1>
 
           <AnimateIn delay={0.16}>
             <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
-              Venta por docena cerrada — talles y colores surtidos, mejor precio por volumen.
+              Sandalias, zuecos, pantalones y bermudas. Talles y colores surtidos, mejor precio por volumen.
             </p>
           </AnimateIn>
 
@@ -182,6 +192,35 @@ export default async function HomePage() {
               </a>
             )}
           </AnimateIn>
+
+          {vitrina.length > 0 && (
+            <AnimateIn delay={0.32} className="mt-8">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-white/60">
+                Algunos de nuestros productos
+              </p>
+              <ul className="flex items-center justify-center gap-3">
+                {vitrina.map((p, i) => (
+                  <li key={p.id} className={i >= 4 ? 'hidden sm:block' : undefined}>
+                    <Link
+                      href={`/productos/${p.slug}`}
+                      aria-label={p.nombre}
+                      title={p.nombre}
+                      className="block overflow-hidden rounded-xl border border-white/20 transition hover:scale-105 hover:border-white/60"
+                    >
+                      <Image
+                        src={p.imagenes[0]}
+                        alt=""
+                        width={64}
+                        height={64}
+                        sizes="64px"
+                        className="h-14 w-14 object-cover sm:h-16 sm:w-16"
+                      />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </AnimateIn>
+          )}
         </div>
 
         {/* Divisor angular — corta el bloque navy plano en vez de un borde recto */}
@@ -218,7 +257,7 @@ export default async function HomePage() {
         <AnimateIn className="mb-6 flex items-end justify-between gap-4 flex-wrap">
           <div>
             <span className="text-xs font-semibold uppercase tracking-wide text-accent-600 dark:text-accent-300">
-              Destacados
+              {etiquetaSeccion}
             </span>
             <h2 className="font-display text-3xl font-bold mt-1">Productos</h2>
           </div>

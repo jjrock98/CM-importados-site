@@ -40,7 +40,7 @@ export const revalidate = 60;
 export default async function ProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string; orden?: string }>;
+  searchParams: Promise<{ pagina?: string; q?: string; categoria?: string; orden?: string; stock?: string; maxprecio?: string }>;
 }) {
   const params   = await searchParams;
   const pagina   = Math.max(1, parseInt(params.pagina ?? '1', 10));
@@ -59,10 +59,19 @@ export default async function ProductosPage({
     stock:       { col: 'stock_unidades', asc: false },
   };
   const orden = Object.keys(ORDENES).includes(params.orden ?? '') ? (params.orden as string) : '';
+  // Filtros "solo con stock" y "precio máximo": también en el servidor (antes solo
+  // recortaban las 12 tarjetas visibles). Mismos criterios que tenía el filtro local:
+  // stock >= 6 uds (media docena) y precio de referencia = media docena, o la docena
+  // si el producto no tiene media docena.
+  const soloStock = params.stock === '1';
+  const maxPrecioNum = Math.floor(Number(params.maxprecio ?? ''));
+  const maxPrecio = Number.isFinite(maxPrecioNum) && maxPrecioNum > 0 ? Math.min(maxPrecioNum, 100_000_000) : 0;
   const extraQs =
     (busqueda  ? `&q=${encodeURIComponent(busqueda)}` : '') +
     (categoria ? `&categoria=${encodeURIComponent(categoria)}` : '') +
-    (orden     ? `&orden=${orden}` : '');
+    (orden     ? `&orden=${orden}` : '') +
+    (soloStock ? '&stock=1' : '') +
+    (maxPrecio ? `&maxprecio=${maxPrecio}` : '');
   const POR_PAGINA = 12;
   const offset     = (pagina - 1) * POR_PAGINA;
   const admin = createAdminClient();
@@ -88,17 +97,29 @@ export default async function ProductosPage({
   if (categoria) {
     prodQuery = prodQuery.eq('categoria', categoria);
   }
+  if (soloStock) {
+    prodQuery = prodQuery.gte('stock_unidades', 6);
+  }
+  if (maxPrecio) {
+    // precio de referencia <= tope: media docena si existe; si no, la docena
+    prodQuery = prodQuery.or(
+      `precio_media_docena.lte.${maxPrecio},and(precio_media_docena.is.null,precio_docena.lte.${maxPrecio})`,
+    );
+  }
 
   const [{ data: products, count: totalProductos }, { data: categoriasRaw }] = await Promise.all([
     prodQuery,
-    admin.from('products').select('categoria').eq('activo', true).eq('venta_mayorista', true),
+    admin.from('products').select('categoria, precio_docena, precio_media_docena').eq('activo', true).eq('venta_mayorista', true),
   ]);
 
   const productList    = (products ?? []) as Product[];
   const totalPaginas   = Math.ceil((totalProductos ?? 0) / POR_PAGINA);
   const hayAnterior    = pagina > 1;
   const haySiguiente   = pagina < totalPaginas;
-  const categoriasPresentes = new Set((categoriasRaw ?? []).map((r) => (r as { categoria: string }).categoria));
+  const filasCatalogo = (categoriasRaw ?? []) as { categoria: string; precio_docena: number; precio_media_docena: number | null }[];
+  const categoriasPresentes = new Set(filasCatalogo.map((r) => r.categoria));
+  // Tope del slider de precio: el más caro de TODO el catálogo (no solo de la página visible).
+  const precioMaximoCatalogo = Math.max(0, ...filasCatalogo.map((r) => Number(r.precio_media_docena ?? r.precio_docena) || 0));
   const categoriasDisponibles = CATEGORIAS.filter((c) => categoriasPresentes.has(c.value));
 
   return (
@@ -137,7 +158,7 @@ export default async function ProductosPage({
                 aria-label="Buscar productos" className="input-base text-sm" />
               <button type="submit" className="btn-primary px-4 py-2 text-sm">Buscar</button>
             </form>
-            {(busqueda || categoria) && (
+            {(busqueda || categoria || soloStock || maxPrecio > 0) && (
               <Link href="/productos" className="btn-secondary mt-4 text-sm px-4 py-2">Ver todo el catálogo</Link>
             )}
           </AnimateIn>
@@ -151,6 +172,9 @@ export default async function ProductosPage({
               basePath="/productos"
               ordenActual={orden}
               ordenServidor
+              soloStockActual={soloStock}
+              maxPrecioActual={maxPrecio}
+              precioMaximoCatalogo={precioMaximoCatalogo}
             />
 
             {/* Paginación */}

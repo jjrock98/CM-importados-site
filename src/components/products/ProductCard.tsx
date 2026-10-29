@@ -22,6 +22,17 @@ interface Props {
   priority?: boolean;
 }
 
+/**
+ * Stock en el idioma del comprador mayorista: docenas, no unidades sueltas.
+ * 48 → "4 docenas disponibles" · 30 → "2 docenas + 6 uds disponibles" · 12 → "1 docena disponible".
+ */
+function textoDocenas(unidades: number): string {
+  const docenas = Math.floor(unidades / 12);
+  const sueltas = unidades % 12;
+  const plural  = docenas > 1 || sueltas > 0;
+  return `${docenas} ${docenas === 1 ? 'docena' : 'docenas'}${sueltas ? ` + ${sueltas} uds` : ''} ${plural ? 'disponibles' : 'disponible'}`;
+}
+
 export function ProductCard({ product: p, priority = false }: Props) {
   const { isInWishlist, toggle } = useWishlist();
   const { user } = useAuth();
@@ -285,7 +296,7 @@ export function ProductCard({ product: p, priority = false }: Props) {
                 ? 'Sin stock disponible'
                 : !canBuyDocena
                   ? `Solo ${liveStock} uds — sin stock para docena`
-                  : `${liveStock} uds disponibles`
+                  : textoDocenas(liveStock)
               }
             </span>
           </div>

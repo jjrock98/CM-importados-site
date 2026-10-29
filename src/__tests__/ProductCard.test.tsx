@@ -69,7 +69,7 @@ describe('ProductCard', () => {
 
   it('shows stock information', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
-    expect(screen.getByText(/48 uds disponibles/)).toBeInTheDocument();
+    expect(screen.getByText(/4 docenas disponibles/)).toBeInTheDocument();
   });
 
   it('shows unit price (c/u) for docena and media docena', () => {
@@ -82,7 +82,7 @@ describe('ProductCard', () => {
   it('calculates max packs from stock', () => {
     render(<ProductCard product={MOCK_PRODUCT} />);
     // 48 / 6 = 8 media docenas, 48 / 12 = 4 docenas
-    expect(screen.getByText(/48 uds disponibles/)).toBeInTheDocument();
+    expect(screen.getByText(/4 docenas disponibles/)).toBeInTheDocument();
   });
 
   it('shows "Agotado" state with notify-me form when out of stock', () => {
