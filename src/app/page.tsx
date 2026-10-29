@@ -100,7 +100,7 @@ export default async function HomePage() {
     ...(contactInfo?.instagram && { sameAs: [contactInfo.instagram] }),
     priceRange: '$$',
     currenciesAccepted: 'ARS',
-    paymentAccepted: 'Cash, Credit Card, Bank Transfer',
+    paymentAccepted: 'Cash, Bank Transfer',
     image: `${appUrl}/og-default.png`,
     hasOfferCatalog: {
       '@type': 'OfferCatalog',
@@ -236,9 +236,9 @@ export default async function HomePage() {
       <section className="mx-auto max-w-7xl px-4 py-12">
         <StaggerGrid className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { icon: Truck,       title: 'Envíos a todo el país',  desc: 'Calculamos el costo por CP' },
-            { icon: Shield,      title: 'Compra segura',          desc: 'MP, tarjeta o transferencia' },
-            { icon: Star,        title: 'Indumentaria, Sandalias y Zuecos importados', desc: 'Buen Precio-Calidad'   },
+            { icon: Truck,       title: 'Envíos a todo el país',  desc: 'Coordinamos el envío con vos' },
+            { icon: Shield,      title: 'Compra segura',          desc: 'Transferencia, efectivo o cuenta corriente' },
+            { icon: Star,        title: 'Calzado e indumentaria importada', desc: 'Buena relación precio-calidad' },
             { icon: ShoppingBag, title: 'Venta por docena',       desc: 'Talles y colores surtidos'  },
           ].map(({ icon: Icon, title, desc }) => (
             <StaggerItem key={title} className="group card-hover p-5 text-center">

@@ -4,7 +4,7 @@ import { ProductCard } from '@/components/products/ProductCard';
 import { Heart } from 'lucide-react';
 import type { Product } from '@/types';
 
-export const metadata = { title: 'Mi Wishlist', robots: { index: false } };
+export const metadata = { title: 'Mis favoritos', robots: { index: false } };
 
 export default async function WishlistPage() {
   const supabase = await createClient();
@@ -28,7 +28,7 @@ export default async function WishlistPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="font-display text-3xl font-bold mb-8 flex items-center gap-3">
-        <Heart size={28} className="text-red-500" fill="currentColor" /> Mi Wishlist
+        <Heart size={28} className="text-red-500" fill="currentColor" /> Mis favoritos
       </h1>
 
       {products.length === 0 ? (

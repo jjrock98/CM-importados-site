@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { createAdminClient } from '@/lib/supabase/admin';
+
+// Páginas públicas que muestran cada tabla. Se guardan con caché (ISR de 1 a 5 minutos):
+// sin revalidar acá, un cambio hecho en el admin tardaba varios minutos en verse en el sitio.
+function revalidarPublico(table: string) {
+  if (table === 'location_info') {
+    revalidatePath('/ubicacion');
+  } else if (table === 'contact_info') {
+    revalidatePath('/contacto');
+    revalidatePath('/ubicacion');
+    revalidatePath('/', 'layout'); // el pie de página (dirección, teléfono, redes) está en todas las páginas
+  } else if (table === 'site_settings') {
+    revalidatePath('/', 'layout');
+  }
+}
 
 // PATCH /api/admin/settings?table=bank_info|contact_info|location_info|site_settings
 export async function PATCH(req: NextRequest) {
@@ -24,6 +39,7 @@ export async function PATCH(req: NextRequest) {
       .update({ valor, updated_at: new Date().toISOString() })
       .eq('clave', clave);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidarPublico(table);
     return NextResponse.json({ ok: true });
   }
 
@@ -37,5 +53,6 @@ export async function PATCH(req: NextRequest) {
     .eq('id', existing.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidarPublico(table);
   return NextResponse.json({ ok: true });
 }

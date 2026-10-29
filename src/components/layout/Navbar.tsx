@@ -91,7 +91,7 @@ export function Navbar() {
             </button>
 
             {user && (
-              <Link href="/wishlist" className="rounded-lg p-2 text-muted hover:bg-surface-2 transition-colors" aria-label="Wishlist">
+              <Link href="/wishlist" className="rounded-lg p-2 text-muted hover:bg-surface-2 transition-colors" aria-label="Favoritos">
                 <Heart size={18} />
               </Link>
             )}
@@ -139,7 +139,7 @@ export function Navbar() {
                     <div className="absolute right-0 top-full mt-1 z-20 w-44 rounded-xl border border-border bg-surface text-foreground shadow-lg">
                       <Link href="/perfil"       className="block px-4 py-2.5 text-sm hover:bg-surface-2" onClick={() => setUserMenu(false)}>Mi perfil</Link>
                       <Link href="/mis-pedidos"  className="block px-4 py-2.5 text-sm hover:bg-surface-2" onClick={() => setUserMenu(false)}>Mis pedidos</Link>
-                      <Link href="/wishlist"     className="block px-4 py-2.5 text-sm hover:bg-surface-2" onClick={() => setUserMenu(false)}>Wishlist</Link>
+                      <Link href="/wishlist"     className="block px-4 py-2.5 text-sm hover:bg-surface-2" onClick={() => setUserMenu(false)}>Favoritos</Link>
                       {isAdmin && (
                         <Link href="/admin" className="block px-4 py-2.5 text-sm text-brand-600 font-medium hover:bg-surface-2" onClick={() => setUserMenu(false)}>
                           Panel Admin
