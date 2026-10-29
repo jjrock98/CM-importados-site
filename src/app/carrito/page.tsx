@@ -5,7 +5,9 @@ import Image from 'next/image';
 import { Trash2, ShoppingBag, Minus, Plus, Truck, AlertTriangle, MessageCircle, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
 import { createClient } from '@/lib/supabase/client';
-import { formatPrice } from '@/utils';
+import { formatPrice, formatStockDocenas } from '@/utils';
+import { aplicarDescuento } from '@/lib/orderTotals';
+import { useCondicionesCliente } from '@/hooks/useCondicionesCliente';
 import { PACK_CONFIG } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -148,24 +150,10 @@ export default function CarritoPage() {
     }
   };
 
-  // Condiciones comerciales del cliente (descuento fijo y pedido mínimo). Antes solo se
-  // conocían recién en el checkout: el carrito mostraba un total distinto del final y
-  // el mínimo aparecía en el último paso. Para invitados vienen en 0 (sin descuento ni mínimo).
-  const [cond, setCond] = useState({ descuento_fijo_pct: 0, monto_minimo_pedido: 0 });
-  useEffect(() => {
-    fetch('/api/mi-cuenta/condiciones')
-      .then((r) => r.json())
-      .then(({ data }) => {
-        if (data) setCond({
-          descuento_fijo_pct:  Number(data.descuento_fijo_pct)  || 0,
-          monto_minimo_pedido: Number(data.monto_minimo_pedido) || 0,
-        });
-      })
-      .catch(() => {});
-  }, []);
-  const subtotalConDescuento = cond.descuento_fijo_pct > 0
-    ? Math.round(subtotal * (1 - cond.descuento_fijo_pct / 100))
-    : subtotal;
+  // Descuento fijo y pedido mínimo del cliente: el carrito tiene que mostrar el MISMO total
+  // que el checkout (antes se conocían recién ahí). Para invitados vienen en 0.
+  const cond = useCondicionesCliente();
+  const subtotalConDescuento = aplicarDescuento(subtotal, cond.descuento_fijo_pct);
   const descuentoMonto = subtotal - subtotalConDescuento;
   const hayMinimo      = cond.monto_minimo_pedido > 0;
   const bajoMinimo     = hayMinimo && subtotalConDescuento < cond.monto_minimo_pedido;
@@ -257,10 +245,11 @@ export default function CarritoPage() {
                       <button
                         onClick={() => handleQtyChange(item.productId, item.tipoPack, item.cantidadPacks - 1, item.variantId)}
                         disabled={item.cantidadPacks <= 1 || isUpdating}
-                        className="rounded-lg border p-1 hover:bg-surface-2 disabled:opacity-40"
-                      ><Minus size={12} /></button>
+                        aria-label="Quitar un pack"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border hover:bg-surface-2 disabled:opacity-40 sm:h-8 sm:w-8"
+                      ><Minus size={14} /></button>
 
-                      <span className="w-6 text-center text-sm font-semibold">
+                      <span className="w-8 text-center text-sm font-semibold">
                         {isUpdating ? <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" /> : item.cantidadPacks}
                       </span>
 
@@ -268,8 +257,9 @@ export default function CarritoPage() {
                         onClick={() => handleQtyChange(item.productId, item.tipoPack, item.cantidadPacks + 1, item.variantId)}
                         disabled={isUpdating || item.cantidadPacks >= maxPacks}
                         title={item.cantidadPacks >= maxPacks ? `Máximo disponible: ${maxPacks} pack${maxPacks !== 1 ? 's' : ''}` : undefined}
-                        className="rounded-lg border p-1 hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed"
-                      ><Plus size={12} /></button>
+                        aria-label="Agregar un pack"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg border hover:bg-surface-2 disabled:opacity-40 disabled:cursor-not-allowed sm:h-8 sm:w-8"
+                      ><Plus size={14} /></button>
                     </div>
 
                     <span className="text-sm font-bold text-brand-600">{formatPrice(item.subtotal)}</span>
@@ -277,8 +267,8 @@ export default function CarritoPage() {
                     {liveStock !== undefined && (
                       <span className="text-[10px] text-muted ml-auto">
                         {liveStock < item.unidades
-                          ? <span className="text-red-400">⚠️ Stock: {liveStock}</span>
-                          : `Stock: ${liveStock}`}
+                          ? <span className="text-red-400">⚠️ Stock: {item.tipoPack === 'unidad' ? `${liveStock} uds` : formatStockDocenas(liveStock, true)}</span>
+                          : `Stock: ${item.tipoPack === 'unidad' ? `${liveStock} uds` : formatStockDocenas(liveStock, true)}`}
                       </span>
                     )}
                   </div>
@@ -287,7 +277,7 @@ export default function CarritoPage() {
                 <button
                   onClick={() => { removeItem(item.productId, item.tipoPack, item.variantId); toast('Producto eliminado'); }}
                   aria-label={`Quitar ${item.nombre} del carrito`}
-                  className="text-muted hover:text-red-500 transition-colors p-1 self-start"
+                  className="-mr-2 -mt-2 self-start p-2.5 text-muted hover:text-red-500 transition-colors"
                 ><Trash2 size={16} /></button>
               </div>
             );

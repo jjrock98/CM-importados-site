@@ -7,6 +7,7 @@ import { sendAdminPushNotification } from '@/lib/webpush';
 import { createOrderSchema, parseBody } from '@/lib/validations';
 import { rateLimiters } from '@/lib/rateLimit';
 import { getPrecioEscalonado } from '@/utils';
+import { calcularMontosPedido } from '@/lib/orderTotals';
 import type { TipoPack, PriceTier } from '@/types';
 
 // ── Código de retiro: alfanumérico 8 chars, sin O/0/I/1 (ambiguos) ──────────
@@ -237,11 +238,13 @@ export async function POST(req: NextRequest) {
     }
 
     const descuentoPct = condicionCliente?.descuento_fijo_pct ?? 0;
-    const expectedSubtotalConDescuento = descuentoPct > 0
-      ? Math.round(expectedSubtotal * (1 - descuentoPct / 100))
-      : expectedSubtotal;
+    const calculo = calcularMontosPedido({
+      subtotalServidor: expectedSubtotal,
+      descuentoPct,
+      subtotalCliente,
+    });
 
-    if (Math.abs(expectedSubtotalConDescuento - subtotalCliente) > 1) {
+    if (!calculo.ok) {
       return NextResponse.json(
         { error: 'Los precios han cambiado. Por favor, actualizá el carrito.' },
         { status: 409 }
@@ -256,9 +259,8 @@ export async function POST(req: NextRequest) {
     // por una suma distinta a la real. Hoy el envío es "a coordinar" (el
     // checkout manda costo_envio 0), así que total = subtotal validado.
     // Si algún día se cobra envío, calcularlo acá con shipping_zones.
-    const subtotal    = expectedSubtotalConDescuento;
-    const costo_envio = 0;
-    const total       = subtotal + costo_envio;
+    // (la lógica vive en src/lib/orderTotals.ts y tiene tests en src/__tests__/orderTotals.test.ts)
+    const { subtotal, costo_envio, total } = calculo.montos;
 
     if (esMayorista) {
       let montoMinimo = condicionCliente?.monto_minimo_pedido ?? 0;

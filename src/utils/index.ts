@@ -141,3 +141,16 @@ export function getProximoEscalon(
     .sort((a, b) => a.min_docenas - b.min_docenas);
   return noAlcanzados[0] ?? null;
 }
+
+/**
+ * Stock en el idioma del comprador mayorista: docenas, no unidades sueltas.
+ * 48 → "4 docenas disponibles" · 30 → "2 docenas + 6 uds disponibles" · 12 → "1 docena disponible".
+ * Con `corto` se omite "disponible(s)": "4 docenas".
+ */
+export function formatStockDocenas(unidades: number, corto = false): string {
+  const docenas = Math.floor(unidades / 12);
+  const sueltas = unidades % 12;
+  const plural  = docenas > 1 || sueltas > 0;
+  const base = `${docenas} ${docenas === 1 ? 'docena' : 'docenas'}${sueltas ? ` + ${sueltas} uds` : ''}`;
+  return corto ? base : `${base} ${plural ? 'disponibles' : 'disponible'}`;
+}

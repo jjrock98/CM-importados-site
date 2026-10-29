@@ -6,6 +6,8 @@ import { X, ShoppingBag, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/hooks/useCart';
 import { useCartDrawerStore } from '@/hooks/useCartDrawer';
 import { formatPrice } from '@/utils';
+import { aplicarDescuento } from '@/lib/orderTotals';
+import { useCondicionesCliente } from '@/hooks/useCondicionesCliente';
 import { PACK_CONFIG } from '@/types';
 
 /**
@@ -23,6 +25,11 @@ import { PACK_CONFIG } from '@/types';
 export function CartDrawer() {
   const { items, subtotal, removeItem } = useCartStore();
   const { isOpen, close } = useCartDrawerStore();
+  // Solo se consulta con el panel abierto. Muestra el mismo descuento y total que el carrito y el checkout.
+  const cond = useCondicionesCliente(isOpen);
+  const subtotalConDescuento = aplicarDescuento(subtotal, cond.descuento_fijo_pct);
+  const descuentoMonto = subtotal - subtotalConDescuento;
+  const faltaMinimo = cond.monto_minimo_pedido > 0 ? cond.monto_minimo_pedido - subtotalConDescuento : 0;
 
   // Cerrar con Escape + bloquear el scroll del fondo mientras está abierto
   useEffect(() => {
@@ -103,7 +110,7 @@ export function CartDrawer() {
                     </div>
                     <button
                       onClick={() => removeItem(item.productId, item.tipoPack, item.variantId)}
-                      className="self-start p-1 text-muted hover:text-red-500 transition-colors"
+                      className="-mr-2 -mt-2 self-start p-2.5 text-muted hover:text-red-500 transition-colors"
                       aria-label={`Quitar ${item.nombre}`}
                     >
                       <Trash2 size={16} />
@@ -115,10 +122,27 @@ export function CartDrawer() {
 
             {/* Footer fijo: subtotal + acciones */}
             <div className="border-t border-border px-5 py-4 space-y-3">
+              {descuentoMonto > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Subtotal</span>
+                    <span>{formatPrice(subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Tu descuento ({cond.descuento_fijo_pct}%)</span>
+                    <span>−{formatPrice(descuentoMonto)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between items-baseline">
-                <span className="font-semibold">Subtotal:</span>
-                <span className="text-lg font-bold text-brand-600">{formatPrice(subtotal)}</span>
+                <span className="font-semibold">{descuentoMonto > 0 ? 'Total:' : 'Subtotal:'}</span>
+                <span className="text-lg font-bold text-brand-600 dark:text-brand-300">{formatPrice(subtotalConDescuento)}</span>
               </div>
+              {faltaMinimo > 0 && (
+                <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
+                  Te faltan <strong>{formatPrice(faltaMinimo)}</strong> para el pedido mínimo de {formatPrice(cond.monto_minimo_pedido)}.
+                </p>
+              )}
               <Link href="/carrito" onClick={close} className="btn-secondary w-full text-center block">
                 Ver carrito
               </Link>

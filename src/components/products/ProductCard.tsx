@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { Heart, Package, Bell, CheckCircle, Eye } from 'lucide-react';
-import { cn, formatPrice } from '@/utils';
+import { cn, formatPrice, formatStockDocenas } from '@/utils';
 import { useWishlist } from '@/hooks/useWishlist';
 import { useAuth } from '@/hooks/useAuth';
 import { getSupabase } from '@/lib/supabase/lazy';
@@ -20,17 +20,6 @@ interface Props {
    *  las tarjetas del catálogo sigue en lazy (default), que es lo correcto
    *  para no bajar imágenes que ni se van a ver. */
   priority?: boolean;
-}
-
-/**
- * Stock en el idioma del comprador mayorista: docenas, no unidades sueltas.
- * 48 → "4 docenas disponibles" · 30 → "2 docenas + 6 uds disponibles" · 12 → "1 docena disponible".
- */
-function textoDocenas(unidades: number): string {
-  const docenas = Math.floor(unidades / 12);
-  const sueltas = unidades % 12;
-  const plural  = docenas > 1 || sueltas > 0;
-  return `${docenas} ${docenas === 1 ? 'docena' : 'docenas'}${sueltas ? ` + ${sueltas} uds` : ''} ${plural ? 'disponibles' : 'disponible'}`;
 }
 
 export function ProductCard({ product: p, priority = false }: Props) {
@@ -296,7 +285,7 @@ export function ProductCard({ product: p, priority = false }: Props) {
                 ? 'Sin stock disponible'
                 : !canBuyDocena
                   ? `Solo ${liveStock} uds — sin stock para docena`
-                  : textoDocenas(liveStock)
+                  : formatStockDocenas(liveStock)
               }
             </span>
           </div>
