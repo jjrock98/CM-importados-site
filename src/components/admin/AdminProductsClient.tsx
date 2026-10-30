@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { slugify, formatPrice } from '@/utils';
 import { CATEGORIAS, categoriaLabel } from '@/lib/categorias';
 import type { Product, PriceTier } from '@/types';
+import { reducirImagen } from '@/lib/imageCompress';
 import toast from 'react-hot-toast';
 
 interface ContenidoIA {
@@ -366,9 +367,17 @@ export function AdminProductsClient({ initialProducts, initialLowStockFilter }: 
     if (!file) return;
     setEditorBusy(true);
     try {
-      const url = result
-        ? await uploadToStorage(result, `${file.name.replace(/\.[^.]+$/, '') || 'imagen'}.jpg`)
-        : await uploadToStorage(file, file.name);
+      const base = file.name.replace(/\.[^.]+$/, '') || 'imagen';
+      let url: string | null;
+      if (result) {
+        url = await uploadToStorage(result, `${base}.jpg`);
+      } else {
+        // "Subir sin editar": igual se reduce (máx. 1600 px) para no subir el original de 4–8 MB.
+        const reducida = await reducirImagen(file);
+        url = reducida === file
+          ? await uploadToStorage(file, file.name)
+          : await uploadToStorage(reducida, `${base}.jpg`);
+      }
       if (url) {
         queueUploadedCount.current += 1;
         setEditing((prev) => ({ ...prev!, imagenes: [...(prev?.imagenes ?? []), url] }));

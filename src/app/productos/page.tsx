@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { unstable_cache } from 'next/cache';
 import { env } from '@/env';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ProductFilters } from '@/components/products/ProductFilters';
@@ -37,6 +38,70 @@ export const metadata: Metadata = {
 
 export const revalidate = 60;
 
+const POR_PAGINA = 12;
+
+// Orden aplicado en el servidor (sobre todo el catálogo, no solo la página visible).
+const ORDENES: Record<string, { col: string; asc: boolean }> = {
+  nuevos:      { col: 'created_at',     asc: false },
+  precio_asc:  { col: 'precio_docena',  asc: true  },
+  precio_desc: { col: 'precio_docena',  asc: false },
+  nombre:      { col: 'nombre',         asc: true  },
+  stock:       { col: 'stock_unidades', asc: false },
+};
+
+interface ConsultaCatalogo {
+  busqueda: string;
+  categoria: string;
+  orden: string;
+  soloStock: boolean;
+  maxPrecio: number;
+  offset: number;
+}
+interface FilaCatalogo { categoria: string; precio_docena: number; precio_media_docena: number | null }
+
+// Misma query base que usa la home (ver src/app/page.tsx) — mismo criterio de
+// "activo" + "venta_mayorista", misma paginación y filtros.
+async function consultarProductos(c: ConsultaCatalogo) {
+  let q = createAdminClient()
+    .from('products')
+    .select('*', { count: 'exact' })
+    .eq('activo', true)
+    .eq('venta_mayorista', true);
+
+  q = (c.orden
+    ? q.order(ORDENES[c.orden].col, { ascending: ORDENES[c.orden].asc }).order('created_at', { ascending: false })
+    : q.order('destacado', { ascending: false }).order('created_at', { ascending: false })
+  ).range(c.offset, c.offset + POR_PAGINA - 1);
+
+  if (c.busqueda) {
+    q = q.or(`nombre.ilike.%${c.busqueda}%,descripcion_corta.ilike.%${c.busqueda}%,descripcion.ilike.%${c.busqueda}%`);
+  }
+  if (c.categoria) q = q.eq('categoria', c.categoria);
+  if (c.soloStock) q = q.gte('stock_unidades', 6);
+  if (c.maxPrecio) {
+    // precio de referencia <= tope: media docena si existe; si no, la docena
+    q = q.or(`precio_media_docena.lte.${c.maxPrecio},and(precio_media_docena.is.null,precio_docena.lte.${c.maxPrecio})`);
+  }
+
+  const { data, count } = await q;
+  return { products: (data ?? []) as Product[], total: count ?? 0 };
+}
+
+async function consultarFilasCatalogo(): Promise<FilaCatalogo[]> {
+  const { data } = await createAdminClient()
+    .from('products')
+    .select('categoria, precio_docena, precio_media_docena')
+    .eq('activo', true)
+    .eq('venta_mayorista', true);
+  return (data ?? []) as FilaCatalogo[];
+}
+
+// Caché de 60 s en el servidor: la mayoría de las visitas del catálogo no tocan la base
+// de datos. Un cambio de precio o stock puede tardar hasta 1 minuto en verse en el listado
+// (igual que ya pasaba con la portada y las fichas de producto).
+const consultarProductosCacheada = unstable_cache(consultarProductos, ['catalogo-productos'], { revalidate: 60 });
+const filasCatalogoCacheadas     = unstable_cache(consultarFilasCatalogo, ['catalogo-filas'], { revalidate: 60 });
+
 export default async function ProductosPage({
   searchParams,
 }: {
@@ -49,15 +114,6 @@ export default async function ProductosPage({
   // o alteraba el filtro. También se limita el largo.
   const busqueda = (params.q ?? '').replace(/[,()%*\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80);
   const categoria = params.categoria?.trim() ?? '';
-  // Orden aplicado en el servidor: antes el selector solo reordenaba las 12
-  // tarjetas de la página visible, no todo el catálogo.
-  const ORDENES: Record<string, { col: string; asc: boolean }> = {
-    nuevos:      { col: 'created_at',     asc: false },
-    precio_asc:  { col: 'precio_docena',  asc: true  },
-    precio_desc: { col: 'precio_docena',  asc: false },
-    nombre:      { col: 'nombre',         asc: true  },
-    stock:       { col: 'stock_unidades', asc: false },
-  };
   const orden = Object.keys(ORDENES).includes(params.orden ?? '') ? (params.orden as string) : '';
   // Filtros "solo con stock" y "precio máximo": también en el servidor (antes solo
   // recortaban las 12 tarjetas visibles). Mismos criterios que tenía el filtro local:
@@ -72,51 +128,25 @@ export default async function ProductosPage({
     (orden     ? `&orden=${orden}` : '') +
     (soloStock ? '&stock=1' : '') +
     (maxPrecio ? `&maxprecio=${maxPrecio}` : '');
-  const POR_PAGINA = 12;
   const offset     = (pagina - 1) * POR_PAGINA;
-  const admin = createAdminClient();
 
-  // Misma query base que usa la home (ver src/app/page.tsx) — mismo
-  // criterio de "activo" + "venta_mayorista", misma paginación y filtros.
-  let prodQuery = admin
-    .from('products')
-    .select('*', { count: 'exact' })
-    .eq('activo', true)
-    .eq('venta_mayorista', true);
+  // Solo se cachean las combinaciones "normales" (sin texto de búsqueda, categoría válida,
+  // sin tope de precio y primeras páginas): así nadie puede llenar el caché con variantes
+  // inventadas en la URL. El resto consulta directo a la base.
+  const consulta: ConsultaCatalogo = { busqueda, categoria, orden, soloStock, maxPrecio, offset };
+  const cacheable =
+    !busqueda && !maxPrecio && pagina <= 20 &&
+    (categoria === '' || CATEGORIAS.some((c) => c.value === categoria));
 
-  prodQuery = (orden
-    ? prodQuery.order(ORDENES[orden].col, { ascending: ORDENES[orden].asc }).order('created_at', { ascending: false })
-    : prodQuery.order('destacado', { ascending: false }).order('created_at', { ascending: false })
-  ).range(offset, offset + POR_PAGINA - 1);
-
-  if (busqueda) {
-    prodQuery = prodQuery.or(
-      `nombre.ilike.%${busqueda}%,descripcion_corta.ilike.%${busqueda}%,descripcion.ilike.%${busqueda}%`
-    );
-  }
-  if (categoria) {
-    prodQuery = prodQuery.eq('categoria', categoria);
-  }
-  if (soloStock) {
-    prodQuery = prodQuery.gte('stock_unidades', 6);
-  }
-  if (maxPrecio) {
-    // precio de referencia <= tope: media docena si existe; si no, la docena
-    prodQuery = prodQuery.or(
-      `precio_media_docena.lte.${maxPrecio},and(precio_media_docena.is.null,precio_docena.lte.${maxPrecio})`,
-    );
-  }
-
-  const [{ data: products, count: totalProductos }, { data: categoriasRaw }] = await Promise.all([
-    prodQuery,
-    admin.from('products').select('categoria, precio_docena, precio_media_docena').eq('activo', true).eq('venta_mayorista', true),
+  const [{ products, total: totalProductos }, filasCatalogo] = await Promise.all([
+    cacheable ? consultarProductosCacheada(consulta) : consultarProductos(consulta),
+    filasCatalogoCacheadas(),
   ]);
 
-  const productList    = (products ?? []) as Product[];
-  const totalPaginas   = Math.ceil((totalProductos ?? 0) / POR_PAGINA);
+  const productList    = products;
+  const totalPaginas   = Math.ceil(totalProductos / POR_PAGINA);
   const hayAnterior    = pagina > 1;
   const haySiguiente   = pagina < totalPaginas;
-  const filasCatalogo = (categoriasRaw ?? []) as { categoria: string; precio_docena: number; precio_media_docena: number | null }[];
   const categoriasPresentes = new Set(filasCatalogo.map((r) => r.categoria));
   // Tope del slider de precio: el más caro de TODO el catálogo (no solo de la página visible).
   const precioMaximoCatalogo = Math.max(0, ...filasCatalogo.map((r) => Number(r.precio_media_docena ?? r.precio_docena) || 0));

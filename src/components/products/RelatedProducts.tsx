@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createPublicClient } from '@/lib/supabase/public';
 import { ProductCard } from './ProductCard';
 import type { Product } from '@/types';
 
@@ -17,7 +17,11 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 export async function RelatedProducts({ currentProductId, categoria }: Props) {
-  const supabase = await createClient();
+  // Cliente PÚBLICO (sin cookies): las consultas son de productos activos, públicos por RLS.
+  // Con el cliente de `@/lib/supabase/server` (que lee cookies) esta sola sección volvía
+  // dinámica TODA la página de producto (ƒ), aunque tuviera generateStaticParams y
+  // revalidate: cada visita iba a la base de datos en vez de salir del caché de Vercel.
+  const supabase = createPublicClient();
 
   // ✅ FIX: antes mostraba siempre los mismos 4 productos "destacados" de
   // todo el catálogo, sin relación con lo que se está viendo. Ahora trae
