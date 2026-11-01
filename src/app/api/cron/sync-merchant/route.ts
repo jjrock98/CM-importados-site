@@ -5,6 +5,7 @@ import {
   CONTENT_LANGUAGE, FEED_LABEL, getMerchantConfig,
   insertProductInput, deleteProductInput, type MerchantProductInput,
 } from '@/lib/merchant';
+import { deducirPublico, colorParaGoogle, categoriaGoogle, textoVariantes } from '@/lib/merchantAttributes';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -19,6 +20,7 @@ interface ProductRow {
   imagenes: string[] | null; stock_unidades: number;
   precio_docena: number | null; precio_unitario: number | null;
   venta_minorista: boolean | null; categoria: string | null;
+  colores: string[] | null; talles: string[] | null;
 }
 
 const clean = (s: string) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -43,7 +45,13 @@ function toProductInput(p: ProductRow, appUrl: string): MerchantProductInput | n
 
   const baseTitle = clean(p.nombre);
   const title = (porUnidad ? baseTitle : `${baseTitle} (docena x${UNITS_PER_DOZEN})`).slice(0, 150);
-  const description = clean(p.descripcion || p.descripcion_corta || p.nombre).slice(0, 5000);
+  // Talles y colores van también en el texto: Google los lee de ahí (el artículo es un surtido
+  // en un solo producto, no una variante por talle, así que no se usa el campo "size").
+  const variantes = textoVariantes(p.talles, p.colores);
+  const description = [clean(p.descripcion || p.descripcion_corta || p.nombre), variantes].filter(Boolean).join(' ').slice(0, 5000);
+  const { gender, ageGroup } = deducirPublico(`${p.nombre} ${p.descripcion_corta ?? ''}`);
+  const color = colorParaGoogle(p.colores);
+  const categoriaG = categoriaGoogle(p.categoria);
 
   return {
     offerId: p.id,
@@ -62,6 +70,10 @@ function toProductInput(p: ProductRow, appUrl: string): MerchantProductInput | n
       identifierExists: false,
       ...(porUnidad ? {} : { multipack: String(UNITS_PER_DOZEN) }),
       ...(p.categoria ? { productTypes: [p.categoria] } : {}),
+      gender,
+      ageGroup,
+      ...(color ? { color } : {}),
+      ...(categoriaG ? { googleProductCategory: categoriaG } : {}),
     },
   };
 }
@@ -94,7 +106,7 @@ export async function GET(req: NextRequest) {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('products')
-    .select('id, nombre, slug, descripcion, descripcion_corta, imagenes, stock_unidades, precio_docena, precio_unitario, venta_minorista, categoria, activo');
+    .select('id, nombre, slug, descripcion, descripcion_corta, imagenes, stock_unidades, precio_docena, precio_unitario, venta_minorista, categoria, colores, talles, activo');
   if (error) {
     console.error('[sync-merchant] no se pudieron leer los productos:', error.message);
     return NextResponse.json({ error: 'No se pudieron leer los productos' }, { status: 500 });
