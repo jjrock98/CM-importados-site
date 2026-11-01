@@ -4,7 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { ContactForm } from '@/components/common/ContactForm';
 import { PageHero } from '@/components/common/PageHero';
 import { AnimateIn } from '@/components/common/AnimateIn';
-import { Mail, Phone, Clock, MapPin, Instagram, Facebook } from 'lucide-react';
+import { Mail, Phone, Clock, MapPin } from 'lucide-react';
+import { InstagramIcon, FacebookIcon } from '@/components/common/BrandIcons';
 import type { ContactInfo } from '@/types';
 
 function TikTokIcon({ size = 16 }: { size?: number }) {
@@ -97,13 +98,13 @@ export default async function ContactoPage() {
                 <a href={`https://instagram.com/${info.instagram.replace('@','')}`}
                   target="_blank" rel="noopener noreferrer"
                   className="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-                  <Instagram size={16} /> Instagram
+                  <InstagramIcon size={16} /> Instagram
                 </a>
               )}
               {info?.facebook && (
                 <a href={info.facebook} target="_blank" rel="noopener noreferrer"
                   className="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-                  <Facebook size={16} /> Facebook
+                  <FacebookIcon size={16} /> Facebook
                 </a>
               )}
               {info?.tiktok && (

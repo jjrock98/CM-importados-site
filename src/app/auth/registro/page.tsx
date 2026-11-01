@@ -6,7 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, User, Chrome, Facebook, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { GoogleIcon, FacebookIcon } from '@/components/common/BrandIcons';
 import { cn } from '@/utils';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
@@ -176,14 +177,14 @@ export default function RegistroPage() {
         <p className="text-center text-sm text-muted mb-8">Registrate para comprar fácilmente</p>
 
         <button onClick={handleGoogle} className={`btn-secondary w-full gap-3 ${FACEBOOK_LOGIN_ENABLED ? 'mb-3' : 'mb-4'}`}>
-          <Chrome size={18} className="text-red-500" />
+          <GoogleIcon size={18} className="text-red-500" />
           Registrarse con Google
         </button>
 
         {/* Facebook — pausado, ver FACEBOOK_LOGIN_ENABLED arriba */}
         {FACEBOOK_LOGIN_ENABLED && (
           <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
-            <Facebook size={18} className="text-blue-600" />
+            <FacebookIcon size={18} className="text-blue-600" />
             Registrarse con Facebook
           </button>
         )}

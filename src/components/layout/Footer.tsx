@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Mail, Phone, MapPin, Instagram, Facebook, Clock } from 'lucide-react';
+import { Mail, Phone, MapPin, Clock } from 'lucide-react';
+import { InstagramIcon, FacebookIcon } from '@/components/common/BrandIcons';
 import { StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import type { ContactInfo } from '@/types';
 
@@ -115,13 +116,13 @@ export function Footer({ contactInfo }: Props) {
                 {instagram && (
                   <a href={instagram} target="_blank" rel="noopener noreferrer"
                     className="transition-all hover:text-accent-300 hover:-translate-y-0.5" aria-label="Instagram">
-                    <Instagram size={18} />
+                    <InstagramIcon size={18} />
                   </a>
                 )}
                 {facebook && (
                   <a href={facebook} target="_blank" rel="noopener noreferrer"
                     className="transition-all hover:text-accent-300 hover:-translate-y-0.5" aria-label="Facebook">
-                    <Facebook size={18} />
+                    <FacebookIcon size={18} />
                   </a>
                 )}
               </li>

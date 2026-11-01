@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Mail, Lock, Eye, EyeOff, Chrome, Facebook } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { GoogleIcon, FacebookIcon } from '@/components/common/BrandIcons';
 import toast from 'react-hot-toast';
 import { TurnstileWidget } from '@/components/common/TurnstileWidget';
 import { safeRedirectPath } from '@/lib/safeRedirect';
@@ -166,14 +167,14 @@ export default function LoginPage() {
 
         {/* Google */}
         <button onClick={handleGoogle} className={`btn-secondary w-full gap-3 ${FACEBOOK_LOGIN_ENABLED ? 'mb-3' : 'mb-4'}`}>
-          <Chrome size={18} className="text-red-500" />
+          <GoogleIcon size={18} className="text-red-500" />
           Continuar con Google
         </button>
 
         {/* Facebook — pausado, ver FACEBOOK_LOGIN_ENABLED arriba */}
         {FACEBOOK_LOGIN_ENABLED && (
           <button onClick={handleFacebook} className="btn-secondary w-full mb-4 gap-3">
-            <Facebook size={18} className="text-blue-600" />
+            <FacebookIcon size={18} className="text-blue-600" />
             Continuar con Facebook
           </button>
         )}

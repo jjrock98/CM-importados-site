@@ -93,7 +93,7 @@ export async function sendContactMessageEmail(
   nombre: string, email: string, asunto: string, mensaje: string
 ) {
   await getResend().emails.send({
-    from: FROM, to: ADMIN, reply_to: email,
+    from: FROM, to: ADMIN, replyTo: email,
     subject: `Nuevo contacto: ${asunto || nombre}`,
     html: contactNotificationHtml(nombre, email, asunto, mensaje),
   });
@@ -111,7 +111,7 @@ export async function sendContactMessageEmail(
 export async function sendStockNotifyAdminEmail(productName: string, customerEmail: string, productUrl: string) {
   if (!ADMIN) return;
   return getResend().emails.send({
-    from: FROM, to: ADMIN, reply_to: customerEmail,
+    from: FROM, to: ADMIN, replyTo: customerEmail,
     subject: `Piden aviso de stock: ${productName}`,
     html: stockNotifyAdminHtml(productName, customerEmail, productUrl),
   });
