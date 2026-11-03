@@ -21,7 +21,7 @@ Tienda online de indumentaria y calzado al por mayor (packs por docena y media d
 
 **Pagos**
 - Mercado Pago (con webhook firmado), transferencia bancaria con carga de comprobante, efectivo al retirar y cuenta corriente para clientes mayoristas.
-- Stripe no se usa (no está disponible en Argentina): la ruta `/api/checkout/stripe` quedó solo como stub que devuelve 404.
+- Stripe no se usa (no está disponible en Argentina).
 
 **Panel de administración (`/admin`)**
 - Pedidos: aprobar / rechazar comprobantes, marcar como pagado, verificar retiro en el local, exportar a Excel.
@@ -53,7 +53,7 @@ Tienda online de indumentaria y calzado al por mayor (packs por docena y media d
 
 ## Requisitos
 
-- Node.js 18.17 o superior (en CI se usa Node 20)
+- Node.js 24 (es lo que fija `engines` en `package.json`; Vercel y el CI usan la misma versión)
 - Proyecto en [Supabase](https://supabase.com)
 - Cuenta en [Mercado Pago Developers](https://www.mercadopago.com.ar/developers)
 - Cuenta en [Resend](https://resend.com)
@@ -66,9 +66,9 @@ Tienda online de indumentaria y calzado al por mayor (packs por docena y media d
 # 1. Instalar dependencias
 npm install
 
-# 2. Crear el archivo de variables de entorno
-#    (usar la tabla de más abajo como referencia)
-touch .env.local
+# 2. Crear el archivo de variables de entorno a partir de la plantilla
+#    y completar al menos las obligatorias (ver más abajo)
+cp .env.example .env.local        # en Windows (CMD): copy .env.example .env.local
 
 # 3. Crear las tablas y funciones en Supabase
 #    Dashboard → SQL Editor → pegar sql/schema.sql → Run
@@ -84,7 +84,7 @@ npm run dev
 
 ## Variables de entorno
 
-Las obligatorias se validan al arrancar (`src/env.ts`). Si falta alguna, se loguea el error pero no se corta el build: cada función falla de forma aislada hasta que se configure.
+La plantilla completa y comentada está en [`.env.example`](./.env.example) (las opcionales vienen comentadas: descomentá solo las que uses). Las obligatorias se validan al arrancar (`src/env.ts`). Si falta alguna, se loguea el error pero no se corta el build: cada función falla de forma aislada hasta que se configure.
 
 ### Obligatorias
 
@@ -112,7 +112,7 @@ Las obligatorias se validan al arrancar (`src/env.ts`). Si falta alguna, se logu
 | `NEXT_PUBLIC_TAWKTO_PROPERTY_ID` / `NEXT_PUBLIC_TAWKTO_WIDGET_ID` | Chat de Tawk.to |
 | `MAINTENANCE_MODE` | `true` para activar el modo mantenimiento sin redeploy |
 | `REVALIDATE_SECRET_TOKEN` | Secret para `/api/revalidate` y los endpoints de `/api/cron/*` |
-| `CRON_SECRET` | Secret que Vercel manda en el cron nativo de `/api/revalidate` |
+| `CRON_SECRET` | Secret que Vercel manda en los crons nativos de `vercel.json` |
 | `MERCADOPAGO_WEBHOOK_SECRET` | Secret para validar la firma del webhook de Mercado Pago |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile |
 | `CLOUDMERSIVE_API_KEY` | Escaneo de virus en comprobantes (si falta, se omite) |
@@ -142,7 +142,7 @@ src/
 │   │   ├── admin/        # CRUD y acciones del panel
 │   │   ├── auth/         # Login, registro, reset de contraseña
 │   │   ├── checkout/     # Mercado Pago
-│   │   ├── cron/         # cleanup-reservations, stock-alerts
+│   │   ├── cron/         # cleanup-reservations, cleanup-visitor-logs, stock-alerts, sync-merchant
 │   │   ├── mi-cuenta/    # Cuenta corriente del cliente
 │   │   ├── orders/       # Creación, cancelación y export de pedidos
 │   │   └── webhooks/     # mercadopago, supabase-to-meta, facebook-deauthorize
@@ -161,6 +161,7 @@ src/
 sql/
 └── schema.sql            # Tablas, funciones, triggers y políticas RLS
 e2e/                      # Tests de Playwright
+.env.example              # Plantilla de variables de entorno (solo nombres)
 ```
 
 ---
@@ -221,14 +222,22 @@ Pendiente de verificar: el precio se envía como entero en centavos (`precio_doc
 
 ## Cron jobs
 
-Vercel Hobby solo permite 2 crons nativos con frecuencia máxima diaria, así que en `vercel.json` queda únicamente `/api/revalidate` (una vez por día). Los otros dos se disparan desde un servicio externo (cron-job.org):
+**Crons nativos de Vercel** (definidos en `vercel.json`). Vercel manda `CRON_SECRET` como `Authorization: Bearer ...`, así que esa variable tiene que estar cargada en el proyecto:
+
+| Endpoint | Horario (UTC) | Para qué |
+|---|---|---|
+| `/api/revalidate` | 03:00 | Revalida el catálogo |
+| `/api/cron/cleanup-visitor-logs` | 03:30 | Limpia los registros de visitas viejos |
+| `/api/cron/sync-merchant` | 06:00 | Sincroniza los productos con Google Merchant Center |
+
+**Crons externos** (cron-job.org u otro servicio), con `?secret=<REVALIDATE_SECRET_TOKEN>`:
 
 | Endpoint | Frecuencia | Para qué |
 |---|---|---|
 | `/api/cron/cleanup-reservations` | cada hora | Libera el stock reservado de pedidos por transferencia que no se pagaron |
 | `/api/cron/stock-alerts` | cada 10 min | Push al admin cuando se agota un talle/color |
 
-Ambos reciben `?secret=<REVALIDATE_SECRET_TOKEN>`. El paso a paso está en [CRON_SETUP.md](./CRON_SETUP.md).
+El paso a paso de los externos está en [CRON_SETUP.md](./CRON_SETUP.md).
 
 ---
 
@@ -238,6 +247,6 @@ Ambos reciben `?secret=<REVALIDATE_SECRET_TOKEN>`. El paso a paso está en [CRON
 2. Cargar las variables de entorno (Project Settings → Environment Variables).
 3. La región está fijada en `gru1` (São Paulo) en `vercel.json`.
 4. Configurar los webhooks (Mercado Pago y Supabase → Meta) apuntando al dominio de producción.
-5. Dar de alta los crons externos según `CRON_SETUP.md`.
+5. Dar de alta los crons externos según `CRON_SETUP.md` y verificar que `CRON_SECRET` esté cargada para los nativos.
 
 ## Licencia

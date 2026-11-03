@@ -17,6 +17,7 @@ build/
 dist/
 
 # Environment variables — NUNCA subir secretos al repositorio
+# (.env.example SÍ se sube: solo tiene los nombres, sin valores)
 .env
 .env*.local
 .env.development
@@ -44,6 +45,9 @@ yarn-error.log*
 
 # Misc
 *.log
+*.bak
+*.bak2
+FETCH_HEAD
 
 # Claves de cuentas de servicio de Google (nunca subir)
 gen-lang-client-*.json

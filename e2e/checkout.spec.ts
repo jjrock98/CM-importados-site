@@ -64,7 +64,6 @@ test.describe('Payment method display', () => {
     }
     // Should show payment methods
     await expect(page.locator('text=Mercado Pago')).toBeVisible();
-    await expect(page.locator('text=Stripe')).toBeVisible();
     await expect(page.locator('text=Transferencia')).toBeVisible();
   });
 });
