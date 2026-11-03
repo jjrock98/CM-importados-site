@@ -30,7 +30,7 @@ export function Footer({ contactInfo }: Props) {
     <footer className="relative mt-16 bg-brand-900 text-white">
       {/* Mismo divisor angular del hero — hace que el footer se sienta parte
           del mismo sistema visual en vez de un bloque separado. */}
-      <svg className="absolute -top-[26px] block w-full text-brand-900" viewBox="0 0 1440 40" preserveAspectRatio="none" style={{ height: '26px' }} aria-hidden="true">
+      <svg className="absolute -top-6.5 block w-full text-brand-900" viewBox="0 0 1440 40" preserveAspectRatio="none" style={{ height: '26px' }} aria-hidden="true">
         <path d="M0 0L1440 40V0H0Z" fill="currentColor" />
       </svg>
 

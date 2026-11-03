@@ -47,7 +47,7 @@ function ProgressBar() {
   // centro, lo que se vería mal acá).
   return (
     <div
-      className="fixed top-0 left-0 z-[9999] h-0.5 w-full origin-left bg-brand-500 shadow-xs shadow-brand-400"
+      className="fixed top-0 left-0 z-9999 h-0.5 w-full origin-left bg-brand-500 shadow-xs shadow-brand-400"
       style={{
         transform: `scaleX(${progress / 100})`,
         opacity: progress === 100 ? 0 : 1,
