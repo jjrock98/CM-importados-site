@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdmin } from '@/lib/auth/verifyAdmin';
 import { PDFDocument, StandardFonts, rgb, PageSizes } from 'pdf-lib';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { formatPrice } from '@/utils';
 
 interface ModeloExport {
@@ -188,22 +188,22 @@ export async function POST(req: NextRequest) {
       'Imprevistos', 'Precio venta pretendido', 'Costo real/docena', 'Ganancia/docena',
       'Margen %', 'Markup %', 'Precio recomendado', 'Veredicto',
     ];
-    const aoa: (string | number)[][] = [headers];
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Detalle por modelo');
+    ws.columns = headers.map((h) => ({ width: h === 'Modelo' ? 28 : 16 }));
+    ws.addRow(headers);
     for (const m of compra.modelos) {
-      aoa.push([
+      ws.addRow([
         m.modelo, m.docenas, m.precioDocenaArs, m.mercaderiaArs, m.lonasArs, m.envioArs,
         m.recargosArs, m.directoTotalArs, m.directoDocena, m.imprevistosArs, m.precioVenta,
-        m.costoRealDocena ?? '', m.gananciaDocena ?? '', m.margenPct ?? '', m.markupPct ?? '',
-        m.precioRecomendado ?? '', VEREDICTO_TXT[m.veredicto ?? '—'],
+        m.costoRealDocena, m.gananciaDocena, m.margenPct, m.markupPct,
+        m.precioRecomendado, VEREDICTO_TXT[m.veredicto ?? '—'],
       ]);
     }
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = headers.map((h) => ({ wch: h === 'Modelo' ? 28 : 16 }));
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Detalle por modelo');
-
-    const wsResumen = XLSX.utils.aoa_to_sheet([
+    const wsResumen = wb.addWorksheet('Resumen de la compra');
+    wsResumen.columns = [{ width: 34 }, { width: 28 }];
+    wsResumen.addRows([
       ['Compra', compra.nombre],
       ['Fecha', new Date(compra.fecha).toLocaleString('es-AR')],
       [],
@@ -223,11 +223,9 @@ export async function POST(req: NextRequest) {
       [],
       ['Nota', 'Herramienta de simulación interna. No modifica productos, precios ni stock del catálogo.'],
     ]);
-    wsResumen['!cols'] = [{ wch: 34 }, { wch: 28 }];
-    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen de la compra');
 
-    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    return new NextResponse(buffer, {
+    const buffer = await wb.xlsx.writeBuffer();
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'Content-Disposition': `attachment; filename="${slug}.xlsx"`,

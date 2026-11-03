@@ -23,6 +23,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "clsx": "^2.1.1",
+    "exceljs": "^4.4.0",
     "framer-motion": "^14.9.0",
     "googleapis": "^189.0.0",
     "lucide-react": "^1.65.0",
@@ -42,7 +43,6 @@
     "sharp": "^0.35.5",
     "tailwind-merge": "^3.7.0",
     "web-push": "^3.6.7",
-    "xlsx": "^0.18.5",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   },
@@ -79,5 +79,8 @@
     "and_chr >= 91",
     "not dead",
     "not op_mini all"
-  ]
+  ],
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
 }

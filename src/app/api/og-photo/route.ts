@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
+import { rateLimiters } from '@/lib/rateLimit';
 
 /**
  * Foto del producto lista para vista previa de enlaces (og:image).
@@ -44,6 +45,12 @@ function isAllowedSource(raw: string | null): URL | null {
 export async function GET(req: NextRequest) {
   const src = isAllowedSource(req.nextUrl.searchParams.get('src'));
   if (!src) return new NextResponse('Bad request', { status: 400 });
+
+  // Esta ruta está excluida del límite global de proxy.ts (matcher) y procesar
+  // una imagen con sharp es lo más caro del sitio. Se limita por IP DESPUÉS de
+  // validar el origen (los pedidos inválidos ya se descartan arriba, gratis).
+  const limited = await rateLimiters.ogPhoto(req);
+  if (limited) return limited;
 
   try {
     const ctrl = new AbortController();

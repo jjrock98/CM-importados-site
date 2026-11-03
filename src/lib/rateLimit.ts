@@ -183,6 +183,15 @@ export const rateLimiters = {
   upload: (req: NextRequest) =>
     rateLimitDistributed(req, { limit: 5, windowSecs: 600, prefix: 'upload' }),
 
+  /**
+   * Vista previa de enlaces (/api/og-photo): 30 requests / 1 min por IP.
+   * Solo cuentan las veces que la función corre de verdad: las respuestas que
+   * sirve el CDN (cacheadas 1 año) no pasan por acá. Es holgado a propósito
+   * para no bloquear a los rastreadores de Facebook/WhatsApp.
+   */
+  ogPhoto: (req: NextRequest) =>
+    rateLimitDistributed(req, { limit: 30, windowSecs: 60, prefix: 'og-photo' }),
+
   /** Seguimiento de pedido (invitado): 8 requests / 10 min — frena fuerza bruta de ID+email */
   seguimiento: (req: NextRequest) =>
     rateLimitDistributed(req, { limit: 8, windowSecs: 600, prefix: 'seguimiento' }),
