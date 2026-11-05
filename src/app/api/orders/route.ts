@@ -9,6 +9,7 @@ import { rateLimiters } from '@/lib/rateLimit';
 import { getPrecioEscalonado } from '@/utils';
 import { calcularMontosPedido } from '@/lib/orderTotals';
 import type { TipoPack, PriceTier } from '@/types';
+import { reportError } from '@/lib/monitoring';
 
 // ── Código de retiro: alfanumérico 8 chars, sin O/0/I/1 (ambiguos) ──────────
 const RETIRO_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -463,6 +464,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: order });
   } catch (err: unknown) {
     console.error('Order error:', err);
+    reportError(err, 'orders');
     return NextResponse.json(
       { error: err instanceof Error ? err.message : 'Error al crear el pedido' },
       { status: 500 }

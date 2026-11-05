@@ -13,6 +13,7 @@ import { refundMercadoPagoPayment } from '@/lib/mercadopago-refund';
 import { sendAdminPushNotification } from '@/lib/webpush';
 import type { Order, OrderEstado } from '@/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { reportError } from '@/lib/monitoring';
 
 // ============================================================
 // TYPES
@@ -176,6 +177,8 @@ export async function POST(req: NextRequest) {
     // Cualquier error inesperado se loguea pero NUNCA se devuelve como 5xx,
     // para que MP no reintente infinitamente un evento que rompe nuestro código.
     console.error('[MP Webhook] Error no controlado:', err);
+    // Se responde 200 a propósito (MP no debe reintentar), pero un pago sin procesar tiene que enterarte.
+    reportError(err, 'mp-webhook');
     return ackOk();
   }
 }
@@ -212,6 +215,7 @@ async function fetchPaymentFromMP(paymentId: string): Promise<MPPaymentResponse 
     return (await res.json()) as MPPaymentResponse;
   } catch (err) {
     console.error(`[MP Webhook] Error consultando pago ${paymentId}:`, err);
+    reportError(err, 'mp-webhook-fetch-payment', { paymentId: String(paymentId) });
     return null;
   }
 }

@@ -29,6 +29,23 @@ module.exports = [
     },
   },
   {
+    // Redirecciones INTENCIONALES con recarga completa del navegador (no son
+    // navegaciones de Next): el popup de pago navega a la ventana que lo abrió
+    // (window.opener), el cierre por inactividad necesita limpiar el estado de
+    // la sesión, y el botón de comprobante vive dentro de una tarjeta con link.
+    // Usar router.push() cambiaría ese comportamiento.
+    files: [
+      'src/app/pago/exitoso/Content.tsx',
+      'src/app/pago/pendiente/Content.tsx',
+      'src/components/admin/AdminIdleTimer.tsx',
+      'src/components/common/UserIdleTimer.tsx',
+      'src/components/orders/OrderCardActions.tsx',
+    ],
+    rules: {
+      '@next/next/no-location-assign-relative-destination': 'off',
+    },
+  },
+  {
     ignores: ['e2e/**', 'coverage/**', 'playwright-report/**'],
   },
 ];

@@ -43,7 +43,8 @@ function buildCsp(scriptSrc) {
     "font-src 'self' https://fonts.gstatic.com https://embed.tawk.to https://*.tawk.to",
     "img-src 'self' data: blob: https://*.supabase.co https://lh3.googleusercontent.com https://*.tawk.to https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://www.gstatic.com",
     "frame-src 'self' https://apis.google.com https://www.mercadopago.com https://www.mercadopago.com.ar https://www.youtube.com https://www.google.com https://tawk.to https://embed.tawk.to https://challenges.cloudflare.com",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com",
+    // Sentry (monitoreo de errores): los 3 hosts cubren las regiones global, EE.UU. y UE del DSN.
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mercadopago.com https://*.tawk.to wss://*.tawk.to https://challenges.cloudflare.com https://*.clarity.ms https://c.bing.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://*.googletagmanager.com https://*.g.doubleclick.net https://www.google.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io",
     "media-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",

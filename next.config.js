@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+const { withSentryConfig } = require('@sentry/nextjs/config');
 const { storefrontCsp } = require('./src/lib/csp');
 
 const securityHeaders = [
@@ -150,4 +151,19 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// Sentry: solo sube los source maps (para ver el código real en los errores) si
+// están cargadas SENTRY_AUTH_TOKEN, SENTRY_ORG y SENTRY_PROJECT en Vercel.
+// Sin eso el build funciona igual, sin subir nada.
+const subirSourceMaps = !!(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT);
+
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  telemetry: false,
+  sourcemaps: {
+    disable: !subirSourceMaps,
+    deleteSourcemapsAfterUpload: true,
+  },
+});

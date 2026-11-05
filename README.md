@@ -241,6 +241,17 @@ El paso a paso de los externos está en [CRON_SETUP.md](./CRON_SETUP.md).
 
 ---
 
+## Monitoreo de errores (Sentry)
+
+El sitio está preparado para reportar errores a [Sentry](https://sentry.io) (el plan gratuito alcanza). **Queda apagado hasta que cargues `NEXT_PUBLIC_SENTRY_DSN`** en Vercel; sin esa variable no se descarga ni se envía nada.
+
+- Reporta solo **errores** (sin trazas de rendimiento ni grabación de sesión). El SDK del navegador se carga diferido, cuando la página ya terminó de cargar, así que no afecta el PageSpeed.
+- Se reportan los errores no atrapados del servidor y del navegador, y a mano los casos críticos que el código atrapa pero no deberían pasar desapercibidos: crear un pedido (`/api/orders`), el webhook de Mercado Pago (que responde 200 siempre para que MP no reintente) y el cron de liberación de reservas. Para sumar otro, usar `reportError(err, 'area')` de `src/lib/monitoring.ts`.
+- Antes de enviar se limpian cookies, headers de autenticación, query strings (los crons externos usan `?secret=`) y los datos personales del usuario (solo queda su id). La limpieza está en `src/lib/sentryShared.ts` y tiene tests.
+- Para ver el código real en los errores (en vez del minificado), cargar también `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` y `SENTRY_PROJECT` en Vercel: así cada deploy sube los source maps.
+
+---
+
 ## Deploy en Vercel
 
 1. Importar el repositorio en Vercel.
@@ -249,4 +260,3 @@ El paso a paso de los externos está en [CRON_SETUP.md](./CRON_SETUP.md).
 4. Configurar los webhooks (Mercado Pago y Supabase → Meta) apuntando al dominio de producción.
 5. Dar de alta los crons externos según `CRON_SETUP.md` y verificar que `CRON_SECRET` esté cargada para los nativos.
 
-## Licencia

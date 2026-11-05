@@ -10,8 +10,11 @@ interface Props {
 
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
-    // Log to error monitoring service in production
     console.error('Global error:', error);
+    // Reporte a Sentry (carga diferida: no suma al JS inicial; no hace nada sin DSN)
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
+      import('@sentry/nextjs').then((Sentry) => Sentry.captureException(error)).catch(() => {});
+    }
   }, [error]);
 
   return (

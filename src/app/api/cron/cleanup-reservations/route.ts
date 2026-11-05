@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { sendOrderExpiredEmail } from '@/lib/email';
 import { secretsMatch } from '@/lib/secureCompare';
 import type { Order } from '@/types';
+import { reportError } from '@/lib/monitoring';
 
 /**
  * ══════════════════════════════════════════════════════════════════════
@@ -71,6 +72,7 @@ export async function GET(req: NextRequest) {
 
     if (!restore?.success) {
       console.error(`[cron] Error restaurando stock del pedido ${order.id}:`, restore);
+      reportError(new Error('cleanup-reservations: no se pudo restaurar el stock'), 'cron-cleanup-reservations', { orderId: String(order.id) });
       restockErrors++;
       continue; // No cancelar si el restock falló — se reintenta en la próxima corrida
     }
@@ -87,6 +89,7 @@ export async function GET(req: NextRequest) {
 
     if (cancelErr) {
       console.error(`[cron] Error cancelando pedido ${order.id}:`, cancelErr);
+      reportError(cancelErr, 'cron-cleanup-reservations', { orderId: String(order.id) });
       continue;
     }
 

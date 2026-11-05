@@ -354,8 +354,9 @@ CREATE POLICY "products_admin_delete"  ON products FOR DELETE USING (is_admin())
 -- orders
 DROP POLICY IF EXISTS "orders_select" ON orders;
 CREATE POLICY "orders_select"          ON orders FOR SELECT USING (user_id = auth.uid() OR is_admin());
+-- Sin policy de INSERT para orders: los pedidos los crea /api/orders con el
+-- service role (ignora RLS). Ver sección de hardening al final de este archivo.
 DROP POLICY IF EXISTS "orders_insert_auth" ON orders;
-CREATE POLICY "orders_insert_auth"     ON orders FOR INSERT WITH CHECK (user_id = auth.uid() OR auth.uid() IS NOT NULL);
 DROP POLICY IF EXISTS "orders_update_admin" ON orders;
 CREATE POLICY "orders_update_admin"    ON orders FOR UPDATE USING (is_admin());
 
@@ -364,10 +365,8 @@ DROP POLICY IF EXISTS "order_items_select" ON order_items;
 CREATE POLICY "order_items_select"     ON order_items FOR SELECT USING (
   EXISTS (SELECT 1 FROM orders o WHERE o.id = order_id AND (o.user_id = auth.uid() OR is_admin()))
 );
+-- Sin policy de INSERT para order_items (mismo motivo que orders).
 DROP POLICY IF EXISTS "order_items_insert" ON order_items;
-CREATE POLICY "order_items_insert"     ON order_items FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM orders o WHERE o.id = order_id AND o.user_id = auth.uid())
-);
 
 -- wishlists
 DROP POLICY IF EXISTS "wishlists_own" ON wishlists;
