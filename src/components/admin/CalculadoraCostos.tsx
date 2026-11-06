@@ -526,7 +526,7 @@ export function CalculadoraCostos() {
 
       {analisis.map(({ m, res }, i) => (
         <div key={i} className="card space-y-2 p-4 text-sm">
-          <h2 className="break-words font-semibold">{m.modelo}</h2>
+          <h2 className="wrap-break-word font-semibold">{m.modelo}</h2>
           <Fila k={`${num2(m.docenas)} docenas × ${ars(m.precioDocenaArs)}`} v={ars(m.mercaderiaArs)} />
           <Fila k="+ Lonas (prorrateo)" v={ars(m.lonasArs)} />
           <Fila k="+ Envío (prorrateo)" v={ars(m.envioArs)} />

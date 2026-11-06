@@ -7,7 +7,7 @@ import { ars, num2, pct, VEREDICTOS } from './calculadoraCostos.shared';
 export function Fila({ k, v, fuerte }: { k: string; v: string; fuerte?: boolean }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <span className={cn('min-w-0 break-words', !fuerte && 'text-muted')}>{k}</span>
+      <span className={cn('min-w-0 wrap-break-word', !fuerte && 'text-muted')}>{k}</span>
       <span className={cn('shrink-0 text-right', fuerte && 'font-semibold')}>{v}</span>
     </div>
   );

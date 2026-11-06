@@ -256,7 +256,7 @@ export function CostosClient() {
             <div key={row.product_id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium break-words">{row.nombre}</p>
+                  <p className="font-medium wrap-break-word">{row.nombre}</p>
                   {sinCostoCargado && (
                     <span className="badge mt-1 bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
                       Sin costo cargado

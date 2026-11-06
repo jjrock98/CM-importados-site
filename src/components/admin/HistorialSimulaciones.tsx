@@ -97,7 +97,7 @@ export function HistorialSimulaciones({ version, onCargar }: Props) {
           <div key={s.id} className="rounded-lg border border-border p-3 text-sm">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="break-words font-medium">{s.nombre}</p>
+                <p className="wrap-break-word font-medium">{s.nombre}</p>
                 <p className="text-xs text-muted">
                   {new Date(s.created_at).toLocaleString('es-AR')}
                   {s.compra?.tipo === 'multimodelo' && ' · compra multimodelo'}
