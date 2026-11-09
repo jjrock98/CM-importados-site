@@ -112,7 +112,7 @@ La plantilla completa y comentada está en [`.env.example`](./.env.example) (las
 | `NEXT_PUBLIC_TAWKTO_PROPERTY_ID` / `NEXT_PUBLIC_TAWKTO_WIDGET_ID` | Chat de Tawk.to |
 | `MAINTENANCE_MODE` | `true` para activar el modo mantenimiento sin redeploy |
 | `REVALIDATE_SECRET_TOKEN` | Secret para `/api/revalidate` y los endpoints de `/api/cron/*` |
-| `CRON_SECRET` | Secret que Vercel manda en los crons nativos de `vercel.json` |
+| `CRON_SECRET` | Secret que Vercel manda en los Schedules de `vercel.json` |
 | `MERCADOPAGO_WEBHOOK_SECRET` | Secret para validar la firma del webhook de Mercado Pago |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` / `TURNSTILE_SECRET_KEY` | Cloudflare Turnstile |
 | `CLOUDMERSIVE_API_KEY` | Escaneo de virus en comprobantes (si falta, se omite) |
@@ -222,13 +222,15 @@ Pendiente de verificar: el precio se envía como entero en centavos (`precio_doc
 
 ## Cron jobs
 
-**Crons nativos de Vercel** (definidos en `vercel.json`). Vercel manda `CRON_SECRET` como `Authorization: Bearer ...`, así que esa variable tiene que estar cargada en el proyecto:
+**Schedules de Vercel** (definidos en `vercel.json`, clave `schedules`). Vercel manda `CRON_SECRET` como `Authorization: Bearer ...`, así que esa variable tiene que estar cargada en el proyecto:
 
-| Endpoint | Horario (UTC) | Para qué |
-|---|---|---|
-| `/api/revalidate` | 03:00 | Revalida el catálogo |
-| `/api/cron/cleanup-visitor-logs` | 03:30 | Limpia los registros de visitas viejos |
-| `/api/cron/sync-merchant` | 06:00 | Sincroniza los productos con Google Merchant Center |
+| Schedule | Endpoint | Horario (UTC) | Para qué |
+|---|---|---|---|
+| `revalidate` | `/api/revalidate` | 03:00 | Revalida el catálogo |
+| `cleanup-visitor-logs` | `/api/cron/cleanup-visitor-logs` | 03:30 | Limpia los registros de visitas viejos |
+| `sync-merchant` | `/api/cron/sync-merchant` | 06:00 | Sincroniza los productos con Google Merchant Center |
+
+Cada schedule tiene `"requestMethod": "GET"` (Schedules usa POST por defecto y las rutas son GET). En el dashboard de Vercel, **Schedules** muestra el historial de cada ejecución y el botón **Run Schedule** para probarlos sin esperar. Un test (`src/__tests__/vercelConfig.test.ts`) verifica que no queden `crons` y `schedules` a la vez, porque cada ruta correría dos veces.
 
 **Crons externos** (cron-job.org u otro servicio), con `?secret=<REVALIDATE_SECRET_TOKEN>`:
 
@@ -258,5 +260,5 @@ El sitio está preparado para reportar errores a [Sentry](https://sentry.io) (el
 2. Cargar las variables de entorno (Project Settings → Environment Variables).
 3. La región está fijada en `gru1` (São Paulo) en `vercel.json`.
 4. Configurar los webhooks (Mercado Pago y Supabase → Meta) apuntando al dominio de producción.
-5. Dar de alta los crons externos según `CRON_SETUP.md` y verificar que `CRON_SECRET` esté cargada para los nativos.
+5. Dar de alta los crons externos según `CRON_SETUP.md` y verificar que `CRON_SECRET` esté cargada para los Schedules de Vercel.
 

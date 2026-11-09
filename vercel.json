@@ -22,20 +22,23 @@
     { "source": "/robots.txt",  "destination": "/robots"  }
   ],
 
-  "crons": [
-    {
+  "schedules": {
+    "revalidate": {
+      "schedule": "0 3 * * *",
       "path": "/api/revalidate",
-      "schedule": "0 3 * * *"
+      "requestMethod": "GET"
     },
-    {
+    "cleanup-visitor-logs": {
+      "schedule": "30 3 * * *",
       "path": "/api/cron/cleanup-visitor-logs",
-      "schedule": "30 3 * * *"
+      "requestMethod": "GET"
     },
-    {
+    "sync-merchant": {
+      "schedule": "0 6 * * *",
       "path": "/api/cron/sync-merchant",
-      "schedule": "0 6 * * *"
+      "requestMethod": "GET"
     }
-  ],
+  },
 
   "functions": {
     "src/app/api/webhooks/mercadopago/route.ts": { "maxDuration": 30 },
