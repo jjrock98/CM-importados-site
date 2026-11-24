@@ -1,4 +1,4 @@
-# MC Importados — Tienda online
+# L&L Importados — Tienda online
 
 Tienda online de indumentaria y calzado al por mayor (packs por docena y media docena), con venta minorista para productos puntuales y panel de administración propio. Está online en [mc-importados.shop](https://www.mc-importados.shop).
 

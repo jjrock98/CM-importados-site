@@ -10,7 +10,7 @@ import { deducirPublico, colorParaGoogle, categoriaGoogle, textoVariantes } from
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-const BRAND = 'MC importados';
+const BRAND = 'L&L importados';
 const UNITS_PER_DOZEN = 12;
 const CONCURRENCY = 5;
 

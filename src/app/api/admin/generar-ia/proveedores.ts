@@ -253,7 +253,7 @@ export async function generarConOpenRouter(
         // Recomendados por OpenRouter para identificar la app en sus stats;
         // no son obligatorios para que funcione la request.
         'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://www.mc-importados.shop',
-        'X-Title': 'MC Importados - Admin',
+        'X-Title': 'L&L Importados - Admin',
       },
       body: JSON.stringify({
         model: OPENROUTER_MODEL,
