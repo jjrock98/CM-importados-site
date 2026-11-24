@@ -60,7 +60,7 @@ export function Navbar() {
               className="rounded-lg object-contain"
               priority
             />
-            <span className="font-display text-base font-bold text-brand-700 dark:text-brand-300 hidden sm:inline">
+            <span className="font-sans text-lg font-bold tracking-tight text-brand-700 dark:text-white hidden sm:inline">
               {process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L Importados'}
             </span>
           </Link>
@@ -86,7 +86,7 @@ export function Navbar() {
               {mounted ? (
                 theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />
               ) : (
-                <span className="block h-[18px] w-[18px]" aria-hidden="true" />
+                <span className="block h-4.5 w-4.5" aria-hidden="true" />
               )}
             </button>
 
