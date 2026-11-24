@@ -66,7 +66,7 @@ function parsearContenido(rawText: string): ContenidoGenerado | null {
 // ────────────────────────────────────────────────────────────────────────
 
 // Se puede pisar con GEMINI_MODEL en Vercel si Google cambia los nombres
-// de modelo o si Javier quiere probar uno distinto (ej. gemini-2.5-pro
+// de modelo o si quiere probar uno distinto (ej. gemini-2.5-pro
 // para mejores descripciones a costa de cuota más chica). Google renombra
 // y da de baja modelos Gemini seguido (varias veces en 2026), así que por
 // defecto usamos el alias "gemini-flash-latest": Google lo actualiza
