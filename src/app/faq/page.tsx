@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/faq`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-faq.png`,
+      url:    `${env.APP_URL}/og-faq.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Centro de Ayuda — L&L Importados',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '❓ Centro de Ayuda | L&L Importados',
     description: 'Envíos, mínimos por docena, métodos de pago y descuentos. Todo lo que necesitás saber antes de comprar.',
-    images:      [`${env.APP_URL}/og-faq.png`],
+    images:      [`${env.APP_URL}/og-faq.png?v=3`],
   },
 };
 

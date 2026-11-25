@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Si el producto no tiene foto, se usa la imagen de marca por defecto.
   const ogImages = ogPhoto
     ? [{ url: ogPhoto, type: 'image/jpeg', alt: product.nombre }]
-    : [{ url: `${appUrl}/og-default.png?v=2`, width: 1200, height: 630, alt: product.nombre }];
+    : [{ url: `${appUrl}/og-default.png?v=3`, width: 1200, height: 630, alt: product.nombre }];
 
   return {
     title:      product.nombre,
@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card:        'summary_large_image',
       title:       product.nombre,
       description,
-      images: [ogPhoto ?? `${appUrl}/og-default.png?v=2`],
+      images: [ogPhoto ?? `${appUrl}/og-default.png?v=3`],
     },
   };
 }

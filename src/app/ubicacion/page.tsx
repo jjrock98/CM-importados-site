@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/ubicacion`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-ubicacion.png`,
+      url:    `${env.APP_URL}/og-ubicacion.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Cómo llegar — L&L Importados',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '📍 Dónde Estamos | L&L Importados',
     description: 'Visitanos en Dr. Carlos Voss 1835, Ingeniero Budge. Lunes, Miércoles y Sábados de 6:00 a 13:00 hs.',
-    images:      [`${env.APP_URL}/og-ubicacion.png`],
+    images:      [`${env.APP_URL}/og-ubicacion.png?v=3`],
   },
 };
 export const revalidate = 300;

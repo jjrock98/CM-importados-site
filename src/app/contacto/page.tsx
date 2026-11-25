@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/contacto`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-contacto.png`,
+      url:    `${env.APP_URL}/og-contacto.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Contactanos — L&L Importados',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '📞 Contactanos | L&L Importados',
     description: '¿Dudas con tu pedido? Escribinos por WhatsApp al +54 11 2157-4004. Estamos para ayudarte.',
-    images:      [`${env.APP_URL}/og-contacto.png`],
+    images:      [`${env.APP_URL}/og-contacto.png?v=3`],
   },
 };
 export const revalidate = 300;

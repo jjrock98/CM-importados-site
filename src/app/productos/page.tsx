@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/productos`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-productos.png`,
+      url:    `${env.APP_URL}/og-productos.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Catálogo Mayorista — L&L Importados',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '🔥 Catálogo Mayorista | L&L Importados',
     description: 'Indumentaria, sandalias y zuecos importados por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
-    images:      [`${env.APP_URL}/og-productos.png`],
+    images:      [`${env.APP_URL}/og-productos.png?v=3`],
   },
 };
 

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
     description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos. ¡Ingresá acá!',
     images: [{
-      url:    `${env.APP_URL}/og-home.png`,
+      url:    `${env.APP_URL}/og-home.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'L&L Importados — Venta mayorista de indumentaria y calzado',
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
     description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos.',
-    images:      [`${env.APP_URL}/og-home.png`],
+    images:      [`${env.APP_URL}/og-home.png?v=3`],
   },
 };
 

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/terminos`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-terminos.png`,
+      url:    `${env.APP_URL}/og-terminos.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Términos y Condiciones — L&L Importados',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '📝 Términos y Condiciones | L&L Importados',
     description: 'Políticas de venta por packs, validación de transferencias y cambios por fallas.',
-    images:      [`${env.APP_URL}/og-terminos.png`],
+    images:      [`${env.APP_URL}/og-terminos.png?v=3`],
   },
 };
 export default function TerminosPage() {

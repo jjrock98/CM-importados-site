@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     url:         `${env.APP_URL}/politicas`,
     type:        'website',
     images: [{
-      url:    `${env.APP_URL}/og-politicas.png`,
+      url:    `${env.APP_URL}/og-politicas.png?v=3`,
       width:  1200,
       height: 630,
       alt:    'Políticas de Privacidad — L&L Importados',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       '🔒 Políticas de Privacidad | L&L Importados',
     description: 'Cómo protegemos tus datos de registro, comprobantes de pago y el uso de cookies.',
-    images:      [`${env.APP_URL}/og-politicas.png`],
+    images:      [`${env.APP_URL}/og-politicas.png?v=3`],
   },
 };
 export default function PoliticasPage() {

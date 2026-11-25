@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     title:       tienda,
     description: `${tienda} — Comprá por packs. Envíos y retiro en local.`,
     images: [{
-      url:    `${appUrl}/og-default.png?v=2`,   // imagen estática de fallback
+      url:    `${appUrl}/og-default.png?v=3`,   // imagen estática de fallback
       width:  1200,
       height: 630,
       alt:    tienda,
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     card:        'summary_large_image',
     title:       tienda,
     description: `${tienda} — Comprá por packs. Envíos y retiro en local.`,
-    images:      [`${appUrl}/og-default.png?v=2`],
+    images:      [`${appUrl}/og-default.png?v=3`],
   },
 
   // ── Robots ────────────────────────────────────────────────────────────────
@@ -110,11 +110,11 @@ export const metadata: Metadata = {
   manifest:  '/manifest.json',
   icons: {
     icon:       [
-      { url: '/icons/icon-32.png',  type: 'image/png', sizes: '32x32'  },
-      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192'},
+      { url: '/icons/icon-32.png?v=2',  type: 'image/png', sizes: '32x32'  },
+      { url: '/icons/icon-192.png?v=2', type: 'image/png', sizes: '192x192'},
     ],
-    apple:      [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
-    shortcut:   '/favicon.ico',
+    apple:      [{ url: '/icons/apple-touch-icon.png?v=2', sizes: '180x180' }],
+    shortcut:   '/favicon.ico?v=2',
   },
 };
 

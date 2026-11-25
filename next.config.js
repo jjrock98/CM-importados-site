@@ -97,7 +97,7 @@ const nextConfig = {
       // Archivos estáticos de /public que casi no cambian: que el navegador y
       // la CDN los reutilicen en vez de pedirlos de nuevo en cada visita.
       { source: '/og-:name.:ext(png|jpg)', headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
-      { source: '/logo.png',              headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
+      { source: '/logo-ll.png',            headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
       { source: '/icons/:path*',          headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },
       { source: '/api/webhooks/:path*', headers: [{ key: 'Cache-Control', value: 'no-store' }, ...securityHeaders] },
     ];

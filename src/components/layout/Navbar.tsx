@@ -53,14 +53,14 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
-              src="/logo.png"
+              src="/logo-ll.png"
               alt={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L Importados'}
-              width={34}
-              height={34}
-              className="rounded-lg object-contain"
+              width={40}
+              height={40}
+              className="rounded-full object-contain"
               priority
             />
-            <span className="font-sans text-lg font-bold tracking-tight text-brand-700 dark:text-white hidden sm:inline">
+            <span className="font-display text-base font-bold text-brand-700 dark:text-brand-300 hidden sm:inline">
               {process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L Importados'}
             </span>
           </Link>

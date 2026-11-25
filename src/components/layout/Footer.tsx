@@ -40,8 +40,8 @@ export function Footer({ contactInfo }: Props) {
           {/* Marca */}
           <StaggerItem>
             <div className="flex items-center gap-2 mb-3">
-              <Image src="/logo.png" alt={tienda} width={32} height={32} className="rounded-lg object-contain bg-white/95 p-0.5" />
-              <h3 className="font-sans text-lg font-bold tracking-tight text-white">{tienda}</h3>
+              <Image src="/logo-ll.png" alt={tienda} width={36} height={36} className="rounded-full object-contain" />
+              <h3 className="font-display text-xl font-bold">{tienda}</h3>
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               Venta mayorista de indumentaria importada — productos por docena. Entregas a domicilio y retiro en local.
@@ -132,7 +132,7 @@ export function Footer({ contactInfo }: Props) {
 
         <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-white/50 space-y-1">
           <p>© {new Date().getFullYear()} {tienda}. Todos los derechos reservados.</p>
-          <p className="opacity-70">Un emprendimiento de L&L Importados</p>
+          <p className="opacity-70">Un emprendimiento de Martirian Claros y Javier Claros</p>
         </div>
       </div>
     </footer>
