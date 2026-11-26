@@ -11,6 +11,7 @@ import { useCartDrawerStore } from '@/hooks/useCartDrawer';
 import { isMobileOrTabletViewport } from '@/lib/viewport';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/utils';
+import { BrandWordmark } from '@/components/common/BrandWordmark';
 
 const LINKS = [
   { href: '/',              label: 'Inicio'       },
@@ -54,15 +55,16 @@ export function Navbar() {
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src="/logo-ll.png"
-              alt={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L Importados'}
+              alt={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L importados'}
               width={40}
               height={40}
               className="rounded-full object-contain"
               priority
             />
-            <span className="font-display text-base font-bold text-brand-700 dark:text-brand-300 hidden sm:inline">
-              {process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L Importados'}
-            </span>
+            <BrandWordmark
+              name={process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L importados'}
+              className="hidden sm:inline-flex"
+            />
           </Link>
 
           {/* Search — pill claro con borde, botón de buscar en navy sólido */}

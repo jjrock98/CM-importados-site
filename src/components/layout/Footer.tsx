@@ -4,6 +4,7 @@ import { Mail, Phone, MapPin, Clock } from 'lucide-react';
 import { InstagramIcon, FacebookIcon } from '@/components/common/BrandIcons';
 import { StaggerGrid, StaggerItem } from '@/components/common/AnimateIn';
 import type { ContactInfo } from '@/types';
+import { BrandWordmark } from '@/components/common/BrandWordmark';
 
 interface Props {
   contactInfo: ContactInfo | null;
@@ -11,7 +12,7 @@ interface Props {
 
 /** Footer recibe contactInfo desde layout.tsx (leído de Supabase) */
 export function Footer({ contactInfo }: Props) {
-  const tienda   = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'Mi Tienda';
+  const tienda   = process.env.NEXT_PUBLIC_TIENDA_NOMBRE ?? 'L&L importados';
   const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER;
 
   // Fallback a env vars si contact_info está vacío o no cargó
@@ -41,7 +42,7 @@ export function Footer({ contactInfo }: Props) {
           <StaggerItem>
             <div className="flex items-center gap-2 mb-3">
               <Image src="/logo-ll.png" alt={tienda} width={36} height={36} className="rounded-full object-contain" />
-              <h3 className="font-sans text-lg font-bold tracking-tight text-white">{tienda}</h3>
+              <h3 className="leading-none"><BrandWordmark name={tienda} tone="dark" /></h3>
             </div>
             <p className="text-white/60 text-sm leading-relaxed">
               Venta mayorista de indumentaria importada — productos por docena. Entregas a domicilio y retiro en local.
