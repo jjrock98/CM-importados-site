@@ -12,13 +12,13 @@ import { ShoppingBag } from 'lucide-react';
 
 export const metadata: Metadata = {
   title:       'Productos',
-  description: 'Catálogo completo: indumentaria, sandalias y zuecos importados por docena cerrada. Talles y colores surtidos.',
+  description: 'Catálogo completo: indumentaria importada por docena cerrada. Talles y colores surtidos.',
   alternates:  { canonical: `${env.APP_URL}/productos`, languages: { 'es-AR': `${env.APP_URL}/productos`, 'x-default': `${env.APP_URL}/productos` } },
   openGraph: {
     siteName:    'L&L Importados',
     locale:      'es_AR',
     title:       '🔥 Catálogo Mayorista | L&L Importados',
-    description: 'Indumentaria, sandalias y zuecos importados por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
+    description: 'Indumentaria importada por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
     url:         `${env.APP_URL}/productos`,
     type:        'website',
     images: [{
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card:        'summary_large_image',
     title:       '🔥 Catálogo Mayorista | L&L Importados',
-    description: 'Indumentaria, sandalias y zuecos importados por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
+    description: 'Indumentaria importada por docena cerrada. Mirá los ingresos de Nike, Luofu, Adidas y marcas urbanas.',
     images:      [`${env.APP_URL}/og-productos.png?v=3`],
   },
 };
@@ -157,7 +157,7 @@ export default async function ProductosPage({
       <PageHero
         eyebrow="Catálogo completo"
         title="Productos"
-        description="Indumentaria, sandalias y zuecos importados por docena cerrada."
+        description="Indumentaria importada por docena cerrada."
         icon={<ShoppingBag size={28} />}
         compact
       />

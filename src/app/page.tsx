@@ -13,14 +13,14 @@ import { ShoppingBag, Truck, Shield, Star, ArrowRight, MessageCircle } from 'luc
 
 export const metadata: Metadata = {
   title: 'Inicio – Venta mayorista por docena',
-  description: 'Indumentaria, sandalias y zuecos importadas por docena cerrada. Talles y colores surtidos, envíos a todo el país.',
+  description: 'Indumentaria importada por docena cerrada. Talles y colores surtidos, envíos a todo el país.',
   openGraph: {
     siteName:    'L&L Importados',
     locale:      'es_AR',
     type:        'website',
     url:         env.APP_URL,
     title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
-    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos. ¡Ingresá acá!',
+    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria. ¡Ingresá acá!',
     images: [{
       url:    `${env.APP_URL}/og-home.png?v=3`,
       width:  1200,
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card:        'summary_large_image',
     title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
-    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria, sandalias y zuecos.',
+    description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria.',
     images:      [`${env.APP_URL}/og-home.png?v=3`],
   },
 };
@@ -171,7 +171,7 @@ export default async function HomePage() {
 
           <AnimateIn delay={0.16}>
             <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">
-              Sandalias, zuecos, pantalones y bermudas. Talles y colores surtidos, mejor precio por volumen.
+              Pantalones, bermudas, chombas y muchos mas productos importados. Talles y colores surtidos, mejor precio por volumen.
             </p>
           </AnimateIn>
 

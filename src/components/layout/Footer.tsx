@@ -133,7 +133,7 @@ export function Footer({ contactInfo }: Props) {
 
         <div className="mt-10 border-t border-white/10 pt-6 text-center text-xs text-white/50 space-y-1">
           <p>© {new Date().getFullYear()} {tienda}. Todos los derechos reservados.</p>
-          <p className="opacity-70">Un emprendimiento de Martirian Claros y Javier Claros</p>
+          <p className="opacity-70">Un emprendimiento de L&L importados</p>
         </div>
       </div>
     </footer>
