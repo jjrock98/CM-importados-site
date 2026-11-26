@@ -1,11 +1,5 @@
 import { cn } from '@/utils';
 
-/**
- * Separa el nombre de la marca en sigla y resto, para armar el mismo "lockup"
- * que el logotipo: "L&L importados" → { mark: 'L&L', rest: 'importados' }.
- * Solo se separa si la primera palabra es corta (hasta 4 caracteres, como
- * "L&L" o "MC"); con nombres largos se muestra todo junto.
- */
 export function splitBrandName(name: string): { mark: string; rest: string } {
   const clean = name.trim().replace(/\s+/g, ' ');
   const i = clean.indexOf(' ');
@@ -15,18 +9,30 @@ export function splitBrandName(name: string): { mark: string; rest: string } {
 
 interface Props {
   name: string;
-  /** `light`: sobre fondo claro (encabezado). `dark`: sobre fondo oscuro (pie). */
   tone?: 'light' | 'dark';
   className?: string;
 }
 
-/**
- * Nombre de la marca con el estilo del logotipo: sigla grande en serif y el
- * resto en mayúsculas pequeñas y espaciadas.
- */
 export function BrandWordmark({ name, tone = 'light', className }: Props) {
   const { mark, rest } = splitBrandName(name);
   const dark = tone === 'dark';
+
+  // ✅ Función para renderizar la sigla aislando el "&" para que no se vea como un "8"
+  const renderMark = (text: string) => {
+    if (text.includes('&')) {
+      const [first, second] = text.split('&');
+      return (
+        <>
+          {first}
+          <span className="font-sans italic font-medium px-1 text-[22px] align-baseline opacity-90">
+            &
+          </span>
+          {second}
+        </>
+      );
+    }
+    return text;
+  };
 
   if (!rest) {
     return (
@@ -37,7 +43,7 @@ export function BrandWordmark({ name, tone = 'light', className }: Props) {
           className,
         )}
       >
-        {mark}
+        {renderMark(mark)}
       </span>
     );
   }
@@ -50,7 +56,7 @@ export function BrandWordmark({ name, tone = 'light', className }: Props) {
           dark ? 'text-white' : 'text-brand-700 dark:text-white',
         )}
       >
-        {mark}
+        {renderMark(mark)}
       </span>
       <span
         className={cn(
