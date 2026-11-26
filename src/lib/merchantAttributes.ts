@@ -1,5 +1,5 @@
 /**
- * Atributos de indumentaria y calzado para Google Merchant Center: público (género y
+ * Atributos de indumentaria para Google Merchant Center: público (género y
  * edad), color y categoría de Google. Lógica pura y con tests (src/__tests__/merchantAttributes.test.ts).
  *
  * IMPORTANTE: la tienda no tiene campos de "género" ni "edad" en cada producto, así que se

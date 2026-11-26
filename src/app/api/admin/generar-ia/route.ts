@@ -124,7 +124,7 @@ export async function POST(req: NextRequest) {
         .join('\n')}\n`
     : '';
 
-  const prompt = `Sos redactor de e-commerce para una tienda argentina de indumentaria y calzado importado (venta mayorista y minorista). Mirá las fotos adjuntas del producto y generá el contenido para publicarlo en el catálogo.
+  const prompt = `Sos redactor de e-commerce para una tienda argentina de indumentaria importado (venta mayorista y minorista). Mirá las fotos adjuntas del producto y generá el contenido para publicarlo en el catálogo.
 
 Contexto ya cargado (no lo repitas literal, usalo de guía):
 ${contexto.join('\n')}

@@ -19,18 +19,18 @@ export const metadata: Metadata = {
     locale:      'es_AR',
     type:        'website',
     url:         env.APP_URL,
-    title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
+    title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria',
     description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria. ¡Ingresá acá!',
     images: [{
       url:    `${env.APP_URL}/og-home.png?v=3`,
       width:  1200,
       height: 630,
-      alt:    'L&L Importados — Venta mayorista de indumentaria y calzado',
+      alt:    'L&L Importados — Venta mayorista de indumentaria',
     }],
   },
   twitter: {
     card:        'summary_large_image',
-    title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria y Calzado',
+    title:       '🛍️ L&L Importados | Venta Mayorista de Indumentaria',
     description: 'Venta por docena cerrada con talles y colores surtidos. El mejor precio por volumen en indumentaria.',
     images:      [`${env.APP_URL}/og-home.png?v=3`],
   },
@@ -166,7 +166,7 @@ export default async function HomePage() {
               hasta que corría JS. Se renderiza estático (sin animación
               de entrada) para que se pinte apenas llega el HTML. */}
           <h1 className="mt-5 font-display text-3xl font-bold tracking-tight md:text-5xl">
-            Calzado e indumentaria importada, por docena cerrada
+            Indumentaria importada, por docena cerrada
           </h1>
 
           <AnimateIn delay={0.16}>
@@ -238,7 +238,7 @@ export default async function HomePage() {
           {[
             { icon: Truck,       title: 'Envíos a todo el país',  desc: 'Coordinamos el envío con vos' },
             { icon: Shield,      title: 'Compra segura',          desc: 'Transferencia, efectivo o cuenta corriente' },
-            { icon: Star,        title: 'Calzado e indumentaria importada', desc: 'Buena relación precio-calidad' },
+            { icon: Star,        title: 'Indumentaria importada', desc: 'Buena relación precio-calidad' },
             { icon: ShoppingBag, title: 'Venta por docena',       desc: 'Talles y colores surtidos'  },
           ].map(({ icon: Icon, title, desc }) => (
             <StaggerItem key={title} className="group card-hover p-5 text-center">

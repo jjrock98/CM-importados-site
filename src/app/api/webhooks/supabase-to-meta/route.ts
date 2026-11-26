@@ -110,7 +110,7 @@ function buildMetaData(p: Product) {
     url: `${env.APP_URL}/productos/${p.slug}`,
 
     // Meta suele pedir `category` (o `google_product_category`) para
-    // aprobar los productos del todo — `categoria` (Calzado,
+    // aprobar los productos del todo — `categoria` (Ropa, chombas, remeras, camisas, pantalones, etc.) es lo más parecido que hay en el schema hoy;
     // Pantalones, etc.) es lo más parecido que hay en el schema hoy;
     // puede necesitar mapearse a la taxonomía de Google/Meta más
     // adelante si Commerce Manager tira warnings de categoría.
