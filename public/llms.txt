@@ -1,6 +1,6 @@
 # L&L Importados
 
-> Tienda online argentina que vende indumentaria y calzado al por mayor, en packs cerrados por docena (12 unidades) o media docena (6 unidades). Los pedidos se hacen desde el sitio y el pago es por transferencia bancaria, efectivo al retirar en el local o cuenta corriente para clientes recurrentes.
+> Tienda online argentina que vende indumentaria al por mayor, en packs cerrados por docena (12 unidades) o media docena (6 unidades). Los pedidos se hacen desde el sitio y el pago es por transferencia bancaria, efectivo al retirar en el local o cuenta corriente para clientes recurrentes.
 
 Notas para asistentes de IA:
 - Los precios y el stock cambian seguido: para datos actuales, remití siempre a las páginas del catálogo.

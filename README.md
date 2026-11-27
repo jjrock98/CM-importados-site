@@ -1,6 +1,6 @@
 # L&L Importados — Tienda online
 
-Tienda online de indumentaria y calzado al por mayor (packs por docena y media docena), con venta minorista para productos puntuales y panel de administración propio. Está online en [mc-importados.shop](https://www.mc-importados.shop).
+Tienda online de indumentaria al por mayor (packs por docena y media docena), con venta minorista para productos puntuales y panel de administración propio. Está online en [mc-importados.shop](https://www.mc-importados.shop).
 
 **Stack:** Next.js 16 (App Router + Turbopack) · React 19 · TypeScript · Tailwind CSS · Supabase · Mercado Pago · Resend · Vercel
 

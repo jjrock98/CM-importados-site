@@ -47,7 +47,10 @@ export function TawkTo() {
       script.async = true;
       script.src = `https://embed.tawk.to/${propertyId}/${widgetId}`;
       script.charset = 'UTF-8';
-      script.setAttribute('crossorigin', '*');
+      // Sin atributo `crossorigin`: con él el navegador exige el encabezado CORS
+      // (Access-Control-Allow-Origin) y, si el servidor de Tawk no lo manda (por
+      // ejemplo ante el robot de PageSpeed), el script se bloquea y queda un error
+      // en la consola. Un script común no lo necesita.
       document.head.appendChild(script);
     };
 

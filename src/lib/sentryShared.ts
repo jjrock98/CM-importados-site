@@ -63,6 +63,8 @@ export const sentryBaseOptions = {
     'ResizeObserver loop limit exceeded',
     'ResizeObserver loop completed with undelivered notifications',
     'Non-Error promise rejection captured',
+    'Script error.',
+    'Script error',
     'Failed to fetch',
     'Load failed',
     'NetworkError when attempting to fetch resource.',

@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reportarErrorCliente } from '@/lib/sentryClient';
 
 interface Props {
   error:  Error & { digest?: string };
@@ -11,10 +12,8 @@ interface Props {
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
     console.error('Global error:', error);
-    // Reporte a Sentry (carga diferida: no suma al JS inicial; no hace nada sin DSN)
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-      import('@sentry/nextjs').then((Sentry) => Sentry.captureException(error)).catch(() => {});
-    }
+    // Reporte a Sentry (el SDK se carga recién ahora; no hace nada sin DSN)
+    reportarErrorCliente(error);
   }, [error]);
 
   return (

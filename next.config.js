@@ -94,6 +94,11 @@ const nextConfig = {
   async headers() {
     return [
       { source: '/(.*)',               headers: securityHeaders },
+      // Aísla la ventana del sitio de otras ventanas (COOP). `same-origin-allow-popups`
+      // mantiene el popup de Mercado Pago. Se excluye /pago/*: esas páginas vuelven
+      // del popup y usan `window.opener` para redirigir la ventana principal; con COOP
+      // el navegador cortaría esa relación.
+      { source: '/((?!pago).*)',         headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' }] },
       // Archivos estáticos de /public que casi no cambian: que el navegador y
       // la CDN los reutilicen en vez de pedirlos de nuevo en cada visita.
       { source: '/og-:name.:ext(png|jpg)', headers: [{ key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' }] },

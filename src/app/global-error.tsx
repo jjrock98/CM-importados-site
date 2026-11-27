@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { reportarErrorCliente } from '@/lib/sentryClient';
 
 // Última red de seguridad: errores que rompen el layout raíz (error.tsx no los
 // alcanza). Reemplaza TODO el documento, por eso trae su propio <html> y usa
@@ -14,9 +15,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('Global error (layout raíz):', error);
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-      import('@sentry/nextjs').then((Sentry) => Sentry.captureException(error)).catch(() => {});
-    }
+    reportarErrorCliente(error);
   }, [error]);
 
   return (
